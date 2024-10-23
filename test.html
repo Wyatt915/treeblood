@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN"
 	"http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<html>
 	<head>
 		<title>Example of MathML embedded in an XHTML file</title>
 		<meta name="description" content="Example of MathML embedded in an XHTML file"/>
 	</head>
 	<body>
-<math mode="display" xmlns="http://www.w3.org/1998/Math/MathML">
-	<mrow>
-		<mrow>phi</mrow>
+	<table><tbody><tr><th colspan=2>GoLaTeX Test</th></tr>
+<tr><td><code>\varphi=1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1+\cdots}}}}}</code></td><td><math mode="display" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
+		<mi>φ</mi>
 		<mo>=</mo>
 		<mn>1</mn>
 		<mo>+</mo>
@@ -47,6 +47,8 @@
 											</mrow>
 											<mrow>
 												<mn>1</mn>
+												<mo>+</mo>
+												<mi>⋯</mi>
 											</mrow>
 										</mfrac>
 									</mrow>
@@ -58,4 +60,37 @@
 			</mrow>
 		</mfrac>
 	</mrow>
-</math></body></html>
+</math></td></tr><tr><td><code>\forall A \, \exists P \, \forall B \, [B \in P \iff \forall C \, (C \in B \Rightarrow C \in A)]</code></td><td><math mode="display" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
+		<mi>∀</mi>
+		<mi>A</mi>
+		<mo></mo>
+		<mo>,</mo>
+		<mi>∃</mi>
+		<mi>P</mi>
+		<mo></mo>
+		<mo>,</mo>
+		<mi>∀</mi>
+		<mi>B</mi>
+		<mo></mo>
+		<mo>,</mo>
+		<mo>[</mo>
+		<mi>B</mi>
+		<mo>∈</mo>
+		<mi>P</mi>
+		<mrow>iff</mrow>
+		<mi>∀</mi>
+		<mi>C</mi>
+		<mo></mo>
+		<mo>,</mo>
+		<mo>(</mo>
+		<mi>C</mi>
+		<mo>∈</mo>
+		<mi>B</mi>
+		<mo>⇒</mo>
+		<mi>C</mi>
+		<mo>∈</mo>
+		<mi>A</mi>
+		<mo>)</mo>
+		<mo>]</mo>
+	</mrow>
+</math></td></tr></tbody></table></body></html>

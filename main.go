@@ -1,7 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"log"
+	"os"
 	"slices"
 	"strings"
 	"unicode"
@@ -12,13 +16,13 @@ type NodeClass int
 type ParseState int
 
 const (
-	psBegin ParseState = iota
-	psEnd
-	psContinue
-	psSpace
-	psWasBackslash
-	psCommand
-	psNumber
+	PS_Begin ParseState = iota
+	PS_End
+	PS_Continue
+	PS_Space
+	PS_WasBackslash
+	PS_Command
+	PS_Number
 )
 
 const (
@@ -50,24 +54,6 @@ const (
 	tokReserved
 )
 
-type Token struct {
-	Kind  TokenKind
-	Value string
-}
-
-type MMLNode struct {
-	Value    Token
-	Class    NodeClass
-	Children []*MMLNode
-}
-
-func newMMLNode() *MMLNode {
-	return &MMLNode{
-		Class:    EXPR,
-		Children: make([]*MMLNode, 0),
-	}
-}
-
 var (
 	BRACEMATCH = map[rune]rune{
 		'(': ')',
@@ -80,14 +66,68 @@ var (
 	RESERVED = []rune(`#$%^&_{}~\`)
 	// maps commands to number of expected arguments
 	COMMANDS = map[string]int{
-		"frac":  2,
-		"left":  1,
-		"right": 1,
+		"frac":          2,
+		"textfrac":      2,
+		"ElsevierGlyph": 1,
+		"acute":         1,
+		"bar":           1,
+		"breve":         1,
+		"check":         1,
+		"ddot":          1,
+		"ding":          1,
+		"dot":           1,
+		"fbox":          1,
+		"grave":         1,
+		"hat":           1,
+		"k":             1,
+		"left":          1,
+		"mathbb":        1,
+		"mathbf":        1,
+		"mathbit":       1,
+		"mathfrak":      1,
+		"mathmit":       1,
+		"mathring":      1,
+		"mathrm":        1,
+		"mathscr":       1,
+		"mathsf":        1,
+		"mathsfbf":      1,
+		"mathsfbfsl":    1,
+		"mathsfsl":      1,
+		"mathsl":        1,
+		"mathslbb":      1,
+		"mathtt":        1,
+		"mbox":          1,
+		"right":         1,
+		"tilde":         1,
+		"u":             1,
 	}
 	COMMAND_CLASS = map[string]NodeClass{
 		"frac": INNER,
 	}
+	TEX_SYMBOLS map[string]map[string]string
 )
+
+type Token struct {
+	Kind  TokenKind
+	Value string
+}
+
+type MMLNode struct {
+	Value    Token
+	Text     string
+	Tag      string
+	Attrib   map[string]string
+	Class    NodeClass
+	Children []*MMLNode
+}
+
+func newMMLNode() *MMLNode {
+	return &MMLNode{
+		Class:    EXPR,
+		Children: make([]*MMLNode, 0),
+		Attrib:   make(map[string]string),
+	}
+}
 
 type stack struct {
 	data []int
@@ -145,55 +185,64 @@ func GetToken(tex string) (Token, string) {
 	idx := 0
 	for idx, r := range tex {
 		switch state {
-		case psEnd:
+		case PS_End:
 			return Token{Kind: kind, Value: string(result)}, tex[idx:]
-		case psBegin:
+		case PS_Begin:
 			switch {
 			case unicode.IsLetter(r):
-				state = psEnd
+				state = PS_End
 				kind = tokLetter
 				result = append(result, r)
 			case unicode.IsNumber(r):
-				state = psNumber
+				state = PS_Number
 				kind = tokNumber
 				result = append(result, r)
 			case r == '\\':
-				state = psWasBackslash
+				state = PS_WasBackslash
 			case r == '{':
-				state = psEnd
+				state = PS_End
 				kind = tokOpenBrace
 				result = append(result, r)
 			case r == '}':
-				state = psEnd
+				state = PS_End
 				kind = tokCloseBrace
 				result = append(result, r)
+			case unicode.IsSpace(r):
+				continue
 			default:
-				state = psEnd
+				state = PS_End
 				kind = tokChar
 				result = append(result, r)
 			}
-		case psNumber:
+		case PS_Number:
 			switch {
+			case r == '.':
+				result = append(result, r)
+			case unicode.IsSpace(r):
+				state = PS_End
 			case !unicode.IsNumber(r):
 				return Token{Kind: kind, Value: string(result)}, tex[idx:]
 			default:
 				result = append(result, r)
 			}
-		case psWasBackslash:
+		case PS_WasBackslash:
 			switch {
 			case slices.Contains(RESERVED, r):
-				state = psEnd
+				state = PS_End
 				kind = tokReserved
 				result = append(result, r)
 			case unicode.IsLetter(r):
-				state = psCommand
+				state = PS_Command
 				kind = tokCommand
 				result = append(result, r)
 			default:
 				return Token{Kind: kind, Value: string(result)}, tex[idx:]
 			}
-		case psCommand:
+		case PS_Command:
 			switch {
+			case r == '*':
+				state = PS_End
+				result = append(result, r)
 			case !unicode.IsLetter(r):
 				return Token{Kind: kind, Value: string(result)}, tex[idx:]
 			default:
@@ -235,12 +284,23 @@ func ParseTex(tokens []Token) *MMLNode {
 		case tokLetter:
 			child.Class = ORD
 			child.Value = tok
+
 		case tokCommand:
 			numChildren, ok := COMMANDS[tok.Value]
 			if ok {
 				for range numChildren {
 					subExpr, i = GetNextExpr(tokens, braces, i)
 					child.Children = append(child.Children, ParseTex(subExpr))
+				}
+			} else {
+				if t, ok := TEX_SYMBOLS[tok.Value]; ok {
+					child.Text = t["char"]
+					switch t["type"] {
+					case "binaryop", "opening", "closing", "relation":
+						child.Tag = "mo"
+					default:
+						child.Tag = "mi"
+					}
 				}
 			}
 			child.Class = COMMAND_CLASS[tok.Value]
@@ -261,57 +321,99 @@ func printAST(n *MMLNode, depth int) {
 	}
 }
 
-func (n *MMLNode) PrintXML(indent int) {
+func (n *MMLNode) Write(w *strings.Builder, indent int) {
 	var tag string
-	switch n.Class {
-	case EXPR:
-		tag = "mrow"
-	case INNER:
-		tag = "mfrac"
-	case ORD:
-		switch n.Value.Kind {
-		case tokNumber:
-			tag = "mn"
-		case tokLetter:
-			tag = "mi"
-		default:
-			tag = "mo"
-		}
-	}
-	fmt.Printf("%s<%s>", strings.Repeat("\t", indent), tag)
-	if len(n.Children) == 0 {
-		fmt.Print(n.Value.Value)
-		fmt.Printf("</%s>", tag)
+	if len(n.Tag) > 0 {
+		tag = n.Tag
 	} else {
-		fmt.Println()
-		for _, child := range n.Children {
-			child.PrintXML(indent + 1)
+		switch n.Class {
+		case EXPR:
+			tag = "mrow"
+		case INNER:
+			tag = "mfrac"
+		case ORD:
+			switch n.Value.Kind {
+			case tokNumber:
+				tag = "mn"
+			case tokLetter:
+				tag = "mi"
+			default:
+				tag = "mo"
+			}
 		}
-		fmt.Printf("%s</%s>", strings.Repeat("\t", indent), tag)
 	}
-	fmt.Println()
+	w.WriteString(strings.Repeat("\t", indent))
+	w.WriteRune('<')
+	w.WriteString(tag)
+	w.WriteRune('>')
+	if len(n.Children) == 0 {
+		if len(n.Text) > 0 {
+			w.WriteString(n.Text)
+		} else {
+			w.WriteString(n.Value.Value)
+		}
+		w.WriteString("</")
+		w.WriteString(tag)
+		w.WriteRune('>')
+	} else {
+		w.WriteRune('\n')
+		for _, child := range n.Children {
+			child.Write(w, indent+1)
+		}
+		w.WriteString(strings.Repeat("\t", indent))
+		w.WriteString("</")
+		w.WriteString(tag)
+		w.WriteRune('>')
+	}
+	w.WriteRune('\n')
 }
 
-func main() {
-	test := `\phi=1+\frac{1}{1+\frac{1}{1+\frac{1}{1+\frac{1}{1+\frac{1}{1}}}}}`
+func TexToMML(tex string) string {
 	var tok Token
 	tokens := make([]Token, 0)
-	for len(test) > 0 {
-		tok, test = GetToken(test)
+	for len(tex) > 0 {
+		tok, tex = GetToken(tex)
 		tokens = append(tokens, tok)
 	}
 	ast := ParseTex(tokens)
+	var builder strings.Builder
+	builder.WriteString(`<math mode="display" xmlns="http://www.w3.org/1998/Math/MathML">`)
+	ast.Write(&builder, 1)
+	builder.WriteString("</math>")
+	return builder.String()
+}
+
+func main() {
+	fp, err := os.Open("./charactermappings/symbols.json")
+	if err != nil {
+		panic("could not open symbols file")
+	}
+	translation, err := io.ReadAll(fp)
+	fp.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = json.Unmarshal(translation, &TEX_SYMBOLS)
+	if err != nil {
+		panic(err.Error())
+	}
+	test := []string{
+		`\varphi=1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1+\cdots}}}}}`,
+		`\forall A \, \exists P \, \forall B \, [B \in P \iff \forall C \, (C \in B \Rightarrow C \in A)]`,
+	}
 	head := `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN"
 	"http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<html>
 	<head>
 		<title>Example of MathML embedded in an XHTML file</title>
 		<meta name="description" content="Example of MathML embedded in an XHTML file"/>
 	</head>
-	<body>`
+	<body>
+	<table><tbody><tr><th colspan=2>GoLaTeX Test</th></tr>`
 	fmt.Println(head)
-	fmt.Println(`<math mode="display" xmlns="http://www.w3.org/1998/Math/MathML">`)
-	ast.PrintXML(1)
-	fmt.Println(`</math></body></html>`)
+	for _, tex := range test {
+		fmt.Printf(`<tr><td><code>%s</code></td><td>%s</td></tr>`, tex, TexToMML(tex))
+	}
+	fmt.Println(`</tbody></table></body></html>`)
 }
