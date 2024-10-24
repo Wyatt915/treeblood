@@ -51,6 +51,7 @@ const (
 	tokOpenBracket
 	tokCloseBrace
 	tokCloseBracket
+	tokSubSup
 	tokReserved
 )
 
@@ -98,6 +99,7 @@ var (
 		"mathtt":        1,
 		"mbox":          1,
 		"right":         1,
+		"sqrt":          1,
 		"tilde":         1,
 		"u":             1,
 	}
@@ -207,6 +209,18 @@ func GetToken(tex string) (Token, string) {
 				state = PS_End
 				kind = tokCloseBrace
 				result = append(result, r)
+			case r == '^':
+				state = PS_End
+				kind = tokSubSup
+				result = append(result, r)
+			case r == '_':
+				state = PS_End
+				kind = tokSubSup
+				result = append(result, r)
+			case slices.Contains(RESERVED, r):
+				state = PS_End
+				kind = tokReserved
+				result = append(result, r)
 			case unicode.IsSpace(r):
 				continue
 			default:
@@ -229,7 +243,7 @@ func GetToken(tex string) (Token, string) {
 			switch {
 			case slices.Contains(RESERVED, r):
 				state = PS_End
-				kind = tokReserved
+				kind = tokCommand
 				result = append(result, r)
 			case unicode.IsLetter(r):
 				state = PS_Command
@@ -257,7 +271,6 @@ func GetToken(tex string) (Token, string) {
 }
 
 func GetNextExpr(tokens []Token, braces map[int]int, idx int) ([]Token, int) {
-	idx++
 	var result []Token
 	if tokens[idx].Kind == tokOpenBrace {
 		end := braces[idx]
@@ -272,7 +285,7 @@ func GetNextExpr(tokens []Token, braces map[int]int, idx int) ([]Token, int) {
 func ParseTex(tokens []Token) *MMLNode {
 	node := newMMLNode()
 	var i int
-	var subExpr []Token
+	var nextExpr []Token
 	braces, err := MatchBraces(tokens)
 	if err != nil {
 		panic(err.Error())
@@ -281,16 +294,23 @@ func ParseTex(tokens []Token) *MMLNode {
 		tok := tokens[i]
 		child := newMMLNode()
 		switch tok.Kind {
+		case tokOpenBrace:
+			nextExpr, i = GetNextExpr(tokens, braces, i)
+			child = ParseTex(nextExpr)
 		case tokLetter:
 			child.Class = ORD
 			child.Value = tok
-
+			child.Text = tok.Value
+		case tokNumber:
+			child.Tag = "mn"
+			child.Text = tok.Value
+			child.Value = tok
 		case tokCommand:
 			numChildren, ok := COMMANDS[tok.Value]
 			if ok {
 				for range numChildren {
-					subExpr, i = GetNextExpr(tokens, braces, i)
-					child.Children = append(child.Children, ParseTex(subExpr))
+					nextExpr, i = GetNextExpr(tokens, braces, i+1)
+					child.Children = append(child.Children, ParseTex(nextExpr))
 				}
 			} else {
 				if t, ok := TEX_SYMBOLS[tok.Value]; ok {
@@ -298,26 +318,127 @@ func ParseTex(tokens []Token) *MMLNode {
 					switch t["type"] {
 					case "binaryop", "opening", "closing", "relation":
 						child.Tag = "mo"
+					case "large":
+						child.Tag = "mo"
+						child.Attrib["largeop"] = "true"
 					default:
 						child.Tag = "mi"
 					}
 				}
 			}
+			if tok.Value == "sqrt" {
+				child.Tag = "msqrt"
+			}
 			child.Class = COMMAND_CLASS[tok.Value]
 			child.Value = tok
+		case tokCloseBrace:
+			continue
 		default:
 			child.Class = ORD
 			child.Value = tok
 		}
 		node.Children = append(node.Children, child)
 	}
+	node.PostProcessScripts()
 	return node
 }
 
-func printAST(n *MMLNode, depth int) {
-	fmt.Println(strings.Repeat("\t", depth), n.Value.Value)
+func (node *MMLNode) PostProcessCommands() {
+}
+
+// Slide a kernel to idx and see if the types match
+func KernelTest(ary []*MMLNode, kernel []TokenKind, idx int) bool {
+	for i, t := range kernel {
+		// Null matches anything
+		if t == tokNull {
+			continue
+		}
+		if t != ary[idx+i].Value.Kind {
+			return false
+		}
+	}
+	return true
+}
+
+func MakeSupSubNode(nodes []*MMLNode) (*MMLNode, error) {
+	out := newMMLNode()
+	//fmt.Println("MakeSupSubNode")
+	//for _, n := range nodes {
+	//	fmt.Print(n.Value, " ")
+	//}
+	//fmt.Println()
+	var base, sub, sup *MMLNode
+	switch len(nodes) {
+	case 3:
+		switch nodes[1].Value.Value {
+		case "^":
+			out.Tag = "msup"
+		case "_":
+			out.Tag = "msub"
+		}
+		out.Children = []*MMLNode{nodes[0], nodes[2]}
+	case 5:
+		base = nodes[0]
+		if nodes[1].Value.Value == nodes[3].Value.Value {
+			return nil, fmt.Errorf("ambiguous multiscript")
+		}
+		if nodes[1].Value.Value == "_" && nodes[3].Value.Value == "^" {
+			sub = nodes[2]
+			sup = nodes[4]
+		} else if nodes[1].Value.Value == "^" && nodes[3].Value.Value == "_" {
+			sub = nodes[4]
+			sup = nodes[2]
+		} else {
+			return nil, fmt.Errorf("ambiguous multiscript")
+		}
+		out.Tag = "msubsup"
+		out.Children = []*MMLNode{base, sub, sup}
+	}
+	return out, nil
+}
+
+// Look for any ^ or _ among siblings and convert to a msub, msup, or msubsup
+func (node *MMLNode) PostProcessScripts() {
+	//fmt.Println("PostProcessScripts")
+	//for _, n := range node.Children {
+	//	fmt.Print(n.Value, " ")
+	//}
+	//fmt.Println()
+
+	twoScriptKernel := []TokenKind{tokNull, tokSubSup, tokNull, tokSubSup, tokNull}
+	oneScriptKernel := []TokenKind{tokNull, tokSubSup, tokNull}
+	processKernel := func(kernel []TokenKind) {
+		i := 0
+		n := len(kernel)
+		limit := len(node.Children) - n
+		for i <= limit {
+			if KernelTest(node.Children, kernel, i) {
+				ssNode, err := MakeSupSubNode(node.Children[i : i+n])
+				if err != nil {
+					i++
+					continue
+				}
+				node.Children[i] = ssNode
+				copy(node.Children[i+1:], node.Children[i+n:])
+				// free up memory if needed
+				for j := len(node.Children) - n + 1; j < len(node.Children); j++ {
+					node.Children[j] = nil
+				}
+				node.Children = node.Children[:len(node.Children)-n+1]
+				limit = len(node.Children) - n
+				//i--
+			}
+			i++
+		}
+	}
+	processKernel(twoScriptKernel)
+	processKernel(oneScriptKernel)
+}
+
+func (n *MMLNode) printAST(depth int) {
+	fmt.Println(strings.Repeat("  ", depth), n.Value.Value)
 	for _, child := range n.Children {
-		printAST(child, depth+1)
+		child.printAST(depth + 1)
 	}
 }
 
@@ -345,6 +466,13 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 	w.WriteString(strings.Repeat("\t", indent))
 	w.WriteRune('<')
 	w.WriteString(tag)
+	for key, val := range n.Attrib {
+		w.WriteRune(' ')
+		w.WriteString(key)
+		w.WriteString(`="`)
+		w.WriteString(val)
+		w.WriteRune('"')
+	}
 	w.WriteRune('>')
 	if len(n.Children) == 0 {
 		if len(n.Text) > 0 {
@@ -375,9 +503,12 @@ func TexToMML(tex string) string {
 		tok, tex = GetToken(tex)
 		tokens = append(tokens, tok)
 	}
+	//for _, t := range tokens {
+	//	fmt.Println(t)
+	//}
 	ast := ParseTex(tokens)
 	var builder strings.Builder
-	builder.WriteString(`<math mode="display" xmlns="http://www.w3.org/1998/Math/MathML">`)
+	builder.WriteString(`<math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">`)
 	ast.Write(&builder, 1)
 	builder.WriteString("</math>")
 	return builder.String()
@@ -400,6 +531,13 @@ func main() {
 	test := []string{
 		`\varphi=1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1+\cdots}}}}}`,
 		`\forall A \, \exists P \, \forall B \, [B \in P \iff \forall C \, (C \in B \Rightarrow C \in A)]`,
+		`\int f(x) dx`,
+		`x^2`,
+		`x^{2^2}`,
+		`{{x^2}^2}^2`,
+		`x^{2^{2^2}}`,
+		`a^2 + b^2 = c^2`,
+		`\int_0^{\infty}e^{-x^2} dx = \frac{\sqrt{\pi}}{2}`,
 	}
 	head := `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN"
@@ -411,9 +549,16 @@ func main() {
 	</head>
 	<body>
 	<table><tbody><tr><th colspan=2>GoLaTeX Test</th></tr>`
-	fmt.Println(head)
-	for _, tex := range test {
-		fmt.Printf(`<tr><td><code>%s</code></td><td>%s</td></tr>`, tex, TexToMML(tex))
+	f, err := os.Create("test.html")
+	if err != nil {
+		log.Fatal(err)
 	}
-	fmt.Println(`</tbody></table></body></html>`)
+	// remember to close the file
+	defer f.Close()
+
+	f.WriteString(head)
+	for _, tex := range test {
+		f.WriteString(fmt.Sprintf(`<tr><td><code>%s</code></td><td>%s</td></tr>`, tex, TexToMML(tex)))
+	}
+	f.WriteString(`</tbody></table></body></html>`)
 }

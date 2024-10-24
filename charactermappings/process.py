@@ -40,6 +40,7 @@ def main():
     symbols = {}
     commands = {}
     command_arg_count = {}
+    multi = {}
 
     for char in root.findall('character'):
         if char.get('mode') == 'text':
@@ -56,6 +57,22 @@ def main():
         codepoint = char.get('id')
         ent = getEntityName(char)
         sym = tex.text.strip(' \\')
+        if sym not in multi:
+            multi[sym] = [{
+                'description': desc.text,
+                'codepoint': codepoint,
+                'entity': ent,
+                'char': getCharacter(codepoint),
+                'type': ctype
+                }]
+        else:
+            multi[sym].append({
+                'description': desc.text,
+                'codepoint': codepoint,
+                'entity': ent,
+                'char': getCharacter(codepoint),
+                'type': ctype
+                })
         if '{' in sym and sym not in commands:
             commands[sym] = {
                     'description': desc.text,
@@ -82,12 +99,20 @@ def main():
                     'type': ctype
                     }
 
+    singular = []
+    for sym in multi:
+        if len(multi[sym]) <= 1:
+            singular.append(sym)
+    for sym in singular:
+        del multi[sym]
     with open('commands.json', 'w', encoding='utf-8') as fp:
-        json.dump(commands, fp, sort_keys=True)
+        json.dump(commands, fp, sort_keys=True, indent=4)
     with open('symbols.json', 'w', encoding='utf-8') as fp:
-        json.dump(symbols, fp, sort_keys=True)
+        json.dump(symbols, fp, sort_keys=True, indent=4)
     with open('counts.json', 'w', encoding='utf-8') as fp:
-        json.dump(command_arg_count, fp, sort_keys=True)
+        json.dump(command_arg_count, fp, sort_keys=True, indent=4)
+    with open('multi.json', 'w', encoding='utf-8') as fp:
+        json.dump(multi, fp, sort_keys=True, indent=4)
 
 
 if __name__ == "__main__":
