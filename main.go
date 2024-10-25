@@ -26,7 +26,9 @@ const (
 )
 
 const (
-	EXPR NodeClass = iota
+	NULL NodeClass = iota
+	NONPRINT
+	EXPR
 	ORD
 	OP
 	BIN
@@ -103,10 +105,30 @@ var (
 		"tilde":         1,
 		"u":             1,
 	}
+	FONT_MODIFIERS = map[string]bool{
+		"mathbb":     true,
+		"mathbf":     true,
+		"mathbin":    true,
+		"mathbit":    true,
+		"mathfrak":   true,
+		"mathmit":    true,
+		"mathring":   true,
+		"mathrm":     true,
+		"mathscr":    true,
+		"mathsf":     true,
+		"mathsfbf":   true,
+		"mathsfbfsl": true,
+		"mathsfsl":   true,
+		"mathsl":     true,
+		"mathslbb":   true,
+		"mathtt":     true,
+	}
+
 	COMMAND_CLASS = map[string]NodeClass{
 		"frac": INNER,
 	}
 	TEX_SYMBOLS map[string]map[string]string
+	TEX_FONTS   map[string]map[string]string
 )
 
 type Token struct {
@@ -250,7 +272,8 @@ func GetToken(tex string) (Token, string) {
 				kind = tokCommand
 				result = append(result, r)
 			default:
-				return Token{Kind: kind, Value: string(result)}, tex[idx:]
+				result = append(result, r)
+				return Token{Kind: tokCommand, Value: string(result)}, tex[idx:]
 			}
 		case PS_Command:
 			switch {
@@ -312,6 +335,7 @@ func ParseTex(tokens []Token) *MMLNode {
 					nextExpr, i = GetNextExpr(tokens, braces, i+1)
 					child.Children = append(child.Children, ParseTex(nextExpr))
 				}
+				child.Text = tok.Value
 			} else {
 				if t, ok := TEX_SYMBOLS[tok.Value]; ok {
 					child.Text = t["char"]
@@ -321,6 +345,7 @@ func ParseTex(tokens []Token) *MMLNode {
 					case "large":
 						child.Tag = "mo"
 						child.Attrib["largeop"] = "true"
+						child.Attrib["movablelimits"] = "true"
 					default:
 						child.Tag = "mi"
 					}
@@ -329,7 +354,10 @@ func ParseTex(tokens []Token) *MMLNode {
 			if tok.Value == "sqrt" {
 				child.Tag = "msqrt"
 			}
-			child.Class = COMMAND_CLASS[tok.Value]
+			child.Class = ORD
+			if cl, ok := COMMAND_CLASS[tok.Value]; ok {
+				child.Class = cl
+			}
 			child.Value = tok
 		case tokCloseBrace:
 			continue
@@ -337,7 +365,14 @@ func ParseTex(tokens []Token) *MMLNode {
 			child.Class = ORD
 			child.Value = tok
 		}
+		child.PostProcessFonts()
 		node.Children = append(node.Children, child)
+	}
+	if (node.Class == NULL || node.Value.Kind == tokNull) && len(node.Children) == 1 {
+		child := node.Children[0]
+		node.Children[0] = nil
+		node.Children = nil
+		node = child
 	}
 	node.PostProcessScripts()
 	return node
@@ -360,6 +395,12 @@ func KernelTest(ary []*MMLNode, kernel []TokenKind, idx int) bool {
 	return true
 }
 
+const (
+	SCSUPER = iota
+	SCSUB
+	SCBOTH
+)
+
 func MakeSupSubNode(nodes []*MMLNode) (*MMLNode, error) {
 	out := newMMLNode()
 	//fmt.Println("MakeSupSubNode")
@@ -368,13 +409,14 @@ func MakeSupSubNode(nodes []*MMLNode) (*MMLNode, error) {
 	//}
 	//fmt.Println()
 	var base, sub, sup *MMLNode
+	kind := 0
 	switch len(nodes) {
 	case 3:
 		switch nodes[1].Value.Value {
 		case "^":
-			out.Tag = "msup"
+			kind = SCSUPER
 		case "_":
-			out.Tag = "msub"
+			kind = SCSUB
 		}
 		out.Children = []*MMLNode{nodes[0], nodes[2]}
 	case 5:
@@ -391,8 +433,27 @@ func MakeSupSubNode(nodes []*MMLNode) (*MMLNode, error) {
 		} else {
 			return nil, fmt.Errorf("ambiguous multiscript")
 		}
-		out.Tag = "msubsup"
+		kind = SCBOTH
 		out.Children = []*MMLNode{base, sub, sup}
+	}
+	if _, ok := nodes[0].Attrib["largeop"]; ok {
+		switch kind {
+		case SCSUPER:
+			out.Tag = "mover"
+		case SCSUB:
+			out.Tag = "munder"
+		case SCBOTH:
+			out.Tag = "munderover"
+		}
+	} else {
+		switch kind {
+		case SCSUPER:
+			out.Tag = "msup"
+		case SCSUB:
+			out.Tag = "msub"
+		case SCBOTH:
+			out.Tag = "msupsub"
+		}
 	}
 	return out, nil
 }
@@ -435,14 +496,38 @@ func (node *MMLNode) PostProcessScripts() {
 	processKernel(oneScriptKernel)
 }
 
+func (node *MMLNode) PostProcessFonts() {
+	mod := node.Text
+	fmt.Println("MODIFIER: ", mod)
+	if !FONT_MODIFIERS[mod] {
+		return
+	}
+	//if node.Class == NONPRINT {
+	//	return
+	//}
+	node.Class = NONPRINT
+	for _, child := range node.Children {
+		if val, ok := TEX_FONTS[mod][child.Value.Value]; ok {
+			child.Text = val
+		}
+		fmt.Println("Child: ", child.Value)
+	}
+}
+
 func (n *MMLNode) printAST(depth int) {
-	fmt.Println(strings.Repeat("  ", depth), n.Value.Value)
+	fmt.Println(strings.Repeat("  ", depth), n.Value, n.Text, n)
 	for _, child := range n.Children {
 		child.printAST(depth + 1)
 	}
 }
 
 func (n *MMLNode) Write(w *strings.Builder, indent int) {
+	if n.Class == NONPRINT {
+		for _, child := range n.Children {
+			child.Write(w, indent)
+		}
+		return
+	}
 	var tag string
 	if len(n.Tag) > 0 {
 		tag = n.Tag
@@ -507,6 +592,7 @@ func TexToMML(tex string) string {
 	//	fmt.Println(t)
 	//}
 	ast := ParseTex(tokens)
+	ast.printAST(0)
 	var builder strings.Builder
 	builder.WriteString(`<math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">`)
 	ast.Write(&builder, 1)
@@ -514,8 +600,8 @@ func TexToMML(tex string) string {
 	return builder.String()
 }
 
-func main() {
-	fp, err := os.Open("./charactermappings/symbols.json")
+func readJSON(fname string, dst *map[string]map[string]string) {
+	fp, err := os.Open(fname)
 	if err != nil {
 		panic("could not open symbols file")
 	}
@@ -524,10 +610,27 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = json.Unmarshal(translation, &TEX_SYMBOLS)
+	err = json.Unmarshal(translation, dst)
 	if err != nil {
 		panic(err.Error())
 	}
+}
+
+func loadData() {
+	readJSON("./charactermappings/symbols.json", &TEX_SYMBOLS)
+	readJSON("./charactermappings/fonts.json", &TEX_FONTS)
+	//count := 0
+	//for _, s := range TEX_SYMBOLS {
+	//	if count == 10 {
+	//		return
+	//	}
+	//	fmt.Println(s)
+	//	count++
+	//}
+}
+
+func main() {
+	loadData()
 	test := []string{
 		`\varphi=1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1+\cdots}}}}}`,
 		`\forall A \, \exists P \, \forall B \, [B \in P \iff \forall C \, (C \in B \Rightarrow C \in A)]`,
@@ -537,7 +640,9 @@ func main() {
 		`{{x^2}^2}^2`,
 		`x^{2^{2^2}}`,
 		`a^2 + b^2 = c^2`,
-		`\int_0^{\infty}e^{-x^2} dx = \frac{\sqrt{\pi}}{2}`,
+		`\lim_{b\to\infty}\int_0^{b}e^{-x^2} dx = \frac{\sqrt{\pi}}{2}`,
+		`e^x = \sum_{n=0}^\infty \frac{x^n}{n!}`,
+		`\forall n \in \mathbb{N} \exists x \in \mathbb{R} \; : \; n^x \not\in \mathbb{Q}`,
 	}
 	head := `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN"
@@ -555,7 +660,6 @@ func main() {
 	}
 	// remember to close the file
 	defer f.Close()
-
 	f.WriteString(head)
 	for _, tex := range test {
 		f.WriteString(fmt.Sprintf(`<tr><td><code>%s</code></td><td>%s</td></tr>`, tex, TexToMML(tex)))

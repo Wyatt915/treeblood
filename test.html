@@ -13,37 +13,27 @@
 		<mn>1</mn>
 		<mo>+</mo>
 		<mfrac>
-			<mrow>
-				<mn>1</mn>
-			</mrow>
+			<mn>1</mn>
 			<mrow>
 				<mn>1</mn>
 				<mo>+</mo>
 				<mfrac>
-					<mrow>
-						<mn>1</mn>
-					</mrow>
+					<mn>1</mn>
 					<mrow>
 						<mn>1</mn>
 						<mo>+</mo>
 						<mfrac>
-							<mrow>
-								<mn>1</mn>
-							</mrow>
+							<mn>1</mn>
 							<mrow>
 								<mn>1</mn>
 								<mo>+</mo>
 								<mfrac>
-									<mrow>
-										<mn>1</mn>
-									</mrow>
+									<mn>1</mn>
 									<mrow>
 										<mn>1</mn>
 										<mo>+</mo>
 										<mfrac>
-											<mrow>
-												<mn>1</mn>
-											</mrow>
+											<mn>1</mn>
 											<mrow>
 												<mn>1</mn>
 												<mo>+</mo>
@@ -62,38 +52,38 @@
 </math></td></tr><tr><td><code>\forall A \, \exists P \, \forall B \, [B \in P \iff \forall C \, (C \in B \Rightarrow C \in A)]</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
 		<mi>∀</mi>
 		<mi>A</mi>
-		<mo></mo>
+		<mo>,</mo>
 		<mo>,</mo>
 		<mi>∃</mi>
 		<mi>P</mi>
-		<mo></mo>
+		<mo>,</mo>
 		<mo>,</mo>
 		<mi>∀</mi>
 		<mi>B</mi>
-		<mo></mo>
+		<mo>,</mo>
 		<mo>,</mo>
 		<mo>[</mo>
 		<mi>B</mi>
-		<mo>∈</mo>
+		<mo>∊</mo>
 		<mi>P</mi>
-		<mrow>iff</mrow>
+		<mo>iff</mo>
 		<mi>∀</mi>
 		<mi>C</mi>
-		<mo></mo>
+		<mo>,</mo>
 		<mo>,</mo>
 		<mo>(</mo>
 		<mi>C</mi>
-		<mo>∈</mo>
+		<mo>∊</mo>
 		<mi>B</mi>
 		<mo>⇒</mo>
 		<mi>C</mi>
-		<mo>∈</mo>
+		<mo>∊</mo>
 		<mi>A</mi>
 		<mo>)</mo>
 		<mo>]</mo>
 	</mrow>
 </math></td></tr><tr><td><code>\int f(x) dx</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
-		<mo largeop="true">∫</mo>
+		<mo largeop="true" movablelimits="true">∫</mo>
 		<mi>f</mi>
 		<mo>(</mo>
 		<mi>x</mi>
@@ -166,14 +156,20 @@
 			<mn>2</mn>
 		</msup>
 	</mrow>
-</math></td></tr><tr><td><code>\int_0^{\infty}e^{-x^2} dx = \frac{\sqrt{\pi}}{2}</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
-		<msubsup>
-			<mo largeop="true">∫</mo>
-			<mn>0</mn>
+</math></td></tr><tr><td><code>\lim_{b\to\infty}\int_0^{b}e^{-x^2} dx = \frac{\sqrt{\pi}}{2}</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
+		<msub>
+			<mo>lim</mo>
 			<mrow>
+				<mi>b</mi>
+				<mo>to</mo>
 				<mi>∞</mi>
 			</mrow>
-		</msubsup>
+		</msub>
+		<munderover>
+			<mo largeop="true" movablelimits="true">∫</mo>
+			<mn>0</mn>
+			<mi>b</mi>
+		</munderover>
 		<msup>
 			<mi>e</mi>
 			<mrow>
@@ -188,16 +184,60 @@
 		<mi>x</mi>
 		<mo>=</mo>
 		<mfrac>
+			<msqrt>
+				<mi>π</mi>
+			</msqrt>
+			<mn>2</mn>
+		</mfrac>
+	</mrow>
+</math></td></tr><tr><td><code>e^x = \sum_{n=0}^\infty \frac{x^n}{n!}</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
+		<msup>
+			<mi>e</mi>
+			<mi>x</mi>
+		</msup>
+		<mo>=</mo>
+		<munderover>
+			<mo largeop="true" movablelimits="true">∑</mo>
 			<mrow>
-				<msqrt>
-					<mrow>
-						<mi>π</mi>
-					</mrow>
-				</msqrt>
+				<mi>n</mi>
+				<mo>=</mo>
+				<mn>0</mn>
+			</mrow>
+			<mi>∞</mi>
+		</munderover>
+		<mfrac>
+			<mrow>
+				<msup>
+					<mi>x</mi>
+					<mi>n</mi>
+				</msup>
 			</mrow>
 			<mrow>
-				<mn>2</mn>
+				<mi>n</mi>
+				<mo>!</mo>
 			</mrow>
 		</mfrac>
+	</mrow>
+</math></td></tr><tr><td><code>\forall n \in \mathbb{N} \exists x \in \mathbb{R} \; : \; n^x \not\in \mathbb{Q}</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
+		<mi>∀</mi>
+		<mi>n</mi>
+		<mo>∊</mo>
+		<mi>ℕ</mi>
+		<mi>∃</mi>
+		<mi>x</mi>
+		<mo>∊</mo>
+		<mi>ℝ</mi>
+		<mi>   </mi>
+		<mo>;</mo>
+		<mo>:</mo>
+		<mi>   </mi>
+		<mo>;</mo>
+		<msup>
+			<mi>n</mi>
+			<mi>x</mi>
+		</msup>
+		<mo>not</mo>
+		<mo>∊</mo>
+		<mi>ℚ</mi>
 	</mrow>
 </math></td></tr></tbody></table></body></html>

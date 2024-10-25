@@ -1,0 +1,9 @@
+{
+  "iff": {
+    "char": "⟺",
+    "codepoint": "U027FA",
+    "description": "LONG LEFT RIGHT DOUBLE ARROW",
+    "entity": "&DoubleLongLeftRightArrow;",
+    "type": "relation"
+  },
+}
