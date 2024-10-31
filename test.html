@@ -7,237 +7,72 @@
 		<meta name="description" content="Example of MathML embedded in an XHTML file"/>
 	</head>
 	<body>
-	<table><tbody><tr><th colspan=2>GoLaTeX Test</th></tr><tr><td><code>\varphi=1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1+\cdots}}}}}</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
-		<mi>φ</mi>
-		<mo>=</mo>
-		<mn>1</mn>
-		<mo>+</mo>
-		<mfrac>
-			<mn>1</mn>
-			<mrow>
-				<mn>1</mn>
-				<mo>+</mo>
-				<mfrac>
-					<mn>1</mn>
-					<mrow>
-						<mn>1</mn>
-						<mo>+</mo>
-						<mfrac>
-							<mn>1</mn>
-							<mrow>
-								<mn>1</mn>
-								<mo>+</mo>
-								<mfrac>
-									<mn>1</mn>
-									<mrow>
-										<mn>1</mn>
-										<mo>+</mo>
-										<mfrac>
-											<mn>1</mn>
-											<mrow>
-												<mn>1</mn>
-												<mo>+</mo>
-												<mi>⋯</mi>
-											</mrow>
-										</mfrac>
-									</mrow>
-								</mfrac>
-							</mrow>
-						</mfrac>
-					</mrow>
-				</mfrac>
-			</mrow>
-		</mfrac>
-	</mrow>
-</math></td></tr><tr><td><code>\forall A \, \exists P \, \forall B \, [B \in P \iff \forall C \, (C \in B \Rightarrow C \in A)]</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
-		<mi>∀</mi>
-		<mi>A</mi>
-		<mo>,</mo>
-		<mo>,</mo>
-		<mi>∃</mi>
-		<mi>P</mi>
-		<mo>,</mo>
-		<mo>,</mo>
-		<mi>∀</mi>
-		<mi>B</mi>
-		<mo>,</mo>
-		<mo>,</mo>
-		<mo>[</mo>
-		<mi>B</mi>
-		<mo>∊</mo>
-		<mi>P</mi>
-		<mo>iff</mo>
-		<mi>∀</mi>
-		<mi>C</mi>
-		<mo>,</mo>
-		<mo>,</mo>
-		<mo>(</mo>
-		<mi>C</mi>
-		<mo>∊</mo>
-		<mi>B</mi>
-		<mo>⇒</mo>
-		<mi>C</mi>
-		<mo>∊</mo>
-		<mi>A</mi>
-		<mo>)</mo>
-		<mo>]</mo>
-	</mrow>
-</math></td></tr><tr><td><code>\int f(x) dx</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
-		<mo largeop="true" movablelimits="true">∫</mo>
-		<mi>f</mi>
-		<mo>(</mo>
-		<mi>x</mi>
-		<mo>)</mo>
-		<mi>d</mi>
-		<mi>x</mi>
-	</mrow>
-</math></td></tr><tr><td><code>x^2</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
-		<msup>
-			<mi>x</mi>
-			<mn>2</mn>
-		</msup>
-	</mrow>
-</math></td></tr><tr><td><code>x^{2^2}</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
-		<msup>
-			<mi>x</mi>
-			<mrow>
-				<msup>
-					<mn>2</mn>
-					<mn>2</mn>
-				</msup>
-			</mrow>
-		</msup>
-	</mrow>
-</math></td></tr><tr><td><code>{{x^2}^2}^2</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
-		<msup>
-			<mrow>
-				<msup>
-					<mrow>
-						<msup>
-							<mi>x</mi>
-							<mn>2</mn>
-						</msup>
-					</mrow>
-					<mn>2</mn>
-				</msup>
-			</mrow>
-			<mn>2</mn>
-		</msup>
-	</mrow>
-</math></td></tr><tr><td><code>x^{2^{2^2}}</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
-		<msup>
-			<mi>x</mi>
-			<mrow>
-				<msup>
-					<mn>2</mn>
-					<mrow>
-						<msup>
-							<mn>2</mn>
-							<mn>2</mn>
-						</msup>
-					</mrow>
-				</msup>
-			</mrow>
-		</msup>
-	</mrow>
-</math></td></tr><tr><td><code>a^2 + b^2 = c^2</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
-		<msup>
-			<mi>a</mi>
-			<mn>2</mn>
-		</msup>
-		<mo>+</mo>
-		<msup>
-			<mi>b</mi>
-			<mn>2</mn>
-		</msup>
-		<mo>=</mo>
-		<msup>
-			<mi>c</mi>
-			<mn>2</mn>
-		</msup>
-	</mrow>
-</math></td></tr><tr><td><code>\lim_{b\to\infty}\int_0^{b}e^{-x^2} dx = \frac{\sqrt{\pi}}{2}</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
-		<msub>
-			<mo>lim</mo>
-			<mrow>
-				<mi>b</mi>
-				<mo>to</mo>
-				<mi>∞</mi>
-			</mrow>
-		</msub>
-		<munderover>
-			<mo largeop="true" movablelimits="true">∫</mo>
-			<mn>0</mn>
-			<mi>b</mi>
-		</munderover>
-		<msup>
-			<mi>e</mi>
-			<mrow>
-				<mo>-</mo>
-				<msup>
-					<mi>x</mi>
-					<mn>2</mn>
-				</msup>
-			</mrow>
-		</msup>
-		<mi>d</mi>
-		<mi>x</mi>
-		<mo>=</mo>
-		<mfrac>
-			<msqrt>
-				<mi>π</mi>
-			</msqrt>
-			<mn>2</mn>
-		</mfrac>
-	</mrow>
-</math></td></tr><tr><td><code>e^x = \sum_{n=0}^\infty \frac{x^n}{n!}</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
-		<msup>
-			<mi>e</mi>
-			<mi>x</mi>
-		</msup>
-		<mo>=</mo>
-		<munderover>
-			<mo largeop="true" movablelimits="true">∑</mo>
-			<mrow>
-				<mi>n</mi>
-				<mo>=</mo>
-				<mn>0</mn>
-			</mrow>
-			<mi>∞</mi>
-		</munderover>
-		<mfrac>
-			<mrow>
-				<msup>
-					<mi>x</mi>
-					<mi>n</mi>
-				</msup>
-			</mrow>
-			<mrow>
-				<mi>n</mi>
-				<mo>!</mo>
-			</mrow>
-		</mfrac>
-	</mrow>
-</math></td></tr><tr><td><code>\forall n \in \mathbb{N} \exists x \in \mathbb{R} \; : \; n^x \not\in \mathbb{Q}</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">	<mrow>
-		<mi>∀</mi>
-		<mi>n</mi>
-		<mo>∊</mo>
-		<mi>ℕ</mi>
-		<mi>∃</mi>
-		<mi>x</mi>
-		<mo>∊</mo>
-		<mi>ℝ</mi>
-		<mi>   </mi>
-		<mo>;</mo>
-		<mo>:</mo>
-		<mi>   </mi>
-		<mo>;</mo>
-		<msup>
-			<mi>n</mi>
-			<mi>x</mi>
-		</msup>
-		<mo>not</mo>
-		<mo>∊</mo>
-		<mi>ℚ</mi>
-	</mrow>
-</math></td></tr></tbody></table></body></html>
+	<table><tbody><tr><th colspan=2>GoLaTeX Test</th></tr><tr><td><code>\varphi=1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1+\cdots}}}}}</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow>
+<mi>φ</mi><mo>=</mo><mn>1</mn><mo>+</mo><mfrac>
+<mn>1</mn><mrow>
+<mn>1</mn><mo>+</mo><mfrac>
+<mn>1</mn><mrow>
+<mn>1</mn><mo>+</mo><mfrac>
+<mn>1</mn><mrow>
+<mn>1</mn><mo>+</mo><mfrac>
+<mn>1</mn><mrow>
+<mn>1</mn><mo>+</mo><mfrac>
+<mn>1</mn><mrow>
+<mn>1</mn><mo>+</mo><mi>⋯</mi></mrow></mfrac></mrow></mfrac></mrow></mfrac></mrow></mfrac></mrow></mfrac></mrow></math></td></tr><tr><td><code>\forall A \, \exists P \, \forall B \, [B \in P \Leftrightarrow \forall C \, (C \in B \Rightarrow C \in A)]</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow>
+<mi>∀</mi><mi>A</mi><mi>&ThinSpace;</mi><mi>∃</mi><mi>P</mi><mi>&ThinSpace;</mi><mi>∀</mi><mi>B</mi><mi>&ThinSpace;</mi><mo>[</mo><mi>B</mi><mo>∈</mo><mi>P</mi><mo>⇔</mo><mi>∀</mi><mi>C</mi><mi>&ThinSpace;</mi><mo>(</mo><mi>C</mi><mo>∈</mo><mi>B</mi><mo>⇒</mo><mi>C</mi><mo>∈</mo><mi>A</mi><mo>)</mo><mo>]</mo></mrow></math></td></tr><tr><td><code>\int f(x) dx</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow>
+<mo largeop="true" movablelimits="true">∫</mo><mi>f</mi><mo>(</mo><mi>x</mi><mo>)</mo><mi>d</mi><mi>x</mi></mrow></math></td></tr><tr><td><code>x^2</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow>
+<msup>
+<mi>x</mi><mn>2</mn></msup></mrow></math></td></tr><tr><td><code>x^{2^2}</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow>
+<msup>
+<mi>x</mi><mrow>
+<msup>
+<mn>2</mn><mn>2</mn></msup></mrow></msup></mrow></math></td></tr><tr><td><code>{{x^2}^2}^2</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow>
+<msup>
+<mrow>
+<msup>
+<mrow>
+<msup>
+<mi>x</mi><mn>2</mn></msup></mrow><mn>2</mn></msup></mrow><mn>2</mn></msup></mrow></math></td></tr><tr><td><code>x^{2^{2^2}}</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow>
+<msup>
+<mi>x</mi><mrow>
+<msup>
+<mn>2</mn><mrow>
+<msup>
+<mn>2</mn><mn>2</mn></msup></mrow></msup></mrow></msup></mrow></math></td></tr><tr><td><code>a^2 + b^2 = c^2</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow>
+<msup>
+<mi>a</mi><mn>2</mn></msup><mo>+</mo><msup>
+<mi>b</mi><mn>2</mn></msup><mo>=</mo><msup>
+<mi>c</mi><mn>2</mn></msup></mrow></math></td></tr><tr><td><code>\lim_{b\to\infty}\int_0^{b}e^{-x^2} dx = \frac{\sqrt{\pi}}{2}</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow>
+<msub>
+<mo>lim</mo><mrow>
+<mi>b</mi><mo>→</mo><mi>∞</mi></mrow></msub><msubsup>
+<mo largeop="true" movablelimits="true">∫</mo><mn>0</mn><mi>b</mi></msubsup><msup>
+<mi>e</mi><mrow>
+<mo>-</mo><msup>
+<mi>x</mi><mn>2</mn></msup></mrow></msup><mi>d</mi><mi>x</mi><mo>=</mo><mfrac>
+<msqrt>
+<mi>π</mi></msqrt><mn>2</mn></mfrac></mrow></math></td></tr><tr><td><code>e^x = \sum_{n=0}^\infty \frac{x^n}{n!}</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow>
+<msup>
+<mi>e</mi><mi>x</mi></msup><mo>=</mo><munderover>
+<mo largeop="true" movablelimits="true">∑</mo><mrow>
+<mi>n</mi><mo>=</mo><mn>0</mn></mrow><mi>∞</mi></munderover><mfrac>
+<mrow>
+<msup>
+<mi>x</mi><mi>n</mi></msup></mrow><mrow>
+<mi>n</mi><mo>!</mo></mrow></mfrac></mrow></math></td></tr><tr><td><code>\forall n \in \mathbb{N} \exists x \in \mathbb{R} \; : \; n^x \not\in \mathbb{Q}</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow>
+<mi>∀</mi><mi>n</mi><mo>∈</mo><mi>ℕ</mi><mi>∃</mi><mi>x</mi><mo>∈</mo><mi>ℝ</mi><mi>   </mi><mo>:</mo><mi>   </mi><msup>
+<mi>n</mi><mi>x</mi></msup><mo>∉</mo><mi>ℚ</mi></mrow></math></td></tr><tr><td><code> c = \overbrace
+     { \underbrace{\;\;\;\;\; a \;\;\;\;}_\text{real}
+       +
+       \underbrace{\;\;\;\;\; b\mathrm{i} \;\;\;\;}_\text{imaginary}
+     }^\text{complex number}</code></td><td><math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow>
+<mi>c</mi><mo>=</mo><mover>
+<mo>
+<mrow>
+<munder>
+<mo>
+<mrow>
+<mi>   </mi><mi>   </mi><mi>   </mi><mi>   </mi><mi>   </mi><mi>a</mi><mi>   </mi><mi>   </mi><mi>   </mi><mi>   </mi></mrow><mo>&UnderBrace;</mo></mo><mtext>real</mtext></munder><mo>+</mo><munder>
+<mo>
+<mrow>
+<mi>   </mi><mi>   </mi><mi>   </mi><mi>   </mi><mi>   </mi><mi>b</mi><mi>i</mi><mi>   </mi><mi>   </mi><mi>   </mi><mi>   </mi></mrow><mo>&UnderBrace;</mo></mo><mtext>imaginary</mtext></munder></mrow><mo>&OverBrace;</mo></mo><mtext>complexnumber</mtext></mover></mrow></math></td></tr></tbody></table></body></html>

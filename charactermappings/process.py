@@ -62,8 +62,8 @@ def main():
     tree = ET.parse("unicode.xml")
 
     root = tree.getroot()
-
-    symbols = {}
+    with open("./additional_commands.json", 'r') as fp:
+        symbols = json.load(fp)
     commands = {}
     command_arg_count = {}
     multi = {}
@@ -83,9 +83,10 @@ def main():
         codepoint = char.get("id")
         ent = getEntityName(char)
         sym = tex.text.strip()
+        sym = sym.strip()
         if len(sym) > 0 and sym[0] != "\\":
             continue
-        sym = tex.text.strip("\\")
+        sym = tex.text.strip("\\").strip()
         if sym not in multi:
             multi[sym] = [
                 {
@@ -174,7 +175,6 @@ def font_modifiers():
             continue
         sym = tex.text.strip("\\")
         if len(sym) < len("math") or sym.find("math") != 0:
-            print(sym)
             continue
         arg_start = sym.find("{")
         if arg_start < 0:
@@ -193,6 +193,41 @@ def font_modifiers():
         json.dump(fonts, fp, sort_keys=True)
 
 
+def negations():
+    tree = ET.parse("unicode.xml")
+
+    root = tree.getroot()
+
+    negs = {}
+
+    for char in root.findall("character"):
+        if char.get("mode") == "text":
+            continue
+        tex = char.find("latex")
+        if tex is None:
+            continue
+        codepoint = char.get("id")
+        sym = tex.text.strip()
+        if len(sym) > 0 and sym[0] != "\\":
+            continue
+        sym = tex.text.strip().strip("\\")
+        if len(sym) < len("not") or sym.find("not") != 0:
+            continue
+        print(sym)
+        arg = sym[3:]
+        sym = sym[:3]
+        arg = arg.strip().strip("\\")
+        if sym not in negs:
+            negs[sym] = {
+                arg: getCharacter(codepoint),
+            }
+        else:
+            negs[sym][arg] = getCharacter(codepoint)
+    with open("negations.json", "w", encoding="utf-8") as fp:
+        json.dump(negs, fp, sort_keys=True)
+
+
 if __name__ == "__main__":
     main()
-    font_modifiers()
+    # font_modifiers()
+    negations()
