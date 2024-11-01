@@ -28,6 +28,8 @@ const (
 	tokChar
 	tokOpen
 	tokClose
+	tokExprBegin
+	tokExprEnd
 	tokFence
 	tokSubSup
 	tokReserved
@@ -43,6 +45,8 @@ var (
 		"}": "{",
 		"]": "[",
 	}
+	OPEN     = []rune("([{")
+	CLOSE    = []rune(")]}")
 	RESERVED = []rune(`#$%^&_{}~\`)
 )
 
@@ -94,7 +98,7 @@ func MatchBraces(tokens *[]Token) error {
 	var match bool
 	s := newStack()
 	for i := 0; i < len(*tokens); i++ {
-		if (*tokens)[i].Kind == tokOpen {
+		if (*tokens)[i].Kind&tokOpen > 0 {
 			s.Push(i)
 		}
 		if (*tokens)[i].Kind&tokClose > 0 {
@@ -115,6 +119,9 @@ func MatchBraces(tokens *[]Token) error {
 				(*tokens)[pos].MatchOffset = i - pos
 			}
 		}
+	}
+	if s.Peek() >= 0 {
+		return fmt.Errorf("mismatched braces")
 	}
 	return nil
 }
@@ -143,9 +150,17 @@ func GetToken(tex string) (Token, string) {
 				state = LX_WasBackslash
 			case r == '{':
 				state = LX_End
-				kind = tokOpen
+				kind = tokExprBegin | tokOpen
 				result = append(result, r)
 			case r == '}':
+				state = LX_End
+				kind = tokExprEnd | tokClose
+				result = append(result, r)
+			case slices.Contains(OPEN, r):
+				state = LX_End
+				kind = tokOpen
+				result = append(result, r)
+			case slices.Contains(CLOSE, r):
 				state = LX_End
 				kind = tokClose
 				result = append(result, r)
@@ -189,6 +204,14 @@ func GetToken(tex string) (Token, string) {
 			}
 		case LX_WasBackslash:
 			switch {
+			case slices.Contains(OPEN, r):
+				state = LX_End
+				kind = tokOpen
+				result = append(result, r)
+			case slices.Contains(CLOSE, r):
+				state = LX_End
+				kind = tokClose
+				result = append(result, r)
 			case slices.Contains(RESERVED, r):
 				state = LX_End
 				kind = tokCommand
@@ -235,12 +258,19 @@ func GetToken(tex string) (Token, string) {
 
 func GetNextExpr(tokens []Token, idx int) ([]Token, int) {
 	var result []Token
-	if tokens[idx].Kind == tokOpen && tokens[idx].Value == "{" {
+	for tokens[idx].Kind&tokWhitespace > 0 {
+		idx++
+	}
+	if tokens[idx].Kind&tokExprBegin > 0 {
 		end := idx + tokens[idx].MatchOffset
 		result = tokens[idx+1 : end]
 		idx = end
 	} else {
 		result = []Token{tokens[idx]}
 	}
+	for _, t := range result {
+		fmt.Print(t.Value)
+	}
+	fmt.Println()
 	return result, idx
 }

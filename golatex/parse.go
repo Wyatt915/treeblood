@@ -18,7 +18,9 @@ const (
 )
 
 const (
-	ctx_text parseContext = 1 << iota
+	ctx_root parseContext = 1 << iota
+	ctx_display
+	ctx_text
 )
 
 var (
@@ -82,6 +84,10 @@ var (
 		"mathtt":     true,
 	}
 
+	SELFCLOSING = map[string]bool{
+		"mspace": true,
+	}
+
 	TEX_SYMBOLS map[string]map[string]string
 	TEX_FONTS   map[string]map[string]string
 	NEGATIONS   = map[string]string{
@@ -141,44 +147,67 @@ func restringify(n *MMLNode, sb *strings.Builder) {
 			n.Children[i] = nil
 		}
 	}
+	n.Children = n.Children[:0]
 }
 
-func ProcessCommand(n *MMLNode, tok Token, tokens []Token, idx int) int {
+func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
+	switch tok.Value {
+	case "overbrace":
+		parent.Properties |= PROP_LIMITSUNDEROVER
+		parent.Tag = "mover"
+		parent.Children = append(parent.Children, annotation,
+			&MMLNode{
+				Text:   "&OverBrace;",
+				Tag:    "mo",
+				Attrib: map[string]string{"stretchy": "true"},
+			})
+	case "underbrace":
+		parent.Properties |= PROP_LIMITSUNDEROVER
+		parent.Tag = "munder"
+		parent.Children = append(parent.Children, annotation,
+			&MMLNode{
+				Text:   "&UnderBrace;",
+				Tag:    "mo",
+				Attrib: map[string]string{"stretchy": "true"},
+			})
+	}
+}
+
+func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int) int {
 	numChildren, ok := COMMANDS[tok.Value]
 	fmt.Println(tok)
 	var nextExpr []Token
 	if ok {
-		for range numChildren {
-			nextExpr, idx = GetNextExpr(tokens, idx+1)
-			n.Children = append(n.Children, ParseTex(nextExpr))
-		}
 		switch tok.Value {
-		case "overbrace":
-			n.Properties |= PROP_LIMITSUNDEROVER
-			n.Text = "mover"
-			n.Children = append(n.Children, &MMLNode{
-				Text: "&OverBrace;",
-				Tag:  "mo",
-			})
-		case "underbrace":
-			n.Properties |= PROP_LIMITSUNDEROVER
-			n.Text = "munder"
-			n.Children = append(n.Children, &MMLNode{
-				Text: "&UnderBrace;",
-				Tag:  "mo",
-			})
+		case "underbrace", "overbrace":
+			fmt.Print(tok.Value, "\t")
+			nextExpr, idx = GetNextExpr(tokens, idx+1)
+			doUnderOverBrace(tok, n, ParseTex(nextExpr, context))
+			return idx
 		case "text":
 			var sb strings.Builder
+			context |= ctx_text
+			for range numChildren {
+				nextExpr, idx = GetNextExpr(tokens, idx+1)
+				n.Children = append(n.Children, ParseTex(nextExpr, context))
+			}
 			restringify(n, &sb)
 			n.Children = nil
 			n.Tag = "mtext"
 			n.Text = sb.String()
-			fmt.Println(n.Text)
 			return idx
 		case "frac":
 			n.Tag = "mfrac"
+			for range numChildren {
+				nextExpr, idx = GetNextExpr(tokens, idx+1)
+				n.Children = append(n.Children, ParseTex(nextExpr, context))
+			}
 		default:
 			n.Text = tok.Value
+			for range numChildren {
+				nextExpr, idx = GetNextExpr(tokens, idx+1)
+				n.Children = append(n.Children, ParseTex(nextExpr, context))
+			}
 		}
 	} else {
 		if t, ok := TEX_SYMBOLS[tok.Value]; ok {
@@ -197,6 +226,10 @@ func ProcessCommand(n *MMLNode, tok Token, tokens []Token, idx int) int {
 			default:
 				n.Tag = "mi"
 			}
+		} else {
+			n.Tag = "mo"
+			n.Attrib["movablelimits"] = "true"
+			n.Properties |= PROP_LIMITSUNDEROVER | PROP_MOVABLELIMITS
 		}
 	}
 	if tok.Value == "sqrt" {
@@ -206,13 +239,18 @@ func ProcessCommand(n *MMLNode, tok Token, tokens []Token, idx int) int {
 	return idx
 }
 
-func ParseTex(tokens []Token, parent ...*MMLNode) *MMLNode {
+func ParseTex(tokens []Token, context parseContext) *MMLNode {
 	var node *MMLNode
-	if len(parent) < 1 || parent[0] == nil {
-		node = newMMLNode()
-		node.Tag = "mrow"
-	} else {
-		node = parent[0]
+	node = newMMLNode()
+	if context&ctx_root > 0 {
+		node.Tag = "math"
+		if context&ctx_display > 0 {
+			node.Attrib["mode"] = "display"
+			node.Attrib["display"] = "block"
+			//node.Attrib["xmlns"] = "http://www.w3.org/1998/Math/MathML"
+		}
+		node.Children = append(node.Children, ParseTex(tokens, context^ctx_root))
+		return node
 	}
 	var i int
 	var nextExpr []Token
@@ -220,9 +258,9 @@ func ParseTex(tokens []Token, parent ...*MMLNode) *MMLNode {
 		tok := tokens[i]
 		child := newMMLNode()
 		switch {
-		case tok.Kind&tokOpen > 0:
+		case tok.Kind&tokExprBegin > 0:
 			nextExpr, i = GetNextExpr(tokens, i)
-			child = ParseTex(nextExpr)
+			child = ParseTex(nextExpr, context)
 		case tok.Kind&tokLetter > 0:
 			child.Tok = tok
 			child.Text = tok.Value
@@ -231,11 +269,30 @@ func ParseTex(tokens []Token, parent ...*MMLNode) *MMLNode {
 			child.Tag = "mn"
 			child.Text = tok.Value
 			child.Tok = tok
-		case tok.Kind&tokCommand > 0:
-			i = ProcessCommand(child, tok, tokens, i)
-		case tok.Value == "}":
-			continue
+		case tok.Kind&tokFence > 0:
+			child.Tag = "mo"
+			child.Text = tok.Value
+			child.Attrib["fence"] = "true"
+			child.Attrib["stretchy"] = "true"
+		case tok.Kind&(tokOpen|tokClose) > 0:
+			child.Tag = "mo"
+			child.Text = tok.Value
+			child.Attrib["fence"] = "true"
 		case tok.Kind&tokWhitespace > 0:
+			if context&ctx_text > 0 {
+				fmt.Println("WHITESPACE")
+				child.Tag = "mspace"
+				child.Text = " "
+				child.Tok.Value = " "
+				child.Attrib["width"] = "1em"
+				node.Children = append(node.Children, child)
+				continue
+			} else {
+				continue
+			}
+		case tok.Kind&tokCommand > 0:
+			i = ProcessCommand(child, context, tok, tokens, i)
+		case tok.Kind&tokExprEnd > 0:
 			continue
 		default:
 			child.Tok = tok
@@ -425,6 +482,10 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 		w.WriteString(val)
 		w.WriteRune('"')
 	}
+	if SELFCLOSING[tag] {
+		w.WriteString(" />")
+		return
+	}
 	w.WriteRune('>')
 	if len(n.Children) == 0 {
 		if len(n.Text) > 0 {
@@ -459,11 +520,11 @@ func TexToMML(tex string) string {
 	for _, t := range tokens {
 		fmt.Println(t)
 	}
-	ast := ParseTex(tokens)
+	ast := ParseTex(tokens, ctx_root|ctx_display)
 	ast.printAST(0)
 	var builder strings.Builder
-	builder.WriteString(`<math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">`)
+	//builder.WriteString(`<math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">`)
 	ast.Write(&builder, 1)
-	builder.WriteString("</math>")
+	//builder.WriteString("</math>")
 	return builder.String()
 }

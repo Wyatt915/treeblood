@@ -44,6 +44,7 @@ func srv(w http.ResponseWriter, req *http.Request) {
 	test := []string{
 		`\varphi=1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1+\cdots}}}}}`,
 		`\forall A \, \exists P \, \forall B \, [B \in P \Leftrightarrow \forall C \, (C \in B \Rightarrow C \in A)]`,
+		`\int {f(x)} dx`,
 		`\int f(x) dx`,
 		`x^2`,
 		`x^{2^2}`,
@@ -52,16 +53,20 @@ func srv(w http.ResponseWriter, req *http.Request) {
 		`a^2 + b^2 = c^2`,
 		`\lim_{b\to\infty}\int_0^{b}e^{-x^2} dx = \frac{\sqrt{\pi}}{2}`,
 		`e^x = \sum_{n=0}^\infty \frac{x^n}{n!}`,
+		`(e^x = \sum_{n=0}^\infty \frac{x^n}{n!})`,
+		`e^x = (\sum_{n=0}^\infty \frac{x^n}{n!})`,
+		`e^x = \sum_{n=0}^\infty (\frac{x^n}{n!})`,
+		`e^x = \sum_{n=0}^\infty {(\frac{x^n}{n!})}`,
 		`\forall n \in \mathbb{N} \exists x \in \mathbb{R} \; : \; n^x \not\in \mathbb{Q}`,
 		` c = \overbrace
-			{ \underbrace{\;\;\;\;\; a \;\;\;\;}_\text{real}
+		{
+			\underbrace{\;\;\;\;\; a \;\;\;\;}_\text{real}
 			  +
 			  \underbrace{\;\;\;\;\; b\mathrm{i} \;\;\;\;}_\text{imaginary}
 			}^\text{complex number}`,
 	}
 	head := `
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN"
-	"http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd">
+<!DOCTYPE html>
 <html lang="en">
 	<head>
 		<title>GoLaTex MathML Test</title>
