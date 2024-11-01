@@ -126,16 +126,18 @@ func MatchBraces(tokens *[]Token) error {
 	return nil
 }
 
-func GetToken(tex string) (Token, string) {
+func GetToken(input string) (Token, string) {
 	var state LexerState
 	var kind TokenKind
 	var fencing TokenKind
+	tex := []rune(input)
 	result := make([]rune, 0)
 	idx := 0
-	for idx, r := range tex {
+	for idx = 0; idx < len(tex); idx++ {
+		r := tex[idx]
 		switch state {
 		case LX_End:
-			return Token{Kind: kind | fencing, Value: string(result)}, tex[idx:]
+			return Token{Kind: kind | fencing, Value: string(result)}, string(tex[idx:])
 		case LX_Begin:
 			switch {
 			case unicode.IsLetter(r):
@@ -189,7 +191,7 @@ func GetToken(tex string) (Token, string) {
 		case LX_Space:
 			switch {
 			case !unicode.IsSpace(r):
-				return Token{Kind: kind, Value: string(result)}, tex[idx:]
+				return Token{Kind: kind, Value: string(result)}, string(tex[idx:])
 			}
 		case LX_Number:
 			switch {
@@ -198,7 +200,7 @@ func GetToken(tex string) (Token, string) {
 			case unicode.IsSpace(r):
 				state = LX_End
 			case !unicode.IsNumber(r):
-				return Token{Kind: kind, Value: string(result)}, tex[idx:]
+				return Token{Kind: kind, Value: string(result)}, string(tex[idx:])
 			default:
 				result = append(result, r)
 			}
@@ -238,12 +240,14 @@ func GetToken(tex string) (Token, string) {
 					state = LX_Begin
 					result = result[:0]
 					fencing = tokOpen | tokFence
+					idx--
 				case "right":
 					state = LX_Begin
 					result = result[:0]
 					fencing = tokClose | tokFence
+					idx--
 				default:
-					return Token{Kind: kind, Value: val}, tex[idx:]
+					return Token{Kind: kind | fencing, Value: val}, string(tex[idx:])
 				}
 			default:
 				result = append(result, r)
@@ -253,7 +257,7 @@ func GetToken(tex string) (Token, string) {
 	if idx == 0 {
 		return Token{Kind: kind, Value: string(result)}, ""
 	}
-	return Token{Kind: kind, Value: string(result)}, tex[idx:]
+	return Token{Kind: kind, Value: string(result)}, string(tex[idx:])
 }
 
 func GetNextExpr(tokens []Token, idx int) ([]Token, int) {

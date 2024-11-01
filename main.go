@@ -47,16 +47,10 @@ func srv(w http.ResponseWriter, req *http.Request) {
 		`\int {f(x)} dx`,
 		`\int f(x) dx`,
 		`x^2`,
-		`x^{2^2}`,
-		`{{x^2}^2}^2`,
 		`x^{2^{2^2}}`,
 		`a^2 + b^2 = c^2`,
 		`\lim_{b\to\infty}\int_0^{b}e^{-x^2} dx = \frac{\sqrt{\pi}}{2}`,
 		`e^x = \sum_{n=0}^\infty \frac{x^n}{n!}`,
-		`(e^x = \sum_{n=0}^\infty \frac{x^n}{n!})`,
-		`e^x = (\sum_{n=0}^\infty \frac{x^n}{n!})`,
-		`e^x = \sum_{n=0}^\infty (\frac{x^n}{n!})`,
-		`e^x = \sum_{n=0}^\infty {(\frac{x^n}{n!})}`,
 		`\forall n \in \mathbb{N} \exists x \in \mathbb{R} \; : \; n^x \not\in \mathbb{Q}`,
 		` c = \overbrace
 		{
@@ -64,6 +58,12 @@ func srv(w http.ResponseWriter, req *http.Request) {
 			  +
 			  \underbrace{\;\;\;\;\; b\mathrm{i} \;\;\;\;}_\text{imaginary}
 			}^\text{complex number}`,
+		`\int_0^1 x^x\,\mathrm{d}x = \sum_{n = 1}^\infty{(-1)^{n + 1}\,n^{-n}}`,
+		`\nabla \cdot \vec v =
+   \frac{\partial v_x}{\partial x} +
+   \frac{\partial v_y}{\partial y} +
+   \frac{\partial v_z}{\partial z}`,
+		`\left\langle\psi\left|\mathcal{T}\left\{\frac{\delta}{\delta\phi}F[\phi]\right\}\right|\psi\right\rangle = -\mathrm{i}\left\langle\psi\left|\mathcal{T}\left\{F[\phi]\frac{\delta}{\delta\phi}S[\phi]\right\}\right|\psi\right\rangle`,
 	}
 	head := `
 <!DOCTYPE html>

@@ -224,7 +224,11 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 				n.Attrib["largeop"] = "true"
 				n.Attrib["movablelimits"] = "true"
 			default:
-				n.Tag = "mi"
+				if tok.Kind&tokFence > 0 {
+					n.Tag = "mo"
+				} else {
+					n.Tag = "mi"
+				}
 			}
 		} else {
 			n.Tag = "mo"
@@ -271,9 +275,14 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 			child.Tok = tok
 		case tok.Kind&tokFence > 0:
 			child.Tag = "mo"
-			child.Text = tok.Value
 			child.Attrib["fence"] = "true"
 			child.Attrib["stretchy"] = "true"
+			if tok.Kind&tokCommand > 0 {
+				fmt.Println("Command Fence: ", tok.Value)
+				i = ProcessCommand(child, context, tok, tokens, i)
+			} else {
+				child.Text = tok.Value
+			}
 		case tok.Kind&(tokOpen|tokClose) > 0:
 			child.Tag = "mo"
 			child.Text = tok.Value
