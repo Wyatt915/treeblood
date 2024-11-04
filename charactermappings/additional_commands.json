@@ -14,18 +14,27 @@
         "type": "relation"
     },
     "qquad":{
-        "entity": "&emsp;&emsp;"
+        "entity": "&emsp;&emsp;",
+        "type": "space",
     },
     "quad":{
-        "entity": "&emsp;"
+        "entity": "&emsp;",
+        "type": "space",
     },
     ",":{
-        "entity": "&ThinSpace;"
+        "entity": "&ThinSpace;",
+        "type": "space",
     },
     ":":{
-        "entity": "&VeryThinSpace;&ThickSpace;"
+        "entity": "&VeryThinSpace;&ThickSpace;",
+        "type": "space",
     },
     "!":{
-        "entity": "&NegativeThinSpace;"
+        "entity": "&NegativeThinSpace;",
+        "type": "space",
+    },
+    "\\":{
+        "entity": "",
+        "type": "space",
     }
 }

@@ -5,9 +5,9 @@ import (
 	"strings"
 )
 
-type NodeClass int
-type NodeProperties int
-type parseContext int
+type NodeClass uint64
+type NodeProperties uint64
+type parseContext uint64
 
 const (
 	PROP_NULL NodeProperties = 1 << iota
@@ -21,6 +21,15 @@ const (
 	ctx_root parseContext = 1 << iota
 	ctx_display
 	ctx_text
+	// ONLY FONT VARIANTS AFTER THIS POINT
+	ctx_var_normal
+	ctx_var_bb
+	ctx_var_mono
+	ctx_var_script
+	ctx_var_frak
+	ctx_var_bold
+	ctx_var_italic
+	ctx_var_sans
 )
 
 var (
@@ -65,27 +74,33 @@ var (
 		"tilde":         1,
 		"u":             1,
 	}
-	FONT_MODIFIERS = map[string]bool{
-		"mathbb":     true,
-		"mathbf":     true,
-		"mathbin":    true,
-		"mathbit":    true,
-		"mathfrak":   true,
-		"mathmit":    true,
-		"mathring":   true,
-		"mathrm":     true,
-		"mathscr":    true,
-		"mathsf":     true,
-		"mathsfbf":   true,
-		"mathsfbfsl": true,
-		"mathsfsl":   true,
-		"mathsl":     true,
-		"mathslbb":   true,
-		"mathtt":     true,
+	MATH_VARIANTS = map[string]parseContext{
+		"mathbb":     ctx_var_bb,
+		"mathbf":     ctx_var_bold,
+		"mathbfit":   ctx_var_bold | ctx_var_italic,
+		"mathcal":    ctx_var_script,
+		"mathfrak":   ctx_var_frak,
+		"mathit":     ctx_var_italic,
+		"mathrm":     ctx_var_normal,
+		"mathscr":    ctx_var_script,
+		"mathsf":     ctx_var_sans,
+		"mathsfbf":   ctx_var_sans | ctx_var_bold,
+		"mathsfbfsl": ctx_var_sans | ctx_var_bold | ctx_var_italic,
+		"mathsfsl":   ctx_var_sans | ctx_var_italic,
+		"mathtt":     ctx_var_mono,
 	}
 
 	SELFCLOSING = map[string]bool{
 		"mspace": true,
+	}
+
+	// Measured in 18ths of an em
+	TEX_SPACE = map[string]int{
+		`\`: 0, // newline
+		",": 3,
+		":": 4,
+		";": 5,
+		"!": -3,
 	}
 
 	TEX_SYMBOLS map[string]map[string]string
@@ -174,9 +189,24 @@ func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
 }
 
 func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int) int {
-	numChildren, ok := COMMANDS[tok.Value]
-	fmt.Println(tok)
 	var nextExpr []Token
+	if v, ok := MATH_VARIANTS[tok.Value]; ok {
+		nextExpr, idx = GetNextExpr(tokens, idx+1)
+		fmt.Println(nextExpr)
+		n.Children = ParseTex(nextExpr, context|v).Children
+		n.printAST(3)
+		n.Tag = "mrow"
+		return idx
+	}
+	if _, ok := TEX_SPACE[tok.Value]; ok {
+		n.Tok = tok
+		n.Tag = "mspace"
+		if tok.Value == `\` {
+			n.Attrib["linebreak"] = "newline"
+		}
+		return idx
+	}
+	numChildren, ok := COMMANDS[tok.Value]
 	if ok {
 		switch tok.Value {
 		case "underbrace", "overbrace":
@@ -230,6 +260,9 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 					n.Tag = "mi"
 				}
 			}
+			if t, ok := TEX_SYMBOLS[tok.Value]["entity"]; ok && t != "" {
+				n.Text = t
+			}
 		} else {
 			n.Tag = "mo"
 			n.Attrib["movablelimits"] = "true"
@@ -241,6 +274,35 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 	}
 	n.Tok = tok
 	return idx
+}
+
+func (n *MMLNode) set_variants_from_context(context parseContext) {
+	switch context & ^(ctx_var_normal - 1) {
+	case ctx_var_bb:
+		n.Attrib["mathvariant"] = "double-struck"
+	case ctx_var_bold:
+		n.Attrib["mathvariant"] = "bold"
+	case ctx_var_bold | ctx_var_italic:
+		n.Attrib["mathvariant"] = "bold-italic"
+	case ctx_var_script:
+		n.Attrib["mathvariant"] = "script"
+	case ctx_var_frak:
+		n.Attrib["mathvariant"] = "fraktur"
+	case ctx_var_italic:
+		n.Attrib["mathvariant"] = "italic"
+	case ctx_var_normal:
+		n.Attrib["mathvariant"] = "normal"
+	case ctx_var_sans:
+		n.Attrib["mathvariant"] = "sans-serif"
+	case ctx_var_sans | ctx_var_bold:
+		n.Attrib["mathvariant"] = "sans-serif-bold"
+	case ctx_var_sans | ctx_var_bold | ctx_var_italic:
+		n.Attrib["mathvariant"] = "sans-serif-bold-italic"
+	case ctx_var_sans | ctx_var_italic:
+		n.Attrib["mathvariant"] = "sans-serif-italic"
+	case ctx_var_mono:
+		n.Attrib["mathvariant"] = "monospace"
+	}
 }
 
 func ParseTex(tokens []Token, context parseContext) *MMLNode {
@@ -256,6 +318,7 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 		node.Children = append(node.Children, ParseTex(tokens, context^ctx_root))
 		return node
 	}
+	node.Tag = "mrow"
 	var i int
 	var nextExpr []Token
 	for i = 0; i < len(tokens); i++ {
@@ -269,6 +332,7 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 			child.Tok = tok
 			child.Text = tok.Value
 			child.Tag = "mi"
+			child.set_variants_from_context(context)
 		case tok.Kind&tokNumber > 0:
 			child.Tag = "mn"
 			child.Text = tok.Value
@@ -304,12 +368,12 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 		case tok.Kind&tokExprEnd > 0:
 			continue
 		default:
+			child.Tag = "mo"
 			child.Tok = tok
 		}
-		child.PostProcessFonts()
 		node.Children = append(node.Children, child)
 	}
-	if (node.Tok.Value == "") && len(node.Children) == 1 {
+	if len(node.Children) == 1 {
 		child := node.Children[0]
 		node.Children[0] = nil
 		node.Children = nil
@@ -441,7 +505,7 @@ func (node *MMLNode) PostProcessScripts() {
 
 func (node *MMLNode) PostProcessFonts() {
 	mod := node.Text
-	if !FONT_MODIFIERS[mod] {
+	if _, ok := MATH_VARIANTS[mod]; !ok {
 		return
 	}
 	//if node.Class == NONPRINT {
@@ -478,7 +542,7 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 		case tokLetter:
 			tag = "mi"
 		default:
-			tag = "mrow"
+			tag = "mo"
 		}
 	}
 	//w.WriteString(strings.Repeat("\t", indent))
