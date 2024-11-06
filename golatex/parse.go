@@ -2,6 +2,7 @@ package golatex
 
 import (
 	"fmt"
+	"log"
 	"strings"
 )
 
@@ -31,6 +32,10 @@ const (
 	ctx_var_italic
 	ctx_var_sans
 )
+
+func isolateMathVariant(ctx parseContext) parseContext {
+	return ctx & ^(ctx_var_normal - 1)
+}
 
 var (
 	// maps commands to number of expected arguments
@@ -260,9 +265,9 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 					n.Tag = "mi"
 				}
 			}
-			if t, ok := TEX_SYMBOLS[tok.Value]["entity"]; ok && t != "" {
-				n.Text = t
-			}
+			//if t, ok := TEX_SYMBOLS[tok.Value]["entity"]; ok && t != "" {
+			//	n.Text = t
+			//}
 		} else {
 			n.Tag = "mo"
 			n.Attrib["movablelimits"] = "true"
@@ -273,36 +278,65 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		n.Tag = "msqrt"
 	}
 	n.Tok = tok
+	n.set_variants_from_context(context)
 	return idx
 }
 
+func (n *MMLNode) transformByVariant(variant string) {
+	rules, ok := transforms[variant]
+	if !ok {
+		log.Println("Unknown variant transform:", variant)
+		return
+	}
+	chars := []rune(n.Text)
+	for idx, char := range chars {
+		if xform, ok := orphans[variant][char]; ok {
+			chars[idx] = xform
+		}
+		for _, r := range rules {
+			if char >= r.begin && char <= r.end {
+				if xform, ok := r.exceptions[char]; ok {
+					chars[idx] = xform
+				} else {
+					delta := r.delta
+					chars[idx] += delta
+				}
+			}
+		}
+	}
+	n.Text = string(chars)
+}
+
 func (n *MMLNode) set_variants_from_context(context parseContext) {
-	switch context & ^(ctx_var_normal - 1) {
-	case ctx_var_bb:
-		n.Attrib["mathvariant"] = "double-struck"
-	case ctx_var_bold:
-		n.Attrib["mathvariant"] = "bold"
-	case ctx_var_bold | ctx_var_italic:
-		n.Attrib["mathvariant"] = "bold-italic"
-	case ctx_var_script:
-		n.Attrib["mathvariant"] = "script"
-	case ctx_var_frak:
-		n.Attrib["mathvariant"] = "fraktur"
-	case ctx_var_italic:
-		n.Attrib["mathvariant"] = "italic"
+	var variant string
+	switch isolateMathVariant(context) {
 	case ctx_var_normal:
 		n.Attrib["mathvariant"] = "normal"
+		return
+	case ctx_var_bb:
+		variant = "double-struck"
+	case ctx_var_bold:
+		variant = "bold"
+	case ctx_var_bold | ctx_var_italic:
+		variant = "bold-italic"
+	case ctx_var_script:
+		variant = "script"
+	case ctx_var_frak:
+		variant = "fraktur"
+	case ctx_var_italic:
+		variant = "italic"
 	case ctx_var_sans:
-		n.Attrib["mathvariant"] = "sans-serif"
+		variant = "sans-serif"
 	case ctx_var_sans | ctx_var_bold:
-		n.Attrib["mathvariant"] = "sans-serif-bold"
+		variant = "sans-serif-bold"
 	case ctx_var_sans | ctx_var_bold | ctx_var_italic:
-		n.Attrib["mathvariant"] = "sans-serif-bold-italic"
+		variant = "sans-serif-bold-italic"
 	case ctx_var_sans | ctx_var_italic:
-		n.Attrib["mathvariant"] = "sans-serif-italic"
+		variant = "sans-serif-italic"
 	case ctx_var_mono:
-		n.Attrib["mathvariant"] = "monospace"
+		variant = "monospace"
 	}
+	n.transformByVariant(variant)
 }
 
 func ParseTex(tokens []Token, context parseContext) *MMLNode {

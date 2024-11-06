@@ -67,13 +67,13 @@ func srv(w http.ResponseWriter, req *http.Request) {
 		//`\left\langle\psi\left|\mathcal{T}\left\{\frac{\delta}{\delta\phi}F[\phi]\right\}\right|\psi\right\rangle = -\mathrm{i}\left\langle\psi\left|\mathcal{T}\left\{F[\phi]\frac{\delta}{\delta\phi}S[\phi]\right\}\right|\psi\right\rangle`,
 	}
 	var sb strings.Builder
-	sb.WriteString(`abcxyzABCXYZ`)
+	sb.WriteString(`abcxyzABCXYZ\vartheta`)
 	test = append(test, sb.String())
 	sb.Reset()
 	for k := range golatex.MATH_VARIANTS {
 		sb.WriteByte('\\')
 		sb.WriteString(k)
-		sb.WriteString(`{abcxyzABCXYZ}`)
+		sb.WriteString(`{abcxyzABCXYZ\vartheta}`)
 		test = append(test, sb.String())
 		sb.Reset()
 	}
