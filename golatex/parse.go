@@ -232,8 +232,15 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 	var nextExpr []Token
 	if v, ok := MATH_VARIANTS[tok.Value]; ok {
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
-		n.Children = ParseTex(nextExpr, context|v).Children
-		n.Tag = "mrow"
+		temp := ParseTex(nextExpr, context|v).Children
+		if len(temp) == 1 {
+			n.Tag = temp[0].Tag
+			n.Text = temp[0].Text
+			n.Attrib = temp[0].Attrib
+		} else {
+			n.Children = temp
+			n.Tag = "mrow"
+		}
 		return idx
 	}
 	if _, ok := TEX_SPACE[tok.Value]; ok {
@@ -423,6 +430,8 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 		tok := tokens[i]
 		child := newMMLNode()
 		switch {
+		case tok.Kind&tokComment > 0:
+			continue
 		case tok.Kind&tokExprBegin > 0:
 			nextExpr, i, _ = GetNextExpr(tokens, i)
 			child = ParseTex(nextExpr, context)
@@ -447,9 +456,13 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 			}
 		case tok.Kind&(tokOpen|tokClose) > 0:
 			child.Tag = "mo"
-			child.Text = tok.Value
-			child.Attrib["fence"] = "true"
-			child.Attrib["stretchy"] = "false"
+			if tok.Value == "." {
+				child.Text = ""
+			} else {
+				child.Text = tok.Value
+				child.Attrib["fence"] = "true"
+				child.Attrib["stretchy"] = "false"
+			}
 		case tok.Kind&tokWhitespace > 0:
 			if context&ctx_text > 0 {
 				fmt.Println("WHITESPACE")
@@ -469,18 +482,13 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 		default:
 			child.Tag = "mo"
 			child.Tok = tok
+			child.Text = tok.Value
 			if child.Tok.Value == "-" {
 				child.Tok.Value = "−" // Fuckin chrome not reading the spec...
 			}
 		}
 		node.Children = append(node.Children, child)
 	}
-	//if len(node.Children) == 1 {
-	//	child := node.Children[0]
-	//	node.Children[0] = nil
-	//	node.Children = nil
-	//	node = child
-	//}
 	node.PostProcessScripts()
 	node.PostProcessSpace()
 	return node
@@ -508,21 +516,18 @@ func (node *MMLNode) PostProcessSpace() {
 		if node.Children[i] == nil || TEX_SPACE[node.Children[i].Tok.Value] == 0 {
 			continue
 		}
-		end := i
-		width := 0
-		for end < limit && TEX_SPACE[node.Children[end].Tok.Value] > 0 {
-			width += TEX_SPACE[node.Children[end].Tok.Value]
-			end++
+		if node.Children[i].Tok.Kind&tokCommand == 0 {
+			continue
 		}
-		//end--
-		//limit -= (end - i)
-		//copy(node.Children[i+1:], node.Children[end:])
-		// free up memory if needed
-		for j := i + 1; j < end; j++ {
+		j := i + 1
+		width := TEX_SPACE[node.Children[i].Tok.Value]
+		for j < limit && TEX_SPACE[node.Children[j].Tok.Value] > 0 && node.Children[j].Tok.Kind&tokCommand > 0 {
+			width += TEX_SPACE[node.Children[j].Tok.Value]
 			node.Children[j] = nil
+			j++
 		}
-		//node.Children = node.Children[:limit]
 		node.Children[i].Attrib["width"] = fmt.Sprintf("%.2fem", float64(width)/18.0)
+		i = j
 	}
 }
 
@@ -633,21 +638,6 @@ func (node *MMLNode) PostProcessScripts() {
 	processKernel(oneScriptKernel)
 }
 
-func (node *MMLNode) PostProcessFonts() {
-	mod := node.Text
-	if _, ok := MATH_VARIANTS[mod]; !ok {
-		return
-	}
-	//if node.Class == NONPRINT {
-	//	return
-	//}
-	for _, child := range node.Children {
-		if val, ok := TEX_FONTS[mod][child.Tok.Value]; ok {
-			child.Text = val
-		}
-	}
-}
-
 func (n *MMLNode) printAST(depth int) {
 	if n == nil {
 		fmt.Println(strings.Repeat("  ", depth), "NIL")
@@ -728,7 +718,7 @@ func TexToMML(tex string) string {
 	}
 	MatchBraces(&tokens)
 	ast := ParseTex(tokens, ctx_root|ctx_display)
-	//ast.printAST(0)
+	ast.printAST(0)
 	var builder strings.Builder
 	//builder.WriteString(`<math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">`)
 	ast.Write(&builder, 1)

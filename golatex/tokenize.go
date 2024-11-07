@@ -10,14 +10,15 @@ type TokenKind int
 type LexerState int
 
 const (
-	LX_Begin LexerState = iota
-	LX_End
-	LX_Continue
-	LX_Space
-	LX_WasBackslash
-	LX_Command
-	LX_Number
-	LX_fence
+	lxBegin LexerState = iota
+	lxEnd
+	lxContinue
+	lxSpace
+	lxWasBackslash
+	lxCommand
+	lxNumber
+	lxFence
+	lxComment
 )
 const (
 	tokWhitespace TokenKind = 1 << iota
@@ -136,113 +137,124 @@ func GetToken(input string) (Token, string) {
 	for idx = 0; idx < len(tex); idx++ {
 		r := tex[idx]
 		switch state {
-		case LX_End:
+		case lxEnd:
 			return Token{Kind: kind | fencing, Value: string(result)}, string(tex[idx:])
-		case LX_Begin:
+		case lxBegin:
 			switch {
 			case unicode.IsLetter(r):
-				state = LX_End
+				state = lxEnd
 				kind = tokLetter
 				result = append(result, r)
 			case unicode.IsNumber(r):
-				state = LX_Number
+				state = lxNumber
 				kind = tokNumber
 				result = append(result, r)
 			case r == '\\':
-				state = LX_WasBackslash
+				state = lxWasBackslash
 			case r == '{':
-				state = LX_End
+				state = lxEnd
 				kind = tokExprBegin | tokOpen
 				result = append(result, r)
 			case r == '}':
-				state = LX_End
+				state = lxEnd
 				kind = tokExprEnd | tokClose
 				result = append(result, r)
 			case slices.Contains(OPEN, r):
-				state = LX_End
+				state = lxEnd
 				kind = tokOpen
 				result = append(result, r)
 			case slices.Contains(CLOSE, r):
-				state = LX_End
+				state = lxEnd
 				kind = tokClose
 				result = append(result, r)
 			case r == '^':
-				state = LX_End
+				state = lxEnd
 				kind = tokSubSup
 				result = append(result, r)
 			case r == '_':
-				state = LX_End
+				state = lxEnd
 				kind = tokSubSup
 				result = append(result, r)
+			case r == '%':
+				state = lxComment
+				kind = tokComment
 			case slices.Contains(RESERVED, r):
-				state = LX_End
+				state = lxEnd
 				kind = tokReserved
 				result = append(result, r)
 			case unicode.IsSpace(r):
-				state = LX_Space
+				state = lxSpace
 				kind = tokWhitespace
 				result = append(result, ' ')
 				continue
 			default:
-				state = LX_End
+				state = lxEnd
 				kind = tokChar
 				result = append(result, r)
 			}
-		case LX_Space:
+		case lxComment:
+			switch r {
+			case '\n':
+				state = lxEnd
+				result = append(result, r)
+			default:
+				result = append(result, r)
+			}
+		case lxSpace:
 			switch {
 			case !unicode.IsSpace(r):
 				return Token{Kind: kind, Value: string(result)}, string(tex[idx:])
 			}
-		case LX_Number:
+		case lxNumber:
 			switch {
 			case r == '.':
 				result = append(result, r)
 			case unicode.IsSpace(r):
-				state = LX_End
+				state = lxEnd
 			case !unicode.IsNumber(r):
 				return Token{Kind: kind, Value: string(result)}, string(tex[idx:])
 			default:
 				result = append(result, r)
 			}
-		case LX_WasBackslash:
+		case lxWasBackslash:
 			switch {
 			case slices.Contains(OPEN, r):
-				state = LX_End
+				state = lxEnd
 				kind = tokOpen
 				result = append(result, r)
 			case slices.Contains(CLOSE, r):
-				state = LX_End
+				state = lxEnd
 				kind = tokClose
 				result = append(result, r)
 			case slices.Contains(RESERVED, r):
-				state = LX_End
+				state = lxEnd
 				kind = tokCommand
 				result = append(result, r)
 			case unicode.IsLetter(r):
-				state = LX_Command
+				state = lxCommand
 				kind = tokCommand
 				result = append(result, r)
 			default:
-				state = LX_End
+				state = lxEnd
 				kind = tokCommand
 				result = append(result, r)
 				//return Token{Kind: tokCommand, Value: string(result)}, tex[idx:]
 			}
-		case LX_Command:
+		case lxCommand:
 			switch {
 			case r == '*':
-				state = LX_End
+				state = lxEnd
 				result = append(result, r)
 			case !unicode.IsLetter(r):
 				val := string(result)
 				switch val {
 				case "left":
-					state = LX_Begin
+					state = lxBegin
 					result = result[:0]
 					fencing = tokOpen | tokFence
 					idx--
 				case "right":
-					state = LX_Begin
+					state = lxBegin
 					result = result[:0]
 					fencing = tokClose | tokFence
 					idx--
@@ -272,7 +284,7 @@ const (
 func GetNextExpr(tokens []Token, idx int) ([]Token, int, exprKind) {
 	var result []Token
 	var kind exprKind
-	for tokens[idx].Kind&tokWhitespace > 0 {
+	for tokens[idx].Kind&(tokWhitespace|tokComment) > 0 {
 		idx++
 	}
 	if tokens[idx].Kind&tokExprBegin > 0 {
