@@ -1,0 +1,69 @@
+/*
+XITS is released under the SIL Open Font License. See the files in this
+directory for details. The font can be obtained from several TeX distributions
+or package managers.
+
+The WOFF fonts have been obtained from
+http://mirrors.ctan.org/fonts/
+*/
+
+@namespace url('http://www.w3.org/1999/xhtml');
+@namespace m url('http://www.w3.org/1998/Math/MathML');
+
+@font-face {
+    font-family: XITS;
+    src: local('XITS'),
+         url('/fonts/xits/XITS-Regular.woff2'), url('/fonts/xits/XITS-Regular.woff');
+}
+@font-face {
+    font-family: XITS;
+    src: local('XITS Bold'), local('XITS-Bold'),
+         url('/fonts/xits/XITS-Bold.woff2'), url('/fonts/xits/XITS-Bold.woff');
+    font-weight: bold;
+}
+@font-face {
+    font-family: XITS;
+    src: local('XITS Italic'), local('XITS-Italic'),
+         url('/fonts/xits/XITS-Italic.woff2'), url('/fonts/xits/XITS-Italic.woff');
+    font-style: italic;
+}
+@font-face {
+    font-family: XITS;
+    src: local('XITS Bold Italic'), local('XITS-BoldItalic'),
+         url('/fonts/xits/XITS-BoldItalic.woff2'), url('/fonts/xits/XITS-BoldItalic.woff');
+    font-weight: bold;
+    font-style: italic;
+}
+@font-face {
+    font-family: XITS Math;
+    src: local('XITS Math'), local('XITSMath-Regular'),
+         url('/fonts/xits/XITSMath-Regular.woff2'), url('/fonts/xits/XITSMath-Regular.woff');
+}
+@font-face {
+    font-family: XITS Math;
+    src: local('XITS Math Bold'), local('XITSMath-Bold'),
+         url('/fonts/xits/XITSMath-Bold.woff2'), url('/fonts/xits/XITSMathBold.woff');
+    font-weight: bold;
+}
+
+.htmlmathparagraph, m|mtext {
+    font-family: XITS;
+}
+m|math {
+    font-family: XITS Math;
+}
+
+.oldstylenumbers {
+    font-variant-numeric: oldstyle-nums;   /* Recommended syntax */
+    font-feature-settings: 'onum';         /* OpenType feature syntax */
+    -moz-font-feature-settings: 'onum';    /* Gecko <= 33 syntax */
+    -webkit-font-feature-settings: 'onum'; /* Blink syntax */
+}
+
+@font-feature-values XITS Math { @styleset { calligraphic: 1; } }
+m|*.calligraphic {
+    font-variant-alternates: styleset(calligraphic); /* Recommended syntax */
+    font-feature-settings: 'ss01';         /* OpenType feature syntax */
+    -moz-font-feature-settings: 'ss01';    /* Gecko <= 33 syntax */
+    -webkit-font-feature-settings: 'ss01'; /* Blink syntax */
+}

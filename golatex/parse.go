@@ -26,7 +26,8 @@ const (
 	ctx_var_normal
 	ctx_var_bb
 	ctx_var_mono
-	ctx_var_script
+	ctx_var_script_chancery
+	ctx_var_script_roundhand
 	ctx_var_frak
 	ctx_var_bold
 	ctx_var_italic
@@ -45,16 +46,8 @@ var (
 		"underbrace":    1,
 		"overbrace":     1,
 		"ElsevierGlyph": 1,
-		"acute":         1,
-		"bar":           1,
-		"breve":         1,
-		"check":         1,
-		"ddot":          1,
 		"ding":          1,
-		"dot":           1,
 		"fbox":          1,
-		"grave":         1,
-		"hat":           1,
 		"k":             1,
 		"left":          1,
 		"mathbb":        1,
@@ -62,7 +55,6 @@ var (
 		"mathbit":       1,
 		"mathfrak":      1,
 		"mathmit":       1,
-		"mathring":      1,
 		"mathrm":        1,
 		"mathscr":       1,
 		"mathsf":        1,
@@ -73,26 +65,48 @@ var (
 		"mathslbb":      1,
 		"mathtt":        1,
 		"mbox":          1,
+		"not":           1,
 		"right":         1,
 		"sqrt":          1,
 		"text":          1,
-		"tilde":         1,
 		"u":             1,
 	}
 	MATH_VARIANTS = map[string]parseContext{
 		"mathbb":     ctx_var_bb,
 		"mathbf":     ctx_var_bold,
 		"mathbfit":   ctx_var_bold | ctx_var_italic,
-		"mathcal":    ctx_var_script,
+		"mathcal":    ctx_var_script_chancery,
 		"mathfrak":   ctx_var_frak,
 		"mathit":     ctx_var_italic,
 		"mathrm":     ctx_var_normal,
-		"mathscr":    ctx_var_script,
+		"mathscr":    ctx_var_script_roundhand,
 		"mathsf":     ctx_var_sans,
 		"mathsfbf":   ctx_var_sans | ctx_var_bold,
 		"mathsfbfsl": ctx_var_sans | ctx_var_bold | ctx_var_italic,
 		"mathsfsl":   ctx_var_sans | ctx_var_italic,
 		"mathtt":     ctx_var_mono,
+	}
+
+	accents = map[string]rune{
+		"acute":          0x00b4,
+		"bar":            0x0305,
+		"breve":          0x0306,
+		"check":          0x030c,
+		"dot":            0x02d9,
+		"frown":          0x0311,
+		"grave":          0x0060,
+		"hat":            0x0302,
+		"mathring":       0x030a,
+		"overleftarrow":  0x2190,
+		"overline":       0x0332,
+		"overrightarrow": 0x2192,
+		"tilde":          0x0303,
+		"vec":            0x20d7,
+		"widehat":        0x0302,
+		"widetilde":      0x0360,
+	}
+	accents_below = map[string]rune{
+		"underline": 0x0332,
 	}
 
 	SELFCLOSING = map[string]bool{
@@ -101,11 +115,13 @@ var (
 
 	// Measured in 18ths of an em
 	TEX_SPACE = map[string]int{
-		`\`: 0, // newline
-		",": 3,
-		":": 4,
-		";": 5,
-		"!": -3,
+		`\`:     0, // newline
+		",":     3,
+		":":     4,
+		";":     5,
+		"quad":  18,
+		"qquad": 36,
+		"!":     -3,
 	}
 
 	TEX_SYMBOLS map[string]map[string]string
@@ -197,9 +213,7 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 	var nextExpr []Token
 	if v, ok := MATH_VARIANTS[tok.Value]; ok {
 		nextExpr, idx = GetNextExpr(tokens, idx+1)
-		fmt.Println(nextExpr)
 		n.Children = ParseTex(nextExpr, context|v).Children
-		n.printAST(3)
 		n.Tag = "mrow"
 		return idx
 	}
@@ -215,7 +229,6 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 	if ok {
 		switch tok.Value {
 		case "underbrace", "overbrace":
-			fmt.Print(tok.Value, "\t")
 			nextExpr, idx = GetNextExpr(tokens, idx+1)
 			doUnderOverBrace(tok, n, ParseTex(nextExpr, context))
 			return idx
@@ -231,12 +244,24 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 			n.Tag = "mtext"
 			n.Text = sb.String()
 			return idx
-		case "frac":
-			n.Tag = "mfrac"
+		case "frac", "sqrt":
+			n.Tag = "m" + tok.Value
 			for range numChildren {
 				nextExpr, idx = GetNextExpr(tokens, idx+1)
 				n.Children = append(n.Children, ParseTex(nextExpr, context))
 			}
+		case "not":
+			nextExpr, idx = GetNextExpr(tokens, idx+1)
+			if len(nextExpr) == 1 {
+				if neg, ok := NEGATIONS[nextExpr[0].Value]; ok {
+					n.Tag = "mo"
+					n.Text = neg
+					return idx
+				}
+			}
+			n.Tag = "menclose"
+			n.Attrib["notation"] = "updiagonalstrike"
+			n.Children = ParseTex(nextExpr, context).Children
 		default:
 			n.Text = tok.Value
 			for range numChildren {
@@ -244,6 +269,14 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 				n.Children = append(n.Children, ParseTex(nextExpr, context))
 			}
 		}
+	} else if ch, ok := accents[tok.Value]; ok {
+		n.Tag = "mover"
+		nextExpr, idx = GetNextExpr(tokens, idx+1)
+		acc := newMMLNode()
+		acc.Tag = "mo"
+		acc.Text = string(ch)
+		acc.Attrib["accent"] = "true"
+		n.Children = append(n.Children, ParseTex(nextExpr, context), acc)
 	} else {
 		if t, ok := TEX_SYMBOLS[tok.Value]; ok {
 			if text, ok := t["char"]; ok {
@@ -273,9 +306,6 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 			n.Attrib["movablelimits"] = "true"
 			n.Properties |= PROP_LIMITSUNDEROVER | PROP_MOVABLELIMITS
 		}
-	}
-	if tok.Value == "sqrt" {
-		n.Tag = "msqrt"
 	}
 	n.Tok = tok
 	n.set_variants_from_context(context)
@@ -319,7 +349,7 @@ func (n *MMLNode) set_variants_from_context(context parseContext) {
 		variant = "bold"
 	case ctx_var_bold | ctx_var_italic:
 		variant = "bold-italic"
-	case ctx_var_script:
+	case ctx_var_script_chancery, ctx_var_script_roundhand:
 		variant = "script"
 	case ctx_var_frak:
 		variant = "fraktur"
@@ -335,13 +365,33 @@ func (n *MMLNode) set_variants_from_context(context parseContext) {
 		variant = "sans-serif-italic"
 	case ctx_var_mono:
 		variant = "monospace"
+	case 0:
+		return
 	}
 	n.transformByVariant(variant)
+	var variationselector rune
+	switch isolateMathVariant(context) {
+	case ctx_var_script_chancery:
+		variationselector = 0xfe00
+	case ctx_var_script_roundhand:
+		variationselector = 0xfe01
+		n.Attrib["class"] = "calligraphic"
+	}
+	if variationselector > 0 {
+		temp := make([]rune, 0)
+		for _, r := range n.Text {
+			temp = append(temp, r, variationselector)
+		}
+		for _, r := range temp {
+			fmt.Printf("%q ", r)
+		}
+		n.Text = string(temp)
+		fmt.Printf("%+q\n", n.Text)
+	}
 }
 
 func ParseTex(tokens []Token, context parseContext) *MMLNode {
-	var node *MMLNode
-	node = newMMLNode()
+	node := newMMLNode()
 	if context&ctx_root > 0 {
 		node.Tag = "math"
 		if context&ctx_display > 0 {
@@ -404,17 +454,20 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 		default:
 			child.Tag = "mo"
 			child.Tok = tok
+			if child.Tok.Value == "-" {
+				child.Tok.Value = "−" // Fuckin chrome not reading the spec...
+			}
 		}
 		node.Children = append(node.Children, child)
 	}
-	if len(node.Children) == 1 {
-		child := node.Children[0]
-		node.Children[0] = nil
-		node.Children = nil
-		node = child
-	}
-	node.PostProcessNegation()
+	//if len(node.Children) == 1 {
+	//	child := node.Children[0]
+	//	node.Children[0] = nil
+	//	node.Children = nil
+	//	node = child
+	//}
 	node.PostProcessScripts()
+	node.PostProcessSpace()
 	return node
 }
 
@@ -427,6 +480,34 @@ func (node *MMLNode) PostProcessNegation() {
 			node.Children = node.Children[:len(node.Children)-1]
 			node.Children[i].Text = NEGATIONS[node.Children[i].Tok.Value]
 		}
+	}
+}
+
+func (node *MMLNode) PostProcessSpace() {
+	i := 0
+	limit := len(node.Children)
+	for ; i < limit; i++ {
+		//if len(node.Children[i].Children) > 0 {
+		//	node.Children[i].PostProcessSpace()
+		//}
+		if node.Children[i] == nil || TEX_SPACE[node.Children[i].Tok.Value] == 0 {
+			continue
+		}
+		end := i
+		width := 0
+		for end < limit && TEX_SPACE[node.Children[end].Tok.Value] > 0 {
+			width += TEX_SPACE[node.Children[end].Tok.Value]
+			end++
+		}
+		//end--
+		//limit -= (end - i)
+		//copy(node.Children[i+1:], node.Children[end:])
+		// free up memory if needed
+		for j := i + 1; j < end; j++ {
+			node.Children[j] = nil
+		}
+		//node.Children = node.Children[:limit]
+		node.Children[i].Attrib["width"] = fmt.Sprintf("%.2fem", float64(width)/18.0)
 	}
 }
 
@@ -553,6 +634,10 @@ func (node *MMLNode) PostProcessFonts() {
 }
 
 func (n *MMLNode) printAST(depth int) {
+	if n == nil {
+		fmt.Println(strings.Repeat("  ", depth), "NIL")
+		return
+	}
 	fmt.Println(strings.Repeat("  ", depth), n.Tok, n.Text, n)
 	for _, child := range n.Children {
 		child.printAST(depth + 1)
@@ -566,6 +651,9 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 	//	}
 	//	return
 	//}
+	if n == nil {
+		return
+	}
 	var tag string
 	if len(n.Tag) > 0 {
 		tag = n.Tag
@@ -624,11 +712,8 @@ func TexToMML(tex string) string {
 		tokens = append(tokens, tok)
 	}
 	MatchBraces(&tokens)
-	for _, t := range tokens {
-		fmt.Println(t)
-	}
 	ast := ParseTex(tokens, ctx_root|ctx_display)
-	ast.printAST(0)
+	//ast.printAST(0)
 	var builder strings.Builder
 	//builder.WriteString(`<math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">`)
 	ast.Write(&builder, 1)

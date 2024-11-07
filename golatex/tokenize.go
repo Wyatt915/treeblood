@@ -272,9 +272,5 @@ func GetNextExpr(tokens []Token, idx int) ([]Token, int) {
 	} else {
 		result = []Token{tokens[idx]}
 	}
-	for _, t := range result {
-		fmt.Print(t.Value)
-	}
-	fmt.Println()
 	return result, idx
 }
