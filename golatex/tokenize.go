@@ -260,17 +260,35 @@ func GetToken(input string) (Token, string) {
 	return Token{Kind: kind, Value: string(result)}, string(tex[idx:])
 }
 
-func GetNextExpr(tokens []Token, idx int) ([]Token, int) {
+type exprKind int
+
+const (
+	expr_single_tok exprKind = iota
+	expr_options
+	expr_fenced
+	expr_group
+)
+
+func GetNextExpr(tokens []Token, idx int) ([]Token, int, exprKind) {
 	var result []Token
+	var kind exprKind
 	for tokens[idx].Kind&tokWhitespace > 0 {
 		idx++
 	}
 	if tokens[idx].Kind&tokExprBegin > 0 {
+		switch tokens[idx].Value {
+		case "{":
+			kind = expr_group
+		case "[":
+			kind = expr_options
+		default:
+			kind = expr_fenced
+		}
 		end := idx + tokens[idx].MatchOffset
 		result = tokens[idx+1 : end]
 		idx = end
 	} else {
 		result = []Token{tokens[idx]}
 	}
-	return result, idx
+	return result, idx, kind
 }

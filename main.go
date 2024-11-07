@@ -68,6 +68,7 @@ func srv(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	test := []string{
+		`0123456789`,
 		`\varphi=1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1+\cdots}}}}}`,
 		`\forall A \, \exists P \, \forall B \, [B \in P \Leftrightarrow \forall C \, (C \in B \Rightarrow C \in A)]`,
 		`\int {f(x)} dx`,
@@ -85,7 +86,7 @@ func srv(w http.ResponseWriter, req *http.Request) {
 			  \underbrace{\;\;\;\;\; b\mathrm{i} \;\;\;\;}_\text{imaginary}
 			}^\text{complex number}`,
 		`\int_0^1 x^x\,\mathrm{d}x = \sum_{n = 1}^\infty{(-1)^{n + 1}\,n^{-n}}`,
-		`\nabla \cdot \vec v =
+		`\mathrm{\nabla} \cdot \vec v =
 		   \frac{\partial v_x}{\partial x} +
 		   \frac{\partial v_y}{\partial y} +
 		   \frac{\partial v_z}{\partial z}`,
@@ -132,7 +133,6 @@ func srv(w http.ResponseWriter, req *http.Request) {
 		<meta name="description" content="GoLaTex MathML Test"/>
 		<meta charset="utf-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1"/>
-		<link rel="stylesheet" type="text/css" href="/fonts/xits.css">
 		<style>
 			table {
 				border-collapse: collapse;
@@ -153,6 +153,8 @@ func srv(w http.ResponseWriter, req *http.Request) {
 	</head>
 	<body>
 	<table><tbody><tr><th colspan="2">GoLaTeX Test</th></tr>`
+	// put this back in <head> if needed
+	//<link rel="stylesheet" type="text/css" href="/fonts/xits.css">
 	w.WriteHeader(200)
 	w.Write([]byte(head))
 	for _, tex := range test {

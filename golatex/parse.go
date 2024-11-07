@@ -50,20 +50,6 @@ var (
 		"fbox":          1,
 		"k":             1,
 		"left":          1,
-		"mathbb":        1,
-		"mathbf":        1,
-		"mathbit":       1,
-		"mathfrak":      1,
-		"mathmit":       1,
-		"mathrm":        1,
-		"mathscr":       1,
-		"mathsf":        1,
-		"mathsfbf":      1,
-		"mathsfbfsl":    1,
-		"mathsfsl":      1,
-		"mathsl":        1,
-		"mathslbb":      1,
-		"mathtt":        1,
 		"mbox":          1,
 		"not":           1,
 		"right":         1,
@@ -93,6 +79,9 @@ var (
 		"breve":          0x0306,
 		"check":          0x030c,
 		"dot":            0x02d9,
+		"ddot":           0x0308,
+		"dddot":          0x20db,
+		"ddddot":         0x20dc,
 		"frown":          0x0311,
 		"grave":          0x0060,
 		"hat":            0x0302,
@@ -127,32 +116,62 @@ var (
 	TEX_SYMBOLS map[string]map[string]string
 	TEX_FONTS   map[string]map[string]string
 	NEGATIONS   = map[string]string{
-		"<":           "≮",
-		"=":           "≠",
-		">":           "≯",
-		"apid":        "≋̸",
-		"approx":      "≉",
-		"cong":        "≇",
-		"doteq":       "≐̸",
-		"equiv":       "≢",
-		"geq":         "≱",
-		"greaterless": "≹",
-		"in":          "∉",
-		"leq":         "≰",
-		"lessgreater": "≸",
-		"ni":          "∌",
-		"prec":        "⊀",
-		"preceq":      "⪯̸",
-		"sim":         "≁",
-		"simeq":       "≄",
-		"sqsubseteq":  "⋢",
-		"sqsupseteq":  "⋣",
-		"subset":      "⊄",
-		"subseteq":    "⊈",
-		"succ":        "⊁",
-		"succeq":      "⪰̸",
-		"supset":      "⊅",
-		"supseteq":    "⊉",
+		"<":               "≮",
+		"=":               "≠",
+		">":               "≯",
+		"Bumpeq":          "≎̸",
+		"Leftarrow":       "⇍",
+		"Rightarrow":      "⇏",
+		"VDash":           "⊯",
+		"Vdash":           "⊮",
+		"apid":            "≋̸",
+		"approx":          "≉",
+		"bumpeq":          "≏̸",
+		"cong":            "≇",
+		"doteq":           "≐̸",
+		"eqsim":           "≂̸",
+		"equiv":           "≢",
+		"exists":          "∄",
+		"geq":             "≱",
+		"geqslant":        "⩾̸",
+		"greaterless":     "≹",
+		"gt":              "≯",
+		"in":              "∉",
+		"leftarrow":       "↚",
+		"leftrightarrow":  "↮",
+		"leq":             "≰",
+		"leqslant":        "⩽̸",
+		"lessgreater":     "≸",
+		"lt":              "≮",
+		"mid":             "∤",
+		"ni":              "∌",
+		"otgreaterless":   "≹",
+		"otlessgreater":   "≸",
+		"parallel":        "∦",
+		"prec":            "⊀",
+		"preceq":          "⪯̸",
+		"precsim":         "≾̸",
+		"rightarrow":      "↛",
+		"sim":             "≁",
+		"sime":            "≄",
+		"simeq":           "≄",
+		"sqsubseteq":      "⋢",
+		"sqsupseteq":      "⋣",
+		"subset":          "⊄",
+		"subseteq":        "⊈",
+		"subseteqq":       "⫅̸",
+		"succ":            "⊁",
+		"succeq":          "⪰̸",
+		"succsim":         "≿̸",
+		"supset":          "⊅",
+		"supseteq":        "⊉",
+		"supseteqq":       "⫆̸",
+		"triangleleft":    "⋪",
+		"trianglelefteq":  "⋬",
+		"triangleright":   "⋫",
+		"trianglerighteq": "⋭",
+		"vDash":           "⊭",
+		"vdash":           "⊬",
 	}
 	PROPERTIES = map[string]NodeProperties{}
 )
@@ -212,7 +231,7 @@ func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
 func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int) int {
 	var nextExpr []Token
 	if v, ok := MATH_VARIANTS[tok.Value]; ok {
-		nextExpr, idx = GetNextExpr(tokens, idx+1)
+		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 		n.Children = ParseTex(nextExpr, context|v).Children
 		n.Tag = "mrow"
 		return idx
@@ -229,14 +248,14 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 	if ok {
 		switch tok.Value {
 		case "underbrace", "overbrace":
-			nextExpr, idx = GetNextExpr(tokens, idx+1)
+			nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 			doUnderOverBrace(tok, n, ParseTex(nextExpr, context))
 			return idx
 		case "text":
 			var sb strings.Builder
 			context |= ctx_text
 			for range numChildren {
-				nextExpr, idx = GetNextExpr(tokens, idx+1)
+				nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 				n.Children = append(n.Children, ParseTex(nextExpr, context))
 			}
 			restringify(n, &sb)
@@ -247,11 +266,11 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		case "frac", "sqrt":
 			n.Tag = "m" + tok.Value
 			for range numChildren {
-				nextExpr, idx = GetNextExpr(tokens, idx+1)
+				nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 				n.Children = append(n.Children, ParseTex(nextExpr, context))
 			}
 		case "not":
-			nextExpr, idx = GetNextExpr(tokens, idx+1)
+			nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 			if len(nextExpr) == 1 {
 				if neg, ok := NEGATIONS[nextExpr[0].Value]; ok {
 					n.Tag = "mo"
@@ -265,13 +284,13 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		default:
 			n.Text = tok.Value
 			for range numChildren {
-				nextExpr, idx = GetNextExpr(tokens, idx+1)
+				nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 				n.Children = append(n.Children, ParseTex(nextExpr, context))
 			}
 		}
 	} else if ch, ok := accents[tok.Value]; ok {
 		n.Tag = "mover"
-		nextExpr, idx = GetNextExpr(tokens, idx+1)
+		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 		acc := newMMLNode()
 		acc.Tag = "mo"
 		acc.Text = string(ch)
@@ -291,6 +310,8 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 				n.Tag = "mo"
 				n.Attrib["largeop"] = "true"
 				n.Attrib["movablelimits"] = "true"
+			case "alphabetic":
+				n.Tag = "mi"
 			default:
 				if tok.Kind&tokFence > 0 {
 					n.Tag = "mo"
@@ -298,9 +319,6 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 					n.Tag = "mi"
 				}
 			}
-			//if t, ok := TEX_SYMBOLS[tok.Value]["entity"]; ok && t != "" {
-			//	n.Text = t
-			//}
 		} else {
 			n.Tag = "mo"
 			n.Attrib["movablelimits"] = "true"
@@ -373,20 +391,16 @@ func (n *MMLNode) set_variants_from_context(context parseContext) {
 	switch isolateMathVariant(context) {
 	case ctx_var_script_chancery:
 		variationselector = 0xfe00
+		n.Attrib["class"] = "calligraphic"
 	case ctx_var_script_roundhand:
 		variationselector = 0xfe01
-		n.Attrib["class"] = "calligraphic"
 	}
 	if variationselector > 0 {
 		temp := make([]rune, 0)
 		for _, r := range n.Text {
 			temp = append(temp, r, variationselector)
 		}
-		for _, r := range temp {
-			fmt.Printf("%q ", r)
-		}
 		n.Text = string(temp)
-		fmt.Printf("%+q\n", n.Text)
 	}
 }
 
@@ -410,7 +424,7 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 		child := newMMLNode()
 		switch {
 		case tok.Kind&tokExprBegin > 0:
-			nextExpr, i = GetNextExpr(tokens, i)
+			nextExpr, i, _ = GetNextExpr(tokens, i)
 			child = ParseTex(nextExpr, context)
 		case tok.Kind&tokLetter > 0:
 			child.Tok = tok
@@ -435,6 +449,7 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 			child.Tag = "mo"
 			child.Text = tok.Value
 			child.Attrib["fence"] = "true"
+			child.Attrib["stretchy"] = "false"
 		case tok.Kind&tokWhitespace > 0:
 			if context&ctx_text > 0 {
 				fmt.Println("WHITESPACE")
