@@ -31,7 +31,6 @@ func readJSON(fname string, dst *map[string]map[string]string) {
 
 func loadData() {
 	readJSON("./charactermappings/symbols.json", &golatex.TEX_SYMBOLS)
-	readJSON("./charactermappings/fonts.json", &golatex.TEX_FONTS)
 	//count := 0
 	//for _, s := range TEX_SYMBOLS {
 	//	if count == 10 {

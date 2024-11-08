@@ -281,6 +281,21 @@ const (
 	expr_group
 )
 
+func splitByValue(tokens []Token, val string) [][]Token {
+	out := make([][]Token, 0)
+	temp := make([]Token, 0)
+	for _, t := range tokens {
+		if t.Value == val {
+			out = append(out, temp)
+			temp = make([]Token, 0)
+			continue
+		}
+		temp = append(temp, t)
+	}
+	out = append(out, temp)
+	return out
+}
+
 func GetNextExpr(tokens []Token, idx int) ([]Token, int, exprKind) {
 	var result []Token
 	var kind exprKind

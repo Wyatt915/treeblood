@@ -22,6 +22,7 @@ const (
 	ctx_root parseContext = 1 << iota
 	ctx_display
 	ctx_text
+	ctx_table
 	// ONLY FONT VARIANTS AFTER THIS POINT
 	ctx_var_normal
 	ctx_var_bb
@@ -228,8 +229,118 @@ func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
 	}
 }
 
+func stringify_tokens(toks []Token) string {
+	var sb strings.Builder
+	for _, t := range toks {
+		sb.WriteString(t.Value)
+	}
+	return sb.String()
+}
+
+type stringstack struct {
+	data []string
+	top  int
+}
+
+func newStringStack() *stringstack {
+	return &stringstack{
+		data: make([]string, 128),
+		top:  -1,
+	}
+}
+
+func (s *stringstack) Push(i string) {
+	s.top++
+	if len(s.data) <= s.top {
+		s.data = append(make([]string, len(s.data)*2), s.data...)
+	}
+	s.data[s.top] = i
+}
+
+func (s *stringstack) Peek() (val string) {
+	if s.top < 0 {
+		val = ""
+	} else {
+		val = s.data[s.top]
+	}
+	return
+}
+
+func (s *stringstack) Pop() (val string) {
+	if s.top < 0 {
+		val = ""
+	} else {
+		val = s.data[s.top]
+		s.top--
+	}
+	return
+}
+
+func (s *stringstack) Empty() bool {
+	return s.top < 0
+}
+
+func processTable(tokens []Token, context parseContext) *MMLNode {
+	rows := make([]*MMLNode, 0)
+	for _, row := range splitByValue(tokens, `\`) {
+		rowNode := newMMLNode()
+		rowNode.Tag = "mtr"
+		for _, cell := range splitByValue(row, "&") {
+			cellNode := ParseTex(cell, context)
+			cellNode.Tag = "mtd"
+			rowNode.Children = append(rowNode.Children, cellNode)
+		}
+		rows = append(rows, rowNode)
+	}
+	table := newMMLNode()
+	table.Tag = "mtable"
+	table.Children = rows
+	return table
+}
+
+func singleOperator(text string) *MMLNode {
+	op := newMMLNode()
+	op.Tag = "mo"
+	op.Text = text
+	return op
+}
+
+func processEnvironment(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int) int {
+	env, start, _ := GetNextExpr(tokens, idx+1)
+	envName := stringify_tokens(env)
+	st := newStringStack()
+	st.Push(envName)
+	var end int
+	var t []Token
+	start++
+	j := start
+	for j < len(tokens) && !st.Empty() {
+		j++
+		if tokens[j].Value == "end" {
+			t, end, _ = GetNextExpr(tokens, j+1)
+			if stringify_tokens(t) == st.Peek() {
+				st.Pop()
+			}
+		} else if tokens[j].Value == "begin" {
+			t, _, _ = GetNextExpr(tokens, j+1)
+			st.Push(stringify_tokens(t))
+		}
+	}
+	end++
+	switch envName {
+	case "pmatrix":
+		n.Tag = "mrow"
+		n.Children = append(n.Children, singleOperator("("), processTable(tokens[start:j], context|ctx_table), singleOperator(")"))
+	}
+	return end
+}
+
 func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int) int {
 	var nextExpr []Token
+	if tok.Value == "begin" {
+		idx = processEnvironment(n, context, tok, tokens, idx)
+		return idx
+	}
 	if v, ok := MATH_VARIANTS[tok.Value]; ok {
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 		temp := ParseTex(nextExpr, context|v).Children
@@ -718,7 +829,7 @@ func TexToMML(tex string) string {
 	}
 	MatchBraces(&tokens)
 	ast := ParseTex(tokens, ctx_root|ctx_display)
-	ast.printAST(0)
+	//ast.printAST(0)
 	var builder strings.Builder
 	//builder.WriteString(`<math mode="display" display="block" xmlns="http://www.w3.org/1998/Math/MathML">`)
 	ast.Write(&builder, 1)
