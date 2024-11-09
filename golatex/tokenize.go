@@ -3,6 +3,7 @@ package golatex
 import (
 	"fmt"
 	"slices"
+	"strings"
 	"unicode"
 )
 
@@ -31,6 +32,7 @@ const (
 	tokClose
 	tokExprBegin
 	tokExprEnd
+	tokEnv
 	tokFence
 	tokSubSup
 	tokReserved
@@ -55,90 +57,61 @@ type Token struct {
 	Kind        TokenKind
 	MatchOffset int // offset from current index to matching paren, brace, etc.
 	Value       string
+	Pseudo      *MMLNode
 }
-type stack struct {
-	data []int
+
+type stack[T any] struct {
+	data []T
 	top  int
 }
 
-func newStack() *stack {
-	return &stack{
-		data: make([]int, 128),
+func newStack[T any]() *stack[T] {
+	return &stack[T]{
+		data: make([]T, 0),
 		top:  -1,
 	}
 }
 
-func (s *stack) Push(i int) {
+func (s *stack[T]) Push(val T) {
 	s.top++
-	if len(s.data) <= s.top {
-		s.data = append(make([]int, len(s.data)*2), s.data...)
+	if len(s.data) <= s.top { // Check if we need to grow the slice
+		newSize := len(s.data) * 2
+		if newSize == 0 {
+			newSize = 1 // Start with a minimum capacity if the stack is empty
+		}
+		newData := make([]T, newSize)
+		copy(newData, s.data) // Copy old elements to new slice
+		s.data = newData
 	}
-	s.data[s.top] = i
+	s.data[s.top] = val
 }
 
-func (s *stack) Peek() (val int) {
-	if s.top < 0 {
-		val = -1
-	} else {
-		val = s.data[s.top]
-	}
+func (s *stack[T]) Peek() (val T) {
+	val = s.data[s.top]
 	return
 }
 
-func (s *stack) Pop() (val int) {
-	if s.top < 0 {
-		val = -1
-	} else {
-		val = s.data[s.top]
-		s.top--
-	}
+func (s *stack[T]) Pop() (val T) {
+	val = s.data[s.top]
+	s.top--
 	return
 }
 
-func MatchBraces(tokens *[]Token) error {
-	var match bool
-	s := newStack()
-	for i := 0; i < len(*tokens); i++ {
-		if (*tokens)[i].Kind&tokOpen > 0 {
-			s.Push(i)
-		}
-		if (*tokens)[i].Kind&tokClose > 0 {
-			pos := s.Peek()
-			match = false
-			if pos < 0 {
-				return fmt.Errorf("mismatched braces")
-			}
-			if (*tokens)[i].Kind&tokFence > 0 && (*tokens)[pos].Kind&tokFence&tokOpen > 0 {
-				s.Pop()
-				match = true
-			} else if (*tokens)[pos].Value == BRACEMATCH[(*tokens)[i].Value] {
-				s.Pop()
-				match = true
-			}
-			if match {
-				(*tokens)[i].MatchOffset = pos - i
-				(*tokens)[pos].MatchOffset = i - pos
-			}
-		}
-	}
-	if s.Peek() >= 0 {
-		return fmt.Errorf("mismatched braces")
-	}
-	return nil
+func (s *stack[T]) empty() bool {
+	return s.top < 0
 }
 
-func GetToken(input string) (Token, string) {
+func GetToken(tex []rune, start int) (Token, int) {
 	var state LexerState
 	var kind TokenKind
 	var fencing TokenKind
-	tex := []rune(input)
-	result := make([]rune, 0)
-	idx := 0
-	for idx = 0; idx < len(tex); idx++ {
+	result := make([]rune, 0, 24)
+	var idx int
+	for idx = start; idx < len(tex); idx++ {
 		r := tex[idx]
 		switch state {
 		case lxEnd:
-			return Token{Kind: kind | fencing, Value: string(result)}, string(tex[idx:])
+			return Token{Kind: kind | fencing, Value: string(result)}, idx
 		case lxBegin:
 			switch {
 			case unicode.IsLetter(r):
@@ -203,7 +176,7 @@ func GetToken(input string) (Token, string) {
 		case lxSpace:
 			switch {
 			case !unicode.IsSpace(r):
-				return Token{Kind: kind, Value: string(result)}, string(tex[idx:])
+				return Token{Kind: kind, Value: string(result)}, idx
 			}
 		case lxNumber:
 			switch {
@@ -212,7 +185,7 @@ func GetToken(input string) (Token, string) {
 			case unicode.IsSpace(r):
 				state = lxEnd
 			case !unicode.IsNumber(r):
-				return Token{Kind: kind, Value: string(result)}, string(tex[idx:])
+				return Token{Kind: kind, Value: string(result)}, idx
 			default:
 				result = append(result, r)
 			}
@@ -238,7 +211,7 @@ func GetToken(input string) (Token, string) {
 				state = lxEnd
 				kind = tokCommand
 				result = append(result, r)
-				//return Token{Kind: tokCommand, Value: string(result)}, tex[idx:]
+				//return Token{Kind: tokCommand, Value: string(result)}, idx
 			}
 		case lxCommand:
 			switch {
@@ -259,17 +232,14 @@ func GetToken(input string) (Token, string) {
 					fencing = tokClose | tokFence
 					idx--
 				default:
-					return Token{Kind: kind | fencing, Value: val}, string(tex[idx:])
+					return Token{Kind: kind | fencing, Value: val}, idx
 				}
 			default:
 				result = append(result, r)
 			}
 		}
 	}
-	if idx == 0 {
-		return Token{Kind: kind, Value: string(result)}, ""
-	}
-	return Token{Kind: kind, Value: string(result)}, string(tex[idx:])
+	return Token{Kind: kind, Value: string(result)}, idx
 }
 
 type exprKind int
@@ -281,13 +251,15 @@ const (
 	expr_group
 )
 
-func splitByValue(tokens []Token, val string) [][]Token {
-	out := make([][]Token, 0)
-	temp := make([]Token, 0)
-	for _, t := range tokens {
-		if t.Value == val {
+// split a slice whenever an element e of s satisfies f(e) == true.
+// Logically equivalent to strings.slice.
+func splitByFunc[T any](s []T, f func(T) bool) [][]T {
+	out := make([][]T, 0)
+	temp := make([]T, 0)
+	for _, t := range s {
+		if f(t) {
 			out = append(out, temp)
-			temp = make([]Token, 0)
+			temp = make([]T, 0)
 			continue
 		}
 		temp = append(temp, t)
@@ -296,6 +268,12 @@ func splitByValue(tokens []Token, val string) [][]Token {
 	return out
 }
 
+// Get the next single token or expression enclosed in brackets. Return the index immediately after the end of the
+// returned expression. Example:
+// \frac{a^2+b^2}{c+d}
+// .    │╰──┬──╯╰─ final position returned
+// .    │   ╰───── slice of tokens returned
+// .    ╰───────── idx (initial position)
 func GetNextExpr(tokens []Token, idx int) ([]Token, int, exprKind) {
 	var result []Token
 	var kind exprKind
@@ -318,4 +296,61 @@ func GetNextExpr(tokens []Token, idx int) ([]Token, int, exprKind) {
 		result = []Token{tokens[idx]}
 	}
 	return result, idx, kind
+}
+
+func tokenize(str string) []Token {
+	tex := []rune(strings.Clone(str))
+	var tok Token
+	tokens := make([]Token, 0)
+	idx := 0
+	for idx < len(tex) {
+		tok, idx = GetToken(tex, idx)
+		tokens = append(tokens, tok)
+	}
+	return postProcessTokens(tokens)
+}
+
+func stringify_tokens(toks []Token) string {
+	var sb strings.Builder
+	for _, t := range toks {
+		sb.WriteString(t.Value)
+	}
+	return sb.String()
+}
+
+type tokenTestFunc func(t Token) bool
+
+func MatchBraces(tokens []Token, open tokenTestFunc, close tokenTestFunc) error {
+	s := newStack[int]()
+	for i := 0; i < len(tokens); i++ {
+		if open(tokens[i]) {
+			s.Push(i)
+		} else if close(tokens[i]) {
+			if s.empty() {
+				return fmt.Errorf("mismatched braces")
+			}
+			pos := s.Pop()
+			tokens[i].MatchOffset = pos - i
+			tokens[pos].MatchOffset = i - pos
+		}
+	}
+	if !s.empty() {
+		return fmt.Errorf("mismatched braces")
+	}
+	return nil
+}
+func postProcessTokens(toks []Token) []Token {
+	out := make([]Token, 0, len(toks))
+	var i int
+	for i < len(toks) {
+		out = append(out, toks[i])
+		i++
+	}
+	openFunc := func(t Token) bool { return t.Kind&(tokExprBegin) > 0 }
+	closeFunc := func(t Token) bool { return t.Kind&(tokExprEnd) > 0 }
+	err := MatchBraces(out, openFunc, closeFunc)
+	if err != nil {
+		panic(err.Error())
+	}
+	return out
 }

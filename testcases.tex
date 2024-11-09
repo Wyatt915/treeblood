@@ -3,13 +3,19 @@
 
 \varphi=1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1+\cdots}}}}}
 
+\sqrt{1+\sqrt{1+\sqrt{1+\sqrt{1+\sqrt{1+\sqrt{1+\sqrt{1+\sqrt{1+x}}}}}}}}
+
 \forall A \, \exists P \, \forall B \, [B \in P \Leftrightarrow \forall C \, (C \in B \Rightarrow C \in A)]
 
-\sigma = \sqrt{\frac 1 n \sum_{x=1}^n (\mu - x_i)^2}
+\sigma = \sqrt{\frac 1 n \sum_{i=1}^n (\mu - x_i)^2}
 
 x_{y_b^a}^{z_c^d}
 
+\int_a^b f(x) dx = \left. F(x) \right\mid_a^b
+
 \lim_{b\to\infty}\int_0^{b}e^{-x^2} dx = \frac{\sqrt{\pi}}{2}
+
+\int_{\int_a^b f(x) dx}^{\int_c^d g(x) dx}h(x)dx
 
 e^x = \sum_{n=0}^\infty \frac{x^n}{n!}
 
@@ -42,3 +48,20 @@ A_{m,n} =
   \vdots  & \vdots  & \ddots & \vdots  \\
   a_{m,1} & a_{m,2} & \cdots & a_{m,n} 
  \end{pmatrix}
+
+\begin{pmatrix}
+     \begin{matrix}
+         \begin{pmatrix}
+             a_1 & a_2 & a_3 & a_4 \\
+             a_5 & a_6 & a_7 & a_8
+         \end{pmatrix} \\
+         0 &
+             \begin{pmatrix}
+                 c_1 & c_2 \\
+                 c_3 & c_4
+             \end{pmatrix}
+     \end{matrix}
+     \begin{pmatrix}
+         b_1 \\ b_2 \\ b_3 \\ b_4
+     \end{pmatrix}
+\end{pmatrix}

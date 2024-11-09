@@ -153,7 +153,63 @@ func fserv(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 	loadData()
-	http.HandleFunc("/", srv)
-	//http.HandleFunc("/fonts/", fserv)
-	http.ListenAndServe(":8080", nil)
+	testcases, err := os.ReadFile("testcases.tex")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	test := make([]string, 0)
+
+	for _, s := range bytes.Split(testcases, []byte{'\n', '\n'}) {
+		if len(s) > 1 {
+			test = append(test, string(s))
+		}
+	}
+	w, err := os.Create("test.html")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer w.Close()
+	head := `
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>GoLaTex MathML Test</title>
+		<meta name="description" content="GoLaTex MathML Test"/>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1"/>
+		<style>
+			table {
+				border-collapse: collapse;
+			}
+			tr {
+				border: 3px solid #888888;
+			}
+			td {
+				padding: 1em;
+			}
+			.tex{
+				max-width: 50em;
+				height: 100%;
+				overflow: auto;
+				font-size: 0.7em;
+			}
+		</style>
+	</head>
+	<body>
+	<table><tbody><tr><th colspan="2">GoLaTeX Test</th></tr>`
+	// put this back in <head> if needed
+	//<link rel="stylesheet" type="text/css" href="/fonts/xits.css">
+	w.Write([]byte(head))
+	for _, tex := range test {
+		fmt.Fprintf(w, `<tr><td><div class="tex"><pre>%s</pre></div></td><td>%s</td></tr>`, tex, golatex.TexToMML(tex))
+	}
+	w.Write([]byte(`</tbody></table></body></html>`))
 }
+
+//func main() {
+//	loadData()
+//	http.HandleFunc("/", srv)
+//	//http.HandleFunc("/fonts/", fserv)
+//	http.ListenAndServe(":8080", nil)
+//}
