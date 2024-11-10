@@ -143,7 +143,11 @@ func srv(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(200)
 	w.Write([]byte(head))
 	for _, tex := range test {
-		fmt.Fprintf(w, `<tr><td><div class="tex"><pre>%s</pre></div></td><td>%s</td></tr>`, tex, golatex.TexToMML(tex))
+		rendered, err := golatex.TexToMML(tex)
+		if err != nil {
+			rendered = "ERROR: " + err.Error()
+		}
+		fmt.Fprintf(w, `<tr><td><div class="tex"><pre>%s</pre></div></td><td>%s</td></tr>`, tex, rendered)
 	}
 	w.Write([]byte(`</tbody></table></body></html>`))
 }
@@ -202,7 +206,11 @@ func main() {
 	//<link rel="stylesheet" type="text/css" href="/fonts/xits.css">
 	w.Write([]byte(head))
 	for _, tex := range test {
-		fmt.Fprintf(w, `<tr><td><div class="tex"><pre>%s</pre></div></td><td>%s</td></tr>`, tex, golatex.TexToMML(tex))
+		rendered, err := golatex.TexToMML(tex)
+		if err != nil {
+			rendered = "ERROR: " + err.Error()
+		}
+		fmt.Fprintf(w, `<tr><td><div class="tex"><pre>%s</pre></div></td><td>%s</td></tr>`, tex, rendered)
 	}
 	w.Write([]byte(`</tbody></table></body></html>`))
 }

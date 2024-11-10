@@ -3,6 +3,7 @@ package golatex
 import (
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -30,8 +31,7 @@ const (
 	tokChar
 	tokOpen
 	tokClose
-	tokExprBegin
-	tokExprEnd
+	tokCurly
 	tokEnv
 	tokFence
 	tokSubSup
@@ -126,11 +126,11 @@ func GetToken(tex []rune, start int) (Token, int) {
 				state = lxWasBackslash
 			case r == '{':
 				state = lxEnd
-				kind = tokExprBegin | tokOpen
+				kind = tokCurly | tokOpen
 				result = append(result, r)
 			case r == '}':
 				state = lxEnd
-				kind = tokExprEnd | tokClose
+				kind = tokCurly | tokClose
 				result = append(result, r)
 			case slices.Contains(OPEN, r):
 				state = lxEnd
@@ -280,7 +280,7 @@ func GetNextExpr(tokens []Token, idx int) ([]Token, int, exprKind) {
 	for tokens[idx].Kind&(tokWhitespace|tokComment) > 0 {
 		idx++
 	}
-	if tokens[idx].Kind&tokExprBegin > 0 {
+	if tokens[idx].MatchOffset > 0 {
 		switch tokens[idx].Value {
 		case "{":
 			kind = expr_group
@@ -298,7 +298,7 @@ func GetNextExpr(tokens []Token, idx int) ([]Token, int, exprKind) {
 	return result, idx, kind
 }
 
-func tokenize(str string) []Token {
+func tokenize(str string) ([]Token, error) {
 	tex := []rune(strings.Clone(str))
 	var tok Token
 	tokens := make([]Token, 0)
@@ -318,39 +318,166 @@ func stringify_tokens(toks []Token) string {
 	return sb.String()
 }
 
-type tokenTestFunc func(t Token) bool
+type tokenTestFunc func(t Token, u ...Token) bool
 
-func MatchBraces(tokens []Token, open tokenTestFunc, close tokenTestFunc) error {
+type MismatchedBraceError struct {
+	kind    string
+	context string
+	pos     int
+}
+
+func newMismatchedBraceError(kind string, context string, pos int) MismatchedBraceError {
+	return MismatchedBraceError{kind, context, pos}
+}
+
+func (e MismatchedBraceError) Error() string {
+	var sb strings.Builder
+	sb.WriteString("mismatched ")
+	sb.WriteString(e.kind)
+	sb.WriteString(" at position ")
+	sb.WriteString(strconv.FormatInt(int64(e.pos), 10))
+	if e.context != "" {
+		sb.WriteString(" (context: ")
+		sb.WriteString(e.context)
+		sb.WriteRune(')')
+	}
+	return sb.String()
+}
+
+func errorContext(t Token, context string) string {
+	var sb strings.Builder
+	sb.WriteString(context)
+	sb.WriteRune('\n')
+	toklen := len(t.Value)
+	if len(context)-toklen <= 4 {
+		sb.WriteString(strings.Repeat(" ", max(0, len(context)-toklen)))
+		sb.WriteString(strings.Repeat("^", toklen))
+		sb.WriteString("HERE")
+	} else {
+		sb.WriteString(strings.Repeat(" ", max(0, len(context)-toklen-4)))
+		sb.WriteString("HERE")
+		sb.WriteString(strings.Repeat("^", toklen))
+	}
+	sb.WriteRune('\n')
+	return sb.String()
+}
+
+// find matching {curly braces} and
+// \begin{env}
+//
+//	environments
+//
+// \end{env}
+func matchBracesCritical(tokens []Token, kind TokenKind) error {
 	s := newStack[int]()
-	for i := 0; i < len(tokens); i++ {
-		if open(tokens[i]) {
+	contextLength := 16
+	for i, t := range tokens {
+		if t.Kind&(tokOpen|kind) == tokOpen|kind {
 			s.Push(i)
-		} else if close(tokens[i]) {
+			continue
+		}
+		if t.Kind&(tokClose|kind) == tokClose|kind {
 			if s.empty() {
-				return fmt.Errorf("mismatched braces")
+				var kind string
+				if t.Kind&tokCurly > 0 {
+					kind = "curly brace"
+				}
+				if t.Kind&tokEnv > 0 {
+					kind = "environment (" + t.Value + ")"
+				}
+				context := errorContext(t, stringify_tokens(tokens[max(0, i-contextLength):i+1]))
+				return newMismatchedBraceError(kind, "<pre>"+context+"</pre>", i)
 			}
-			pos := s.Pop()
-			tokens[i].MatchOffset = pos - i
-			tokens[pos].MatchOffset = i - pos
+			mate := tokens[s.Peek()]
+			if (mate.Kind&t.Kind)&kind > 0 {
+				pos := s.Pop()
+				tokens[i].MatchOffset = pos - i
+				tokens[pos].MatchOffset = i - pos
+			}
 		}
 	}
 	if !s.empty() {
-		return fmt.Errorf("mismatched braces")
+		pos := s.Pop()
+		t := tokens[pos]
+		var kind string
+		if t.Kind&tokCurly > 0 {
+			kind = "curly brace"
+		}
+		if t.Kind&tokEnv > 0 {
+			kind = "environment (" + t.Value + ")"
+		}
+		context := errorContext(t, stringify_tokens(tokens[max(0, pos-contextLength):pos+1]))
+		return newMismatchedBraceError(kind, "<pre>"+context+"</pre>", pos)
 	}
 	return nil
 }
-func postProcessTokens(toks []Token) []Token {
+
+func matchBracesLazy(tokens []Token) {
+	s := newStack[int]()
+	contextLength := 16
+	for i, t := range tokens {
+		if t.MatchOffset != 0 {
+			// Critical regions have already been taken care of.
+			continue
+		}
+		if t.Kind&tokOpen > 0 {
+			s.Push(i)
+			continue
+		}
+		if t.Kind&tokClose > 0 {
+			if s.empty() {
+				fmt.Println("WARN: Potentially unmatched closing delimeter")
+				context := stringify_tokens(tokens[max(0, i-contextLength) : i+1])
+				fmt.Println(errorContext(t, context))
+				continue
+			}
+			mate := tokens[s.Peek()]
+			if (t.Kind&mate.Kind)&tokFence > 0 || BRACEMATCH[mate.Value] == t.Value {
+				pos := s.Pop()
+				tokens[i].MatchOffset = pos - i
+				tokens[pos].MatchOffset = i - pos
+			} else {
+				fmt.Println("WARN: Potentially unmatched closing delimeter")
+				context := stringify_tokens(tokens[max(0, i-contextLength) : i+1])
+				fmt.Println(errorContext(t, context))
+			}
+		}
+	}
+}
+
+func postProcessTokens(toks []Token) ([]Token, error) {
 	out := make([]Token, 0, len(toks))
 	var i int
+	var temp Token
+	var name []Token
+	err := matchBracesCritical(toks, tokCurly)
+	if err != nil {
+		return out, err
+	}
 	for i < len(toks) {
-		out = append(out, toks[i])
+		temp = toks[i]
+		switch toks[i].Value {
+		case "begin":
+			name, i, _ = GetNextExpr(toks, i+1)
+			temp.Value = stringify_tokens(name)
+			temp.Kind = tokEnv | tokOpen
+		case "end":
+			name, i, _ = GetNextExpr(toks, i+1)
+			temp.Value = stringify_tokens(name)
+			temp.Kind = tokEnv | tokClose
+		}
+		out = append(out, temp)
 		i++
 	}
-	openFunc := func(t Token) bool { return t.Kind&(tokExprBegin) > 0 }
-	closeFunc := func(t Token) bool { return t.Kind&(tokExprEnd) > 0 }
-	err := MatchBraces(out, openFunc, closeFunc)
+	err = matchBracesCritical(out, tokEnv)
 	if err != nil {
-		panic(err.Error())
+		return out, err
 	}
-	return out
+	// Indicies could have changed after processing environments!!
+	err = matchBracesCritical(toks, tokCurly)
+	if err != nil {
+		return out, err
+	}
+	matchBracesLazy(out)
+	return out, nil
 }

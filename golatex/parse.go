@@ -13,17 +13,20 @@ type NodeProperties uint64
 type parseContext uint64
 
 const (
-	PROP_NULL NodeProperties = 1 << iota
-	PROP_NONPRINT
-	PROP_LARGE
-	PROP_MOVABLELIMITS
-	PROP_LIMITSUNDEROVER
+	prop_null NodeProperties = 1 << iota
+	prop_nonprint
+	prop_large
+	prop_movablelimits
+	prop_limitsunderover
+	prop_cell_sep
+	prop_row_sep
 )
 
 const (
 	ctx_root parseContext = 1 << iota
 	ctx_display
 	ctx_text
+	// ENVIRONMENTS
 	ctx_table
 	// ONLY FONT VARIANTS AFTER THIS POINT
 	ctx_var_normal
@@ -39,6 +42,10 @@ const (
 
 func isolateMathVariant(ctx parseContext) parseContext {
 	return ctx & ^(ctx_var_normal - 1)
+}
+
+func isolateEnvironmentContext(ctx parseContext) parseContext {
+	return ctx & ((ctx_var_normal - 1) ^ (ctx_table - 1))
 }
 
 var (
@@ -228,7 +235,7 @@ func restringify(n *MMLNode, sb *strings.Builder) {
 func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
 	switch tok.Value {
 	case "overbrace":
-		parent.Properties |= PROP_LIMITSUNDEROVER
+		parent.Properties |= prop_limitsunderover
 		parent.Tag = "mover"
 		parent.Children = append(parent.Children, annotation,
 			&MMLNode{
@@ -237,7 +244,7 @@ func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
 				Attrib: map[string]string{"stretchy": "true"},
 			})
 	case "underbrace":
-		parent.Properties |= PROP_LIMITSUNDEROVER
+		parent.Properties |= prop_limitsunderover
 		parent.Tag = "munder"
 		parent.Children = append(parent.Children, annotation,
 			&MMLNode{
@@ -248,171 +255,8 @@ func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
 	}
 }
 
-type tableElementKind int
-
-const (
-	tableCellData tableElementKind = iota
-	tableRowDivider
-	tableCellDivider
-)
-
-type tblCmp struct {
-	kind tableElementKind
-	node *MMLNode
-}
-
-func processTable(tableEntries []tblCmp) *MMLNode {
-	//for _, e := range tableEntries {
-	//	switch e.kind {
-	//	case tableCellData:
-	//		fmt.Print("[", e.node.Tag, " : ", e.node.Text, "] ")
-	//	case tableCellDivider:
-	//		fmt.Print("\t&\t")
-	//	case tableRowDivider:
-	//		fmt.Println()
-	//	}
-	//}
-	fmt.Println()
-	rows := make([]*MMLNode, 0)
-	var cellNode *MMLNode
-	for _, row := range splitByFunc(tableEntries, func(t tblCmp) bool { return t.kind == tableRowDivider }) {
-		rowNode := newMMLNode()
-		rowNode.Tag = "mtr"
-		for _, cell := range splitByFunc(row, func(t tblCmp) bool { return t.kind == tableCellDivider }) {
-			if len(cell) == 0 {
-				//fmt.Println("empty cell?")
-				continue
-			}
-			if len(cell[0].node.Children) <= 1 {
-				cellNode = cell[0].node
-				cellNode.Tag = "mtd"
-			} else {
-				cellNode = newMMLNode("mtd")
-				cellNode.Children = append(cellNode.Children, cell[0].node)
-			}
-			rowNode.Children = append(rowNode.Children, cellNode)
-		}
-		rows = append(rows, rowNode)
-	}
-	table := newMMLNode("mtable")
-	table.Children = rows
-	return table
-}
-
-var depth int
-
-func processEnvironment(n *MMLNode, context parseContext, tokens []Token, idx int) int {
-	if len(tokens) == 0 {
-		fmt.Println("No tokens?")
-		return idx
-	}
-	depth++
-	env, start, _ := GetNextExpr(tokens, idx+1)
-	envName := stringify_tokens(env)
-	fmt.Println(strings.Repeat("\t", depth), envName)
-	fmt.Println(strings.Repeat("\t", depth), "Environment: ", stringify_tokens(tokens[idx:]))
-	nameStack := newStack[string]()
-	idxStack := newStack[int]()
-	nameStack.Push(envName)
-	var end int
-	var t []Token
-	idxStack.Push(idx)
-	start++
-	for tokens[start].Value == " " {
-		start++
-	}
-	j := start
-	excludeSubEnvs := make([][]Token, 0)
-	tempRange := make([]Token, 0)
-	subEnvs := make([]*MMLNode, 0)
-	fmt.Println(strings.Repeat("\t", depth), "START: ", tokens[j].Value)
-	var inSubExpr bool
-	for j < len(tokens) && !nameStack.empty() {
-		if tokens[j].Value == "end" {
-			t, end, _ = GetNextExpr(tokens, j+1)
-			if stringify_tokens(t) == nameStack.Peek() {
-				nameStack.Pop()
-				if !nameStack.empty() {
-					subEnv := newMMLNode()
-					processEnvironment(subEnv, context, tokens[idxStack.Pop():end+1], 0)
-					subEnvs = append(subEnvs, subEnv)
-					tempRange = make([]Token, 0)
-				}
-			}
-			j = end + 1
-			inSubExpr = false
-		} else if tokens[j].Value == "begin" {
-			t, end, _ = GetNextExpr(tokens, j+1)
-			nameStack.Push(stringify_tokens(t))
-			idxStack.Push(j)
-			excludeSubEnvs = append(excludeSubEnvs, tempRange)
-			tempRange = make([]Token, 0)
-			j = end + 1
-			inSubExpr = true
-		} else if !inSubExpr {
-			tempRange = append(tempRange, tokens[j])
-		}
-		j++
-	}
-	excludeSubEnvs = append(excludeSubEnvs, tempRange)
-	j--
-	end++
-	var last tableElementKind
-	doTable := func() *MMLNode {
-		children := make([]tblCmp, 0)
-		for i := range excludeSubEnvs {
-			temp := make([]Token, 0)
-			for _, t := range excludeSubEnvs[i] {
-				switch t.Value {
-				case `\`:
-					last = tableRowDivider
-					fmt.Println(strings.Repeat("\t", depth), "CELL: ", stringify_tokens(temp))
-					exp := ParseTex(temp, context)
-					children = append(children, tblCmp{kind: tableCellData, node: exp}, tblCmp{kind: tableRowDivider, node: nil})
-					temp = make([]Token, 0)
-				case `&`:
-					last = tableCellDivider
-					fmt.Println(strings.Repeat("\t", depth), "CELL: ", stringify_tokens(temp))
-					exp := ParseTex(temp, context)
-					children = append(children, tblCmp{kind: tableCellData, node: exp}, tblCmp{kind: tableCellDivider, node: nil})
-					temp = make([]Token, 0)
-				default:
-					last = tableCellData
-					temp = append(temp, t)
-				}
-			}
-			if len(temp) > 0 {
-				fmt.Println(strings.Repeat("\t", depth), "CELL: ", stringify_tokens(temp), " (final) ", last)
-				exp := ParseTex(temp, context)
-				children = append(children, tblCmp{kind: tableCellData, node: exp}, tblCmp{kind: tableCellDivider, node: nil})
-			}
-			if i < len(subEnvs) {
-				children = append(children, tblCmp{kind: tableCellData, node: subEnvs[i]})
-			}
-		}
-		return processTable(children)
-	}
-	switch envName {
-	case "matrix":
-		n.Tag = "mrow"
-		//n.Children = append(n.Children, processTable(tokens[start:j], context|ctx_table))
-		n.Children = append(n.Children, doTable())
-	case "pmatrix":
-		n.Tag = "mrow"
-		n.Children = append(n.Children, newMMLNode("mo", "("))
-		n.Children = append(n.Children, doTable())
-		n.Children = append(n.Children, newMMLNode("mo", ")"))
-	}
-	depth--
-	return end
-}
-
 func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int) int {
 	var nextExpr []Token
-	if tok.Value == "begin" {
-		idx = processEnvironment(n, context, tokens, idx)
-		return idx
-	}
 	if v, ok := MATH_VARIANTS[tok.Value]; ok {
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 		temp := ParseTex(nextExpr, context|v).Children
@@ -512,7 +356,7 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		} else {
 			n.Tag = "mo"
 			n.Attrib["movablelimits"] = "true"
-			n.Properties |= PROP_LIMITSUNDEROVER | PROP_MOVABLELIMITS
+			n.Properties |= prop_limitsunderover | prop_movablelimits
 		}
 	}
 	n.Tok = tok
@@ -594,6 +438,20 @@ func (n *MMLNode) set_variants_from_context(context parseContext) {
 	}
 }
 
+var reMatchMatrix = regexp.MustCompile(`.*[mM]atrix\*?`)
+
+func setEnvironmentContext(envBegin Token, context parseContext) parseContext {
+	context = context ^ isolateEnvironmentContext(context) // clear other environments
+	if reMatchMatrix.MatchString(envBegin.Value) {
+		return context | ctx_table
+	}
+	switch envBegin.Value {
+	case "table", "array", "aligned", "aligned*":
+		return context | ctx_table
+	}
+	return context
+}
+
 func ParseTex(tokens []Token, context parseContext) *MMLNode {
 	node := newMMLNode()
 	if context&ctx_root > 0 {
@@ -614,10 +472,30 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 	for i = 0; i < len(tokens); i++ {
 		tok := tokens[i]
 		child := newMMLNode()
+		if context&ctx_table > 0 {
+			cont := false
+			switch tok.Value {
+			case "&":
+				cont = true
+				child.Properties = prop_cell_sep
+			case "\\":
+				cont = true
+				child.Properties = prop_row_sep
+			}
+			if cont {
+				node.Children = append(node.Children, child)
+				continue
+			}
+		}
 		switch {
 		case tok.Kind&tokComment > 0:
 			continue
-		case tok.Kind&tokExprBegin > 0:
+		case tok.Kind&(tokOpen|tokEnv) == tokOpen|tokEnv:
+			nextExpr, i, _ = GetNextExpr(tokens, i)
+			ctx := setEnvironmentContext(tok, context)
+			child = ParseTex(nextExpr, ctx)
+			child.postProcessEnv(tok.Value, ctx)
+		case tok.Kind&(tokCurly|tokOpen) == tokCurly|tokOpen:
 			nextExpr, i, _ = GetNextExpr(tokens, i)
 			child = ParseTex(nextExpr, context)
 		case tok.Kind&tokLetter > 0:
@@ -660,7 +538,7 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 			}
 		case tok.Kind&tokCommand > 0:
 			i = ProcessCommand(child, context, tok, tokens, i)
-		case tok.Kind&tokExprEnd > 0:
+		case tok.Kind&(tokClose|tokCurly) == tokClose|tokCurly, tok.Kind&(tokClose|tokEnv) == tokClose|tokEnv:
 			continue
 		default:
 			child.Tag = "mo"
@@ -675,6 +553,39 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 	node.PostProcessScripts()
 	node.PostProcessSpace()
 	return node
+}
+
+func processTable(table *MMLNode) {
+	rows := make([]*MMLNode, 0)
+	var cellNode *MMLNode
+	for _, row := range splitByFunc(table.Children, func(n *MMLNode) bool { return n.Properties&prop_row_sep > 0 }) {
+		rowNode := newMMLNode()
+		rowNode.Tag = "mtr"
+		for _, cell := range splitByFunc(row, func(n *MMLNode) bool { return n.Properties&prop_cell_sep > 0 }) {
+			if len(cell) == 0 {
+				//fmt.Println("empty cell?")
+				continue
+			}
+			if len(cell[0].Children) <= 1 {
+				cellNode = cell[0]
+				cellNode.Tag = "mtd"
+			} else {
+				cellNode = newMMLNode("mtd")
+				cellNode.Children = append(cellNode.Children, cell...)
+			}
+			rowNode.Children = append(rowNode.Children, cellNode)
+		}
+		rows = append(rows, rowNode)
+	}
+	table.Tag = "mtable"
+	table.Children = rows
+}
+func (node *MMLNode) postProcessEnv(env string, ctx parseContext) {
+	switch {
+	case ctx&ctx_table > 0:
+		processTable(node)
+	}
+
 }
 
 func (node *MMLNode) PostProcessNegation() {
@@ -767,7 +678,7 @@ func MakeSupSubNode(nodes []*MMLNode) (*MMLNode, error) {
 		out.Children = []*MMLNode{base, sub, sup}
 	}
 	_, ok := base.Attrib["largeop"]
-	if ok || base.Properties&PROP_LIMITSUNDEROVER != 0 {
+	if ok || base.Properties&prop_limitsunderover != 0 {
 		out.Tag = style_overunder[kind]
 	} else {
 		out.Tag = style_subsup[kind]
@@ -880,14 +791,17 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 
 var lt = regexp.MustCompile("<")
 
-func TexToMML(tex string) string {
+func TexToMML(tex string) (string, error) {
 	defer Timer(tex)()
-	tokens := tokenize(tex)
+	tokens, err := tokenize(tex)
+	if err != nil {
+		return "", err
+	}
 	annotation := newMMLNode("annotation", lt.ReplaceAllString(tex, "&lt;"))
 	annotation.Attrib["encoding"] = "application/x-tex"
 	ast := ParseTex(tokens, ctx_root|ctx_display)
 	ast.Children[0].Children = append(ast.Children[0].Children, annotation)
 	var builder strings.Builder
 	ast.Write(&builder, 1)
-	return builder.String()
+	return builder.String(), err
 }
