@@ -2,7 +2,6 @@ package golatex
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -40,152 +39,6 @@ const (
 	ctx_var_sans
 )
 
-func isolateMathVariant(ctx parseContext) parseContext {
-	return ctx & ^(ctx_var_normal - 1)
-}
-
-func isolateEnvironmentContext(ctx parseContext) parseContext {
-	return ctx & ((ctx_var_normal - 1) ^ (ctx_table - 1))
-}
-
-var (
-	// maps commands to number of expected arguments
-	COMMANDS = map[string]int{
-		"frac":          2,
-		"textfrac":      2,
-		"underbrace":    1,
-		"overbrace":     1,
-		"ElsevierGlyph": 1,
-		"ding":          1,
-		"fbox":          1,
-		"k":             1,
-		"left":          1,
-		"mbox":          1,
-		"not":           1,
-		"right":         1,
-		"sqrt":          1,
-		"text":          1,
-		"u":             1,
-	}
-	MATH_VARIANTS = map[string]parseContext{
-		"mathbb":     ctx_var_bb,
-		"mathbf":     ctx_var_bold,
-		"mathbfit":   ctx_var_bold | ctx_var_italic,
-		"mathcal":    ctx_var_script_chancery,
-		"mathfrak":   ctx_var_frak,
-		"mathit":     ctx_var_italic,
-		"mathrm":     ctx_var_normal,
-		"mathscr":    ctx_var_script_roundhand,
-		"mathsf":     ctx_var_sans,
-		"mathsfbf":   ctx_var_sans | ctx_var_bold,
-		"mathsfbfsl": ctx_var_sans | ctx_var_bold | ctx_var_italic,
-		"mathsfsl":   ctx_var_sans | ctx_var_italic,
-		"mathtt":     ctx_var_mono,
-	}
-
-	accents = map[string]rune{
-		"acute":          0x00b4,
-		"bar":            0x0305,
-		"breve":          0x0306,
-		"check":          0x030c,
-		"dot":            0x02d9,
-		"ddot":           0x0308,
-		"dddot":          0x20db,
-		"ddddot":         0x20dc,
-		"frown":          0x0311,
-		"grave":          0x0060,
-		"hat":            0x0302,
-		"mathring":       0x030a,
-		"overleftarrow":  0x2190,
-		"overline":       0x0332,
-		"overrightarrow": 0x2192,
-		"tilde":          0x0303,
-		"vec":            0x20d7,
-		"widehat":        0x0302,
-		"widetilde":      0x0360,
-	}
-	accents_below = map[string]rune{
-		"underline": 0x0332,
-	}
-
-	SELFCLOSING = map[string]bool{
-		"mspace": true,
-	}
-
-	// Measured in 18ths of an em
-	TEX_SPACE = map[string]int{
-		`\`:     0, // newline
-		",":     3,
-		":":     4,
-		";":     5,
-		"quad":  18,
-		"qquad": 36,
-		"!":     -3,
-	}
-
-	TEX_SYMBOLS map[string]map[string]string
-	TEX_FONTS   map[string]map[string]string
-	NEGATIONS   = map[string]string{
-		"<":               "≮",
-		"=":               "≠",
-		">":               "≯",
-		"Bumpeq":          "≎̸",
-		"Leftarrow":       "⇍",
-		"Rightarrow":      "⇏",
-		"VDash":           "⊯",
-		"Vdash":           "⊮",
-		"apid":            "≋̸",
-		"approx":          "≉",
-		"bumpeq":          "≏̸",
-		"cong":            "≇",
-		"doteq":           "≐̸",
-		"eqsim":           "≂̸",
-		"equiv":           "≢",
-		"exists":          "∄",
-		"geq":             "≱",
-		"geqslant":        "⩾̸",
-		"greaterless":     "≹",
-		"gt":              "≯",
-		"in":              "∉",
-		"leftarrow":       "↚",
-		"leftrightarrow":  "↮",
-		"leq":             "≰",
-		"leqslant":        "⩽̸",
-		"lessgreater":     "≸",
-		"lt":              "≮",
-		"mid":             "∤",
-		"ni":              "∌",
-		"otgreaterless":   "≹",
-		"otlessgreater":   "≸",
-		"parallel":        "∦",
-		"prec":            "⊀",
-		"preceq":          "⪯̸",
-		"precsim":         "≾̸",
-		"rightarrow":      "↛",
-		"sim":             "≁",
-		"sime":            "≄",
-		"simeq":           "≄",
-		"sqsubseteq":      "⋢",
-		"sqsupseteq":      "⋣",
-		"subset":          "⊄",
-		"subseteq":        "⊈",
-		"subseteqq":       "⫅̸",
-		"succ":            "⊁",
-		"succeq":          "⪰̸",
-		"succsim":         "≿̸",
-		"supset":          "⊅",
-		"supseteq":        "⊉",
-		"supseteqq":       "⫆̸",
-		"triangleleft":    "⋪",
-		"trianglelefteq":  "⋬",
-		"triangleright":   "⋫",
-		"trianglerighteq": "⋭",
-		"vDash":           "⊭",
-		"vdash":           "⊬",
-	}
-	PROPERTIES = map[string]NodeProperties{}
-)
-
 func Timer(name string) func() {
 	start := time.Now()
 	return func() {
@@ -217,239 +70,6 @@ func newMMLNode(opt ...string) *MMLNode {
 		Children: make([]*MMLNode, 0),
 		Attrib:   make(map[string]string),
 	}
-}
-
-func restringify(n *MMLNode, sb *strings.Builder) {
-	for i, c := range n.Children {
-		if c.Tok.Value == "" {
-			restringify(c, sb)
-		} else {
-			sb.WriteString(c.Tok.Value)
-			restringify(c, sb)
-			n.Children[i] = nil
-		}
-	}
-	n.Children = n.Children[:0]
-}
-
-func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
-	switch tok.Value {
-	case "overbrace":
-		parent.Properties |= prop_limitsunderover
-		parent.Tag = "mover"
-		parent.Children = append(parent.Children, annotation,
-			&MMLNode{
-				Text:   "&OverBrace;",
-				Tag:    "mo",
-				Attrib: map[string]string{"stretchy": "true"},
-			})
-	case "underbrace":
-		parent.Properties |= prop_limitsunderover
-		parent.Tag = "munder"
-		parent.Children = append(parent.Children, annotation,
-			&MMLNode{
-				Text:   "&UnderBrace;",
-				Tag:    "mo",
-				Attrib: map[string]string{"stretchy": "true"},
-			})
-	}
-}
-
-func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int) int {
-	var nextExpr []Token
-	if v, ok := MATH_VARIANTS[tok.Value]; ok {
-		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
-		temp := ParseTex(nextExpr, context|v).Children
-		if len(temp) == 1 {
-			n.Tag = temp[0].Tag
-			n.Text = temp[0].Text
-			n.Attrib = temp[0].Attrib
-		} else {
-			n.Children = temp
-			n.Tag = "mrow"
-		}
-		return idx
-	}
-	if _, ok := TEX_SPACE[tok.Value]; ok {
-		n.Tok = tok
-		n.Tag = "mspace"
-		if tok.Value == `\` {
-			n.Attrib["linebreak"] = "newline"
-		}
-		return idx
-	}
-	numChildren, ok := COMMANDS[tok.Value]
-	if ok {
-		switch tok.Value {
-		case "underbrace", "overbrace":
-			nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
-			doUnderOverBrace(tok, n, ParseTex(nextExpr, context))
-			return idx
-		case "text":
-			var sb strings.Builder
-			context |= ctx_text
-			for range numChildren {
-				nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
-				n.Children = append(n.Children, ParseTex(nextExpr, context))
-			}
-			restringify(n, &sb)
-			n.Children = nil
-			n.Tag = "mtext"
-			n.Text = sb.String()
-			return idx
-		case "frac", "sqrt":
-			n.Tag = "m" + tok.Value
-			for range numChildren {
-				nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
-				n.Children = append(n.Children, ParseTex(nextExpr, context))
-			}
-		case "not":
-			nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
-			if len(nextExpr) == 1 {
-				n.Tag = "mo"
-				if neg, ok := NEGATIONS[nextExpr[0].Value]; ok {
-					n.Text = neg
-				} else {
-					n.Text = nextExpr[0].Value + "̸" //Once again we have chrome to thank for not implementing menclose
-				}
-				return idx
-			}
-			n.Tag = "menclose"
-			n.Attrib["notation"] = "updiagonalstrike"
-			n.Children = ParseTex(nextExpr, context).Children
-		default:
-			n.Text = tok.Value
-			for range numChildren {
-				nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
-				n.Children = append(n.Children, ParseTex(nextExpr, context))
-			}
-		}
-	} else if ch, ok := accents[tok.Value]; ok {
-		n.Tag = "mover"
-		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
-		acc := newMMLNode("mo", string(ch))
-		acc.Attrib["accent"] = "true"
-		n.Children = append(n.Children, ParseTex(nextExpr, context), acc)
-	} else {
-		if t, ok := TEX_SYMBOLS[tok.Value]; ok {
-			if text, ok := t["char"]; ok {
-				n.Text = text
-			} else {
-				n.Text = t["entity"]
-			}
-			switch t["type"] {
-			case "binaryop", "opening", "closing", "relation":
-				n.Tag = "mo"
-			case "large":
-				n.Tag = "mo"
-				n.Attrib["largeop"] = "true"
-				n.Attrib["movablelimits"] = "true"
-			case "alphabetic":
-				n.Tag = "mi"
-			default:
-				if tok.Kind&tokFence > 0 {
-					n.Tag = "mo"
-				} else {
-					n.Tag = "mi"
-				}
-			}
-		} else {
-			n.Tag = "mo"
-			n.Attrib["movablelimits"] = "true"
-			n.Properties |= prop_limitsunderover | prop_movablelimits
-		}
-	}
-	n.Tok = tok
-	n.set_variants_from_context(context)
-	return idx
-}
-
-func (n *MMLNode) transformByVariant(variant string) {
-	rules, ok := transforms[variant]
-	if !ok {
-		log.Println("Unknown variant transform:", variant)
-		return
-	}
-	chars := []rune(n.Text)
-	for idx, char := range chars {
-		if xform, ok := orphans[variant][char]; ok {
-			chars[idx] = xform
-		}
-		for _, r := range rules {
-			if char >= r.begin && char <= r.end {
-				if xform, ok := r.exceptions[char]; ok {
-					chars[idx] = xform
-				} else {
-					delta := r.delta
-					chars[idx] += delta
-				}
-			}
-		}
-	}
-	n.Text = string(chars)
-}
-
-func (n *MMLNode) set_variants_from_context(context parseContext) {
-	var variant string
-	switch isolateMathVariant(context) {
-	case ctx_var_normal:
-		n.Attrib["mathvariant"] = "normal"
-		return
-	case ctx_var_bb:
-		variant = "double-struck"
-	case ctx_var_bold:
-		variant = "bold"
-	case ctx_var_bold | ctx_var_italic:
-		variant = "bold-italic"
-	case ctx_var_script_chancery, ctx_var_script_roundhand:
-		variant = "script"
-	case ctx_var_frak:
-		variant = "fraktur"
-	case ctx_var_italic:
-		variant = "italic"
-	case ctx_var_sans:
-		variant = "sans-serif"
-	case ctx_var_sans | ctx_var_bold:
-		variant = "sans-serif-bold"
-	case ctx_var_sans | ctx_var_bold | ctx_var_italic:
-		variant = "sans-serif-bold-italic"
-	case ctx_var_sans | ctx_var_italic:
-		variant = "sans-serif-italic"
-	case ctx_var_mono:
-		variant = "monospace"
-	case 0:
-		return
-	}
-	n.transformByVariant(variant)
-	var variationselector rune
-	switch isolateMathVariant(context) {
-	case ctx_var_script_chancery:
-		variationselector = 0xfe00
-		n.Attrib["class"] = "calligraphic"
-	case ctx_var_script_roundhand:
-		variationselector = 0xfe01
-	}
-	if variationselector > 0 {
-		temp := make([]rune, 0)
-		for _, r := range n.Text {
-			temp = append(temp, r, variationselector)
-		}
-		n.Text = string(temp)
-	}
-}
-
-var reMatchMatrix = regexp.MustCompile(`.*[mM]atrix\*?`)
-
-func setEnvironmentContext(envBegin Token, context parseContext) parseContext {
-	context = context ^ isolateEnvironmentContext(context) // clear other environments
-	if reMatchMatrix.MatchString(envBegin.Value) {
-		return context | ctx_table
-	}
-	switch envBegin.Value {
-	case "table", "array", "aligned", "aligned*":
-		return context | ctx_table
-	}
-	return context
 }
 
 func ParseTex(tokens []Token, context parseContext) *MMLNode {
@@ -493,8 +113,7 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 		case tok.Kind&(tokOpen|tokEnv) == tokOpen|tokEnv:
 			nextExpr, i, _ = GetNextExpr(tokens, i)
 			ctx := setEnvironmentContext(tok, context)
-			child = ParseTex(nextExpr, ctx)
-			child.postProcessEnv(tok.Value, ctx)
+			child = postProcessEnv(ParseTex(nextExpr, ctx), tok.Value, ctx)
 		case tok.Kind&(tokCurly|tokOpen) == tokCurly|tokOpen:
 			nextExpr, i, _ = GetNextExpr(tokens, i)
 			child = ParseTex(nextExpr, context)
@@ -518,13 +137,9 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 			}
 		case tok.Kind&(tokOpen|tokClose) > 0:
 			child.Tag = "mo"
-			if tok.Value == "." {
-				child.Text = ""
-			} else {
-				child.Text = tok.Value
-				child.Attrib["fence"] = "true"
-				child.Attrib["stretchy"] = "false"
-			}
+			child.Text = tok.Value
+			child.Attrib["fence"] = "true"
+			child.Attrib["stretchy"] = "false"
 		case tok.Kind&tokWhitespace > 0:
 			if context&ctx_text > 0 {
 				child.Tag = "mspace"
@@ -544,60 +159,16 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 			child.Tag = "mo"
 			child.Tok = tok
 			child.Text = tok.Value
-			if child.Tok.Value == "-" {
-				child.Tok.Value = "−" // Fuckin chrome not reading the spec...
-			}
+		}
+		if child.Tok.Value == "-" {
+			child.Tok.Value = "−" // Fuckin chrome not reading the spec...
 		}
 		node.Children = append(node.Children, child)
 	}
 	node.PostProcessScripts()
 	node.PostProcessSpace()
+	node.PostProcessChars()
 	return node
-}
-
-func processTable(table *MMLNode) {
-	rows := make([]*MMLNode, 0)
-	var cellNode *MMLNode
-	for _, row := range splitByFunc(table.Children, func(n *MMLNode) bool { return n.Properties&prop_row_sep > 0 }) {
-		rowNode := newMMLNode()
-		rowNode.Tag = "mtr"
-		for _, cell := range splitByFunc(row, func(n *MMLNode) bool { return n.Properties&prop_cell_sep > 0 }) {
-			if len(cell) == 0 {
-				//fmt.Println("empty cell?")
-				continue
-			}
-			if len(cell[0].Children) <= 1 {
-				cellNode = cell[0]
-				cellNode.Tag = "mtd"
-			} else {
-				cellNode = newMMLNode("mtd")
-				cellNode.Children = append(cellNode.Children, cell...)
-			}
-			rowNode.Children = append(rowNode.Children, cellNode)
-		}
-		rows = append(rows, rowNode)
-	}
-	table.Tag = "mtable"
-	table.Children = rows
-}
-func (node *MMLNode) postProcessEnv(env string, ctx parseContext) {
-	switch {
-	case ctx&ctx_table > 0:
-		processTable(node)
-	}
-
-}
-
-func (node *MMLNode) PostProcessNegation() {
-	i := 0
-	for ; i < len(node.Children); i++ {
-		if node.Children[i].Tok.Value == "not" {
-			copy(node.Children[i:], node.Children[i+1:])
-			node.Children[len(node.Children)-1] = nil
-			node.Children = node.Children[:len(node.Children)-1]
-			node.Children[i].Text = NEGATIONS[node.Children[i].Tok.Value]
-		}
-	}
 }
 
 func (node *MMLNode) PostProcessSpace() {
@@ -622,6 +193,42 @@ func (node *MMLNode) PostProcessSpace() {
 		}
 		node.Children[i].Attrib["width"] = fmt.Sprintf("%.2fem", float64(width)/18.0)
 		i = j
+	}
+}
+
+func (node *MMLNode) PostProcessChars() {
+	//combinePrimes := func(idx int) {
+	//	children := node.Children
+	//	i := idx + 1
+	//	count := 1
+	//	for i < len(children) && children[i].Text == "'" {
+	//		count++
+	//		children[i] = nil
+	//		if count == 4 {
+	//			children[idx].Text = "⁗"
+	//			count = 0
+	//			idx = i + 1
+	//		}
+	//	}
+	//	switch count {
+	//	case 1:
+	//		children[idx].Text = "′"
+	//	case 2:
+	//		children[idx].Text = "″"
+	//	case 3:
+	//		children[idx].Text = "‴"
+	//	}
+	//}
+	for i, n := range node.Children {
+		if n == nil {
+			continue
+		}
+		switch n.Text {
+		case "-":
+			node.Children[i].Text = "−"
+		case "'", "’":
+			node.Children[i].Text = "′"
+		}
 	}
 }
 
@@ -733,12 +340,6 @@ func (n *MMLNode) printAST(depth int) {
 }
 
 func (n *MMLNode) Write(w *strings.Builder, indent int) {
-	//if n.Class == NONPRINT {
-	//	for _, child := range n.Children {
-	//		child.Write(w, indent)
-	//	}
-	//	return
-	//}
 	if n == nil {
 		return
 	}
@@ -781,12 +382,10 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 		for _, child := range n.Children {
 			child.Write(w, indent+1)
 		}
-		//w.WriteString(strings.Repeat("\t", indent))
 	}
 	w.WriteString("</")
 	w.WriteString(tag)
 	w.WriteRune('>')
-	//w.WriteRune('\n')
 }
 
 var lt = regexp.MustCompile("<")

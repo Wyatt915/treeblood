@@ -220,20 +220,7 @@ func GetToken(tex []rune, start int) (Token, int) {
 				result = append(result, r)
 			case !unicode.IsLetter(r):
 				val := string(result)
-				switch val {
-				case "left":
-					state = lxBegin
-					result = result[:0]
-					fencing = tokOpen | tokFence
-					idx--
-				case "right":
-					state = lxBegin
-					result = result[:0]
-					fencing = tokClose | tokFence
-					idx--
-				default:
-					return Token{Kind: kind | fencing, Value: val}, idx
-				}
+				return Token{Kind: kind | fencing, Value: val}, idx
 			default:
 				result = append(result, r)
 			}
@@ -337,9 +324,7 @@ func (e MismatchedBraceError) Error() string {
 	sb.WriteString(" at position ")
 	sb.WriteString(strconv.FormatInt(int64(e.pos), 10))
 	if e.context != "" {
-		sb.WriteString(" (context: ")
 		sb.WriteString(e.context)
-		sb.WriteRune(')')
 	}
 	return sb.String()
 }
@@ -378,17 +363,21 @@ func matchBracesCritical(tokens []Token, kind TokenKind) error {
 		}
 		if t.Kind&(tokClose|kind) == tokClose|kind {
 			if s.empty() {
-				var kind string
+				var k string
 				if t.Kind&tokCurly > 0 {
-					kind = "curly brace"
+					k = "curly brace"
 				}
 				if t.Kind&tokEnv > 0 {
-					kind = "environment (" + t.Value + ")"
+					k = "environment (" + t.Value + ")"
 				}
 				context := errorContext(t, stringify_tokens(tokens[max(0, i-contextLength):i+1]))
-				return newMismatchedBraceError(kind, "<pre>"+context+"</pre>", i)
+				return newMismatchedBraceError(k, "<pre>"+context+"</pre>", i)
 			}
 			mate := tokens[s.Peek()]
+			if kind == tokEnv && mate.Value != t.Value {
+				context := errorContext(t, stringify_tokens(tokens[max(0, i-contextLength):i+1]))
+				return newMismatchedBraceError("environment ("+mate.Value+")", "<pre>"+context+"</pre>", i)
+			}
 			if (mate.Kind&t.Kind)&kind > 0 {
 				pos := s.Pop()
 				tokens[i].MatchOffset = pos - i
@@ -445,15 +434,48 @@ func matchBracesLazy(tokens []Token) {
 	}
 }
 
+func fixFences(toks []Token) []Token {
+	out := make([]Token, 0, len(toks))
+	var i int
+	var temp Token
+	for i < len(toks) {
+		temp = toks[i]
+		switch toks[i].Value {
+		case "left":
+			i++
+			v := toks[i].Value
+			if v == "." {
+				temp.Value = ""
+			} else {
+				temp.Value = v
+			}
+			temp.Kind |= tokFence | tokOpen
+		case "right":
+			i++
+			v := toks[i].Value
+			if v == "." {
+				temp.Value = ""
+			} else {
+				temp.Value = v
+			}
+			temp.Kind |= tokFence | tokClose
+		}
+		out = append(out, temp)
+		i++
+	}
+	return out
+}
+
 func postProcessTokens(toks []Token) ([]Token, error) {
+	toks = fixFences(toks)
+	err := matchBracesCritical(toks, tokCurly)
+	if err != nil {
+		return toks, err
+	}
 	out := make([]Token, 0, len(toks))
 	var i int
 	var temp Token
 	var name []Token
-	err := matchBracesCritical(toks, tokCurly)
-	if err != nil {
-		return out, err
-	}
 	for i < len(toks) {
 		temp = toks[i]
 		switch toks[i].Value {

@@ -1,5 +1,81 @@
 package golatex
 
+import "log"
+
+func (n *MMLNode) transformByVariant(variant string) {
+	rules, ok := transforms[variant]
+	if !ok {
+		log.Println("Unknown variant transform:", variant)
+		return
+	}
+	chars := []rune(n.Text)
+	for idx, char := range chars {
+		if xform, ok := orphans[variant][char]; ok {
+			chars[idx] = xform
+		}
+		for _, r := range rules {
+			if char >= r.begin && char <= r.end {
+				if xform, ok := r.exceptions[char]; ok {
+					chars[idx] = xform
+				} else {
+					delta := r.delta
+					chars[idx] += delta
+				}
+			}
+		}
+	}
+	n.Text = string(chars)
+}
+
+func (n *MMLNode) set_variants_from_context(context parseContext) {
+	var variant string
+	switch isolateMathVariant(context) {
+	case ctx_var_normal:
+		n.Attrib["mathvariant"] = "normal"
+		return
+	case ctx_var_bb:
+		variant = "double-struck"
+	case ctx_var_bold:
+		variant = "bold"
+	case ctx_var_bold | ctx_var_italic:
+		variant = "bold-italic"
+	case ctx_var_script_chancery, ctx_var_script_roundhand:
+		variant = "script"
+	case ctx_var_frak:
+		variant = "fraktur"
+	case ctx_var_italic:
+		variant = "italic"
+	case ctx_var_sans:
+		variant = "sans-serif"
+	case ctx_var_sans | ctx_var_bold:
+		variant = "sans-serif-bold"
+	case ctx_var_sans | ctx_var_bold | ctx_var_italic:
+		variant = "sans-serif-bold-italic"
+	case ctx_var_sans | ctx_var_italic:
+		variant = "sans-serif-italic"
+	case ctx_var_mono:
+		variant = "monospace"
+	case 0:
+		return
+	}
+	n.transformByVariant(variant)
+	var variationselector rune
+	switch isolateMathVariant(context) {
+	case ctx_var_script_chancery:
+		variationselector = 0xfe00
+		n.Attrib["class"] = "calligraphic"
+	case ctx_var_script_roundhand:
+		variationselector = 0xfe01
+	}
+	if variationselector > 0 {
+		temp := make([]rune, 0)
+		for _, r := range n.Text {
+			temp = append(temp, r, variationselector)
+		}
+		n.Text = string(temp)
+	}
+}
+
 // "orphans" do not belong to any of the character ranges in the transforms table.
 var orphans = map[string]map[rune]rune{
 	"bold":                   {'ı': 'ı', 'ȷ': 'ȷ', 'ϑ': '𝛝', 'ي': 'ي', 'ڡ': 'ڡ', 'ں': 'ں', '∂': '𝛛', '∇': '𝛁'},
