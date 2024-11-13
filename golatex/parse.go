@@ -39,10 +39,12 @@ const (
 	ctx_var_sans
 )
 
-func Timer(name string) func() {
+func Timer(name string, total_time *time.Duration, total_chars *int) func() {
 	start := time.Now()
 	return func() {
 		elapsed := time.Since(start)
+		*total_time = *total_time + elapsed
+		*total_chars = *total_chars + len(name)
 		fmt.Printf("Completed in %v (%f characters/ms)\n", elapsed, float64(len(name))/(1000*elapsed.Seconds()))
 	}
 }
@@ -113,7 +115,7 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 		case tok.Kind&(tokOpen|tokEnv) == tokOpen|tokEnv:
 			nextExpr, i, _ = GetNextExpr(tokens, i)
 			ctx := setEnvironmentContext(tok, context)
-			child = postProcessEnv(ParseTex(nextExpr, ctx), tok.Value, ctx)
+			child = processEnv(ParseTex(nextExpr, ctx), tok.Value, ctx)
 		case tok.Kind&(tokCurly|tokOpen) == tokCurly|tokOpen:
 			nextExpr, i, _ = GetNextExpr(tokens, i)
 			child = ParseTex(nextExpr, context)
@@ -167,7 +169,7 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 	}
 	node.PostProcessScripts()
 	node.PostProcessSpace()
-	node.PostProcessChars()
+	//node.PostProcessChars()
 	return node
 }
 
@@ -390,8 +392,8 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 
 var lt = regexp.MustCompile("<")
 
-func TexToMML(tex string) (string, error) {
-	defer Timer(tex)()
+func TexToMML(tex string, total_time *time.Duration, total_chars *int) (string, error) {
+	defer Timer(tex, total_time, total_chars)()
 	tokens, err := tokenize(tex)
 	if err != nil {
 		return "", err

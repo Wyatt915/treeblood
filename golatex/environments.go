@@ -53,7 +53,7 @@ func strechyOP(c string) *MMLNode {
 	return n
 }
 
-func postProcessEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
+func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 	switch {
 	case ctx&ctx_table > 0:
 		processTable(node)

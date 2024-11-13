@@ -245,25 +245,30 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		}
 	} else if ch, ok := accents[tok.Value]; ok {
 		n.Tag = "mover"
+		n.Attrib["accent"] = "true"
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 		acc := newMMLNode("mo", string(ch))
-		acc.Attrib["accent"] = "true"
-		n.Children = append(n.Children, ParseTex(nextExpr, context), acc)
+		acc.Attrib["stretchy"] = "true" // once more for chrome...
+		base := ParseTex(nextExpr, context)
+		if base.Tag == "mrow" && len(base.Children) == 1 {
+			base = base.Children[0]
+		}
+		n.Children = append(n.Children, base, acc)
 	} else {
-		if t, ok := TEX_SYMBOLS[tok.Value]; ok {
-			if text, ok := t["char"]; ok {
-				n.Text = text
+		if t, ok := symbolTable[tok.Value]; ok {
+			if t.char != "" {
+				n.Text = t.char
 			} else {
-				n.Text = t["entity"]
+				n.Text = t.entity
 			}
-			switch t["type"] {
-			case "binaryop", "opening", "closing", "relation":
+			switch t.kind {
+			case sym_binaryop, sym_opening, sym_closing, sym_relation:
 				n.Tag = "mo"
-			case "large":
+			case sym_large:
 				n.Tag = "mo"
 				n.Attrib["largeop"] = "true"
 				n.Attrib["movablelimits"] = "true"
-			case "alphabetic":
+			case sym_alphabetic:
 				n.Tag = "mi"
 			default:
 				if tok.Kind&tokFence > 0 {

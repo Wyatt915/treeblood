@@ -1,4 +1,3 @@
-% test cases separated by consecutive newlines
 0123456789
 
 \varphi=1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1+\cdots}}}}}
@@ -11,7 +10,7 @@
 
 x_{y_b^a}^{z_c^d}
 
-\int_a^b f(x) dx = \left. F(x) \right\mid_a^b
+\left.\int_a^b f(x) dx =  F(x) \right\mid_a^b
 
 \lim_{b\to\infty}\int_0^{b}e^{-x^2} dx = \frac{\sqrt{\pi}}{2}
 
@@ -19,21 +18,15 @@ x_{y_b^a}^{z_c^d}
 
 e^x = \sum_{n=0}^\infty \frac{x^n}{n!}
 
+\Gamma(t) = \int_0^{+\infty} x^{t-1}e^{-x}\mathrm{d}\!x = \frac 1 t \prod_{n=1}^{\infty}\frac{(1+\frac 1 t)^t}{1+\frac 1 t} \sim\sqrt{\frac{2\pi}{t}}{\left(\frac t e \right)^t}
+
 \forall n \in \mathbb{N} \exists \; x \; \in \mathbb{R} \; : \; n^x \not\in \mathbb{Q}
 
-c = \overbrace
-{
-    \underbrace{\;\;\;\;\; a \;\;\;\;}_\text{real}
-    +
-    \underbrace{\;\;\;\;\; b\mathrm{i} \;\;\;\;}_\text{imaginary}
-}^\text{complex number}
+c = \overbrace {     \underbrace{\;\;\;\;\; a \;\;\;\;}_\text{real}     +     \underbrace{\;\;\;\;\; b\mathrm{i} \;\;\;\;}_\text{imaginary} }^\text{complex number} 
 
 \int_0^1 x^x\,\mathrm{d}x = \sum_{n = 1}^\infty{(-1)^{n + 1}\,n^{-n}}
 
-\mathrm{\nabla} \cdot \vec v =
-\frac{\partial v_x}{\partial x} +
-\frac{\partial v_y}{\partial y} +
-\frac{\partial v_z}{\partial z}
+\mathrm{\nabla} \cdot \vec {v} = \frac{\partial v_x}{\partial x} + \frac{\partial v_y}{\partial y} + \frac{\partial v_z}{\partial z}
 
 \left\langle\psi\left|\mathcal{T}\left\{\frac{\delta}{\delta\phi}F[\phi]\right\}\right|\psi\right\rangle = -\mathrm{i}\left\langle\psi\left|\mathcal{T}\left\{F[\phi]\frac{\delta}{\delta\phi}S[\phi]\right\}\right|\psi\right\rangle
 
@@ -41,27 +34,8 @@ c = \overbrace
 
 a \not{=} b \quad \not{a}=\not{b} \quad \not{abc}
 
-A_{m,n} = 
- \begin{pmatrix}
-  a_{1,1} & a_{1,2} & \cdots & a_{1,n} \\
-  a_{2,1} & a_{2,2} & \cdots & a_{2,n} \\
-  \vdots  & \vdots  & \ddots & \vdots  \\
-  a_{m,1} & a_{m,2} & \cdots & a_{m,n} 
- \end{pmatrix}
+A_{m,n} =   \begin{pmatrix}   a_{1,1} & a_{1,2} & \cdots & a_{1,n} \\   a_{2,1} & a_{2,2} & \cdots & a_{2,n} \\   \vdots  & \vdots  & \ddots & \vdots  \\   a_{m,1} & a_{m,2} & \cdots & a_{m,n}   \end{pmatrix}
 
-\begin{pmatrix}
-     \begin{matrix}
-         \begin{pmatrix}
-             a_1 & a_2 & a_3 & a_4 \\
-             a_5 & a_6 & a_7 & a_8
-         \end{pmatrix} \\
-         0 &
-             \begin{pmatrix}
-                 c_1 & c_2 \\
-                 c_3 & c_4
-             \end{pmatrix}
-     \end{matrix}
-     \begin{pmatrix}
-         b_1 \\ b_2 \\ b_3 \\ b_4
-     \end{pmatrix}
-\end{pmatrix}
+\begin{pmatrix} \begin{matrix} \begin{bmatrix} a_1 & a_2 & a_3 & a_4 \\ a_5 & a_6 & a_7 & a_8 \end{bmatrix} \\ 0 & \begin{Vmatrix} c_1 & c_2 \\ c_3 & c_4 \end{Vmatrix} \end{matrix} \begin{Bmatrix} b_1 \\ b_2 \\ b_3 \\ b_4 \end{Bmatrix} \end{pmatrix}
+
+f’(x) = \begin{cases} \lim_{c \to x} \frac{f(c) - f(x)}{c-x} & \text{(A)} \\ \lim_{h \to 0} \frac{f(x+h) - f(x)}{h} & \text{(B)} \\ \lim_{t \to 1} \frac{f(tx) - f(x)}{tx - x} & \text{(C)} \end{cases}
