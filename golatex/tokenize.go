@@ -238,22 +238,6 @@ const (
 	expr_group
 )
 
-// split a slice whenever an element e of s satisfies f(e) == true.
-// Logically equivalent to strings.slice.
-func splitByFunc[T any](s []T, f func(T) bool) [][]T {
-	out := make([][]T, 0)
-	temp := make([]T, 0)
-	for _, t := range s {
-		if f(t) {
-			out = append(out, temp)
-			temp = make([]T, 0)
-			continue
-		}
-		temp = append(temp, t)
-	}
-	out = append(out, temp)
-	return out
-}
 
 // Get the next single token or expression enclosed in brackets. Return the index immediately after the end of the
 // returned expression. Example:

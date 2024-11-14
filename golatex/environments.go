@@ -1,6 +1,8 @@
 package golatex
 
-import "regexp"
+import (
+	"regexp"
+)
 
 var reMatchMatrix = regexp.MustCompile(`.*[mM]atrix\*?`)
 
@@ -14,10 +16,27 @@ func setEnvironmentContext(envBegin Token, context parseContext) parseContext {
 		return context | ctx_table
 	}
 	switch envBegin.Value {
-	case "table", "array", "aligned", "aligned*", "cases":
+	case "table", "array", "align", "align*", "cases":
 		return context | ctx_table
 	}
 	return context
+}
+
+// split a slice whenever an element e of s satisfies f(e) == true.
+// Logically equivalent to strings.slice.
+func splitByFunc[T any](s []T, f func(T) bool) [][]T {
+	out := make([][]T, 0)
+	temp := make([]T, 0)
+	for _, t := range s {
+		if f(t) {
+			out = append(out, temp)
+			temp = make([]T, 0)
+			continue
+		}
+		temp = append(temp, t)
+	}
+	out = append(out, temp)
+	return out
 }
 
 func processTable(table *MMLNode) {
@@ -27,15 +46,8 @@ func processTable(table *MMLNode) {
 		rowNode := newMMLNode()
 		rowNode.Tag = "mtr"
 		for _, cell := range splitByFunc(row, func(n *MMLNode) bool { return n.Properties&prop_cell_sep > 0 }) {
-			if len(cell) == 0 {
-				//fmt.Println("empty cell?")
-				continue
-			}
-			if len(cell[0].Children) <= 1 {
-				cellNode = cell[0]
-				cellNode.Tag = "mtd"
-			} else {
-				cellNode = newMMLNode("mtd")
+			cellNode = newMMLNode("mtd")
+			if len(cell) > 0 {
 				cellNode.Children = append(cellNode.Children, cell...)
 			}
 			rowNode.Children = append(rowNode.Children, cellNode)
@@ -78,6 +90,9 @@ func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 		right = strechyOP("‖")
 	case "cases":
 		left = strechyOP("{")
+		node.Attrib["columnalign"] = "left"
+	case "align", "align*":
+		node.Attrib["displaystyle"] = "true"
 		node.Attrib["columnalign"] = "left"
 	default:
 		return node

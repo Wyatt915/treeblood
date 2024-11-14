@@ -6,6 +6,7 @@ var (
 	// maps commands to number of expected arguments
 	command_args = map[string]int{
 		"frac":          2,
+		"dfrac":         2,
 		"textfrac":      2,
 		"underbrace":    1,
 		"overbrace":     1,
@@ -62,12 +63,8 @@ var (
 		"underline": 0x0332,
 	}
 
-	SELFCLOSING = map[string]bool{
-		"mspace": true,
-	}
-
 	// Measured in 18ths of an em
-	TEX_SPACE = map[string]int{
+	space_widths = map[string]int{
 		`\`:     0, // newline
 		",":     3,
 		":":     4,
@@ -77,9 +74,7 @@ var (
 		"!":     -3,
 	}
 
-	TEX_SYMBOLS map[string]map[string]string
-	TEX_FONTS   map[string]map[string]string
-	NEGATIONS   = map[string]string{
+	negation_map = map[string]string{
 		"<":               "≮",
 		"=":               "≠",
 		">":               "≯",
@@ -137,7 +132,7 @@ var (
 		"vDash":           "⊭",
 		"vdash":           "⊬",
 	}
-	PROPERTIES = map[string]NodeProperties{}
+	//PROPERTIES = map[string]NodeProperties{}
 )
 
 func isolateMathVariant(ctx parseContext) parseContext {
@@ -194,7 +189,7 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		}
 		return idx
 	}
-	if _, ok := TEX_SPACE[tok.Value]; ok {
+	if _, ok := space_widths[tok.Value]; ok {
 		n.Tok = tok
 		n.Tag = "mspace"
 		if tok.Value == `\` {
@@ -222,11 +217,18 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 				nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 				n.Children = append(n.Children, ParseTex(nextExpr, context))
 			}
+		case "dfrac":
+			n.Tag = "mfrac"
+			n.Attrib["displaystyle"] = "true"
+			for range numChildren {
+				nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
+				n.Children = append(n.Children, ParseTex(nextExpr, context))
+			}
 		case "not":
 			nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 			if len(nextExpr) == 1 {
 				n.Tag = "mo"
-				if neg, ok := NEGATIONS[nextExpr[0].Value]; ok {
+				if neg, ok := negation_map[nextExpr[0].Value]; ok {
 					n.Text = neg
 				} else {
 					n.Text = nextExpr[0].Value + "̸" //Once again we have chrome to thank for not implementing menclose

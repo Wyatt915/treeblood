@@ -39,6 +39,14 @@ const (
 	ctx_var_sans
 )
 
+var (
+	self_closing_tags = map[string]bool{
+		"mspace":      true,
+		"malignmark":  true,
+		"maligngroup": true,
+	}
+)
+
 func Timer(name string, total_time *time.Duration, total_chars *int) func() {
 	start := time.Now()
 	return func() {
@@ -81,7 +89,7 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 		if context&ctx_display > 0 {
 			node.Attrib["mode"] = "display"
 			node.Attrib["display"] = "block"
-			//node.Attrib["xmlns"] = "http://www.w3.org/1998/Math/MathML"
+			node.Attrib["xmlns"] = "http://www.w3.org/1998/Math/MathML"
 		}
 		semantics := newMMLNode("semantics")
 		semantics.Children = append(semantics.Children, ParseTex(tokens, context^ctx_root))
@@ -180,16 +188,16 @@ func (node *MMLNode) PostProcessSpace() {
 		//if len(node.Children[i].Children) > 0 {
 		//	node.Children[i].PostProcessSpace()
 		//}
-		if node.Children[i] == nil || TEX_SPACE[node.Children[i].Tok.Value] == 0 {
+		if node.Children[i] == nil || space_widths[node.Children[i].Tok.Value] == 0 {
 			continue
 		}
 		if node.Children[i].Tok.Kind&tokCommand == 0 {
 			continue
 		}
 		j := i + 1
-		width := TEX_SPACE[node.Children[i].Tok.Value]
-		for j < limit && TEX_SPACE[node.Children[j].Tok.Value] > 0 && node.Children[j].Tok.Kind&tokCommand > 0 {
-			width += TEX_SPACE[node.Children[j].Tok.Value]
+		width := space_widths[node.Children[i].Tok.Value]
+		for j < limit && space_widths[node.Children[j].Tok.Value] > 0 && node.Children[j].Tok.Kind&tokCommand > 0 {
+			width += space_widths[node.Children[j].Tok.Value]
 			node.Children[j] = nil
 			j++
 		}
@@ -368,7 +376,7 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 		w.WriteString(val)
 		w.WriteRune('"')
 	}
-	if SELFCLOSING[tag] {
+	if self_closing_tags[tag] {
 		w.WriteString(" />")
 		return
 	}

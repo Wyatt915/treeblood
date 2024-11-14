@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"runtime/pprof"
 	"strings"
 	"time"
 
@@ -90,16 +89,6 @@ func fserv(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	f, err := os.Create("cpu.pprof")
-	if err != nil {
-		log.Fatal("could not create CPU profile: ", err)
-	}
-	defer f.Close() // error handling omitted for example
-	if err := pprof.StartCPUProfile(f); err != nil {
-		log.Fatal("could not start CPU profile: ", err)
-	}
-	pprof.StartCPUProfile(f)
-	defer pprof.StopCPUProfile()
 	testcases, err := os.ReadFile("testcases.tex")
 	if err != nil {
 		panic(err.Error())
