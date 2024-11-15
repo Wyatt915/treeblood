@@ -1,11 +1,17 @@
 package golatex
 
-import "strings"
+import (
+	"strings"
+	"unicode"
+)
 
 var (
 	// maps commands to number of expected arguments
 	command_args = map[string]int{
+		"prescript":     3,
+		"sideset":       3,
 		"frac":          2,
+		"binom":         2,
 		"dfrac":         2,
 		"textfrac":      2,
 		"underbrace":    1,
@@ -151,29 +157,6 @@ func restringify(n *MMLNode, sb *strings.Builder) {
 	n.Children = n.Children[:0]
 }
 
-func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
-	switch tok.Value {
-	case "overbrace":
-		parent.Properties |= prop_limitsunderover
-		parent.Tag = "mover"
-		parent.Children = append(parent.Children, annotation,
-			&MMLNode{
-				Text:   "&OverBrace;",
-				Tag:    "mo",
-				Attrib: map[string]string{"stretchy": "true"},
-			})
-	case "underbrace":
-		parent.Properties |= prop_limitsunderover
-		parent.Tag = "munder"
-		parent.Children = append(parent.Children, annotation,
-			&MMLNode{
-				Text:   "&UnderBrace;",
-				Tag:    "mo",
-				Attrib: map[string]string{"stretchy": "true"},
-			})
-	}
-}
-
 func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int) int {
 	var nextExpr []Token
 	if v, ok := MATH_VARIANTS[tok.Value]; ok {
@@ -197,52 +180,64 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		}
 		return idx
 	}
-	numChildren, ok := command_args[tok.Value]
+	numArgs, ok := command_args[tok.Value]
 	if ok {
+		arguments := make([][]Token, 0)
+		//var option []Token
+		for range numArgs {
+			var expr []Token
+			expr, idx, _ = GetNextExpr(tokens, idx+1)
+			arguments = append(arguments, expr)
+		}
 		switch tok.Value {
 		case "underbrace", "overbrace":
-			nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
-			doUnderOverBrace(tok, n, ParseTex(nextExpr, context))
+			doUnderOverBrace(tok, n, ParseTex(arguments[0], context))
 			return idx
 		case "text":
 			context |= ctx_text
-			nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 			n.Children = nil
 			n.Tag = "mtext"
-			n.Text = stringify_tokens(nextExpr)
+			n.Text = stringify_tokens(arguments[0])
 			return idx
-		case "frac", "sqrt":
-			n.Tag = "m" + tok.Value
-			for range numChildren {
-				nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
-				n.Children = append(n.Children, ParseTex(nextExpr, context))
+		case "sqrt":
+			n.Tag = "msqrt"
+			for _, arg := range arguments {
+				n.Children = append(n.Children, ParseTex(arg, context))
 			}
-		case "dfrac":
-			n.Tag = "mfrac"
-			n.Attrib["displaystyle"] = "true"
-			for range numChildren {
-				nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
-				n.Children = append(n.Children, ParseTex(nextExpr, context))
-			}
+		case "frac", "cfrac", "dfrac", "tfrac", "binom":
+			num := ParseTex(arguments[0], context)
+			den := ParseTex(arguments[1], context)
+			doFraction(tok, n, num, den)
 		case "not":
-			nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
-			if len(nextExpr) == 1 {
-				n.Tag = "mo"
-				if neg, ok := negation_map[nextExpr[0].Value]; ok {
+			if len(arguments[0]) == 1 {
+				t := arguments[0][0]
+				sym, ok := symbolTable[t.Value]
+				if ok {
+					n.Text = sym.char
+				} else {
+					n.Text = t.Value
+				}
+				if sym.kind == sym_alphabetic || (len(t.Value) == 1 && unicode.IsLetter([]rune(t.Value)[0])) {
+					n.Tag = "mi"
+				} else {
+					n.Tag = "mo"
+				}
+				if neg, ok := negation_map[t.Value]; ok {
 					n.Text = neg
 				} else {
-					n.Text = nextExpr[0].Value + "̸" //Once again we have chrome to thank for not implementing menclose
+					n.Text += "̸" //Once again we have chrome to thank for not implementing menclose
 				}
 				return idx
 			}
 			n.Tag = "menclose"
 			n.Attrib["notation"] = "updiagonalstrike"
-			n.Children = ParseTex(nextExpr, context).Children
+			n.Children = ParseTex(arguments[0], context).Children
+		case "sideset":
+			sideset(n, arguments[0], arguments[1], arguments[2], context)
 		default:
 			n.Text = tok.Value
-			for range numChildren {
-				nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
-				n.Children = append(n.Children, ParseTex(nextExpr, context))
+			for _, arg := range arguments {
+				n.Children = append(n.Children, ParseTex(arg, context))
 			}
 		}
 	} else if ch, ok := accents[tok.Value]; ok {
@@ -288,4 +283,92 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 	n.Tok = tok
 	n.set_variants_from_context(context)
 	return idx
+}
+
+func sideset(multi *MMLNode, left, right, base []Token, context parseContext) {
+	multi.Tag = "mmultiscripts"
+	multi.Properties |= prop_limitsunderover
+	multi.Children = append(multi.Children, ParseTex(base, context))
+	getScripts := func(side []Token) []*MMLNode {
+		i := 0
+		subscripts := make([]*MMLNode, 0)
+		superscripts := make([]*MMLNode, 0)
+		var last string
+		var expr []Token
+		for i < len(side) {
+			t := side[i]
+			switch t.Value {
+			case "^":
+				if last == t.Value {
+					subscripts = append(subscripts, newMMLNode("none"))
+				}
+				expr, i, _ = GetNextExpr(side, i+1)
+				superscripts = append(superscripts, ParseTex(expr, context))
+				last = t.Value
+			case "_":
+				if last == t.Value {
+					superscripts = append(superscripts, newMMLNode("none"))
+				}
+				expr, i, _ = GetNextExpr(side, i+1)
+				subscripts = append(subscripts, ParseTex(expr, context))
+				last = t.Value
+			default:
+				i += 1
+			}
+		}
+		result := make([]*MMLNode, len(subscripts)+len(superscripts))
+		for i := range len(subscripts) {
+			result[2*i] = subscripts[i]
+			result[2*i+1] = superscripts[i]
+		}
+		return result
+	}
+	multi.Children = append(multi.Children, getScripts(right)...)
+	multi.Children = append(multi.Children, newMMLNode("mprescripts"))
+	multi.Children = append(multi.Children, getScripts(left)...)
+}
+
+func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
+	switch tok.Value {
+	case "overbrace":
+		parent.Properties |= prop_limitsunderover
+		parent.Tag = "mover"
+		parent.Children = append(parent.Children, annotation,
+			&MMLNode{
+				Text:   "&OverBrace;",
+				Tag:    "mo",
+				Attrib: map[string]string{"stretchy": "true"},
+			})
+	case "underbrace":
+		parent.Properties |= prop_limitsunderover
+		parent.Tag = "munder"
+		parent.Children = append(parent.Children, annotation,
+			&MMLNode{
+				Text:   "&UnderBrace;",
+				Tag:    "mo",
+				Attrib: map[string]string{"stretchy": "true"},
+			})
+	}
+}
+
+func doFraction(tok Token, parent, numerator, denominator *MMLNode) {
+	var frac *MMLNode
+	if tok.Value == "binom" {
+		frac = newMMLNode()
+		parent.Tag = "mrow"
+	} else {
+		frac = parent
+	}
+	frac.Tag = "mfrac"
+	frac.Children = append(frac.Children, numerator, denominator)
+	switch tok.Value {
+	case "cfrac", "dfrac":
+		frac.Attrib["displaystyle"] = "true"
+	case "tfrac":
+		frac.Attrib["displaystyle"] = "false"
+	case "binom":
+		frac.Attrib["linethickness"] = "0"
+		parent.Children = append(parent.Children, strechyOP("("), frac, strechyOP(")"))
+	}
+
 }

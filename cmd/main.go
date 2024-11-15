@@ -120,6 +120,7 @@ func writeHTML(w io.Writer, test []string) {
 		<meta name="description" content="GoLaTex MathML Test"/>
 		<meta charset="utf-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1"/>
+		<link rel="stylesheet" href="stylesheet.css">
 		<style>
 			table {
 				border-collapse: collapse;
@@ -144,7 +145,7 @@ func writeHTML(w io.Writer, test []string) {
 	//<link rel="stylesheet" type="text/css" href="/fonts/xits.css">
 	w.Write([]byte(head))
 	for _, tex := range test {
-		rendered, err := golatex.TexToMML(tex, &total_time, &total_chars)
+		rendered, err := golatex.TexToMML(tex, nil, &total_time, &total_chars)
 		if err != nil {
 			rendered = "ERROR: " + err.Error()
 		}

@@ -2,6 +2,7 @@ package golatex
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -41,9 +42,11 @@ const (
 
 var (
 	self_closing_tags = map[string]bool{
-		"mspace":      true,
 		"malignmark":  true,
 		"maligngroup": true,
+		"mspace":      true,
+		"mprescripts": true,
+		"none":        true,
 	}
 )
 
@@ -171,7 +174,7 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 			child.Text = tok.Value
 		}
 		if child.Tok.Value == "-" {
-			child.Tok.Value = "−" // Fuckin chrome not reading the spec...
+			child.Text = "−" // Fuckin chrome not reading the spec...
 		}
 		node.Children = append(node.Children, child)
 	}
@@ -303,6 +306,10 @@ func MakeSupSubNode(nodes []*MMLNode) (*MMLNode, error) {
 	if base.Text == "∫" {
 		out.Tag = style_subsup[kind]
 	}
+	if base.Text == "|" {
+		base.Attrib["largeop"] = "true"
+		base.Attrib["stretchy"] = "true"
+	}
 	return out, nil
 }
 
@@ -400,7 +407,111 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 
 var lt = regexp.MustCompile("<")
 
-func TexToMML(tex string, total_time *time.Duration, total_chars *int) (string, error) {
+// kahn's algorithm
+func topological_sort(graph [][]bool, sources *stack[int]) ([]int, error) {
+	result := make([]int, 0, len(graph))
+	for !sources.empty() {
+		n := sources.Pop()
+		result = append(result, n)
+		for i, edge := range graph[n] {
+			if edge {
+				graph[n][i] = false
+				total := 0
+				for j := range len(graph) {
+					if graph[j][i] {
+						total++
+					}
+				}
+				if total == 0 {
+					sources.Push(i)
+				}
+			}
+		}
+	}
+	for _, row := range graph {
+		for _, edge := range row {
+			if edge {
+				return nil, fmt.Errorf("cyclic or recursive macro definition")
+			}
+		}
+	}
+	return result, nil
+}
+
+// get the order in which to expand the macros
+func resolve_dependency_graph(macros map[string][]Token) []string {
+	dependencies := make(map[string]int)
+	//tokenized_macros := make(map[string][]Token)
+	macro_idx := make(map[string]int)
+	graph := make([][]bool, 0, len(macros))
+	idx_macro := make(map[int]string)
+	idx := 0
+	for macro := range macros {
+		dependencies[macro] = 0
+		macro_idx[macro] = idx
+		graph = append(graph, make([]bool, len(macros)))
+		idx_macro[idx] = macro
+		idx++
+	}
+	has_incoming := make([]bool, len(macros))
+	for i, macro := range idx_macro {
+		toks := macros[macro]
+		for _, t := range toks {
+			if j, ok := macro_idx[t.Value]; ok && t.Kind == tokCommand {
+				//j has dependent i
+				graph[j][i] = true
+				has_incoming[i] = true
+			}
+		}
+	}
+	sources := newStack[int]()
+	for i, b := range has_incoming {
+		if !b {
+			sources.Push(i)
+		}
+	}
+	process_order, err := topological_sort(graph, sources)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	result := make([]string, len(macros))
+	for i, idx := range process_order {
+		result[i] = idx_macro[idx]
+	}
+	return result
+}
+
+type macro_info struct {
+	toks     []Token
+	argcount int
+}
+
+//func expand_recurse(tokens []Token, macros map[string]macro_info) []Token {
+//	expanded := make([]Token, 0, len(tokens))
+//	i := 0
+//	for i < len(tokens) {
+//		t := tokens[i]
+//		if macro, ok := macros[t.Value]; ok {
+//			expanded = append(expanded)
+//		}
+//	}
+//}
+//
+//func expand_macros(tokens []Token, macros map[string]string) {
+//	tokenized_macros := make(map[string][]Token)
+//	for macro, def := range macros {
+//		toks, err := tokenize(def)
+//		if err != nil {
+//			log.Println(err.Error())
+//			continue
+//		}
+//		tokenized_macros[macro] = toks
+//	}
+//
+//	order := resolve_dependency_graph(tokenized_macros)
+//}
+
+func TexToMML(tex string, macros map[string]string, total_time *time.Duration, total_chars *int) (string, error) {
 	defer Timer(tex, total_time, total_chars)()
 	tokens, err := tokenize(tex)
 	if err != nil {

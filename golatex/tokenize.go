@@ -21,6 +21,7 @@ const (
 	lxNumber
 	lxFence
 	lxComment
+	lxMacroArg
 )
 const (
 	tokWhitespace TokenKind = 1 << iota
@@ -35,6 +36,7 @@ const (
 	tokEnv
 	tokFence
 	tokSubSup
+	tokMacroArg
 	tokReserved
 	tokNull = 0
 )
@@ -151,6 +153,9 @@ func GetToken(tex []rune, start int) (Token, int) {
 			case r == '%':
 				state = lxComment
 				kind = tokComment
+			case r == '#':
+				state = lxMacroArg
+				kind = tokMacroArg
 			case slices.Contains(RESERVED, r):
 				state = lxEnd
 				kind = tokReserved
@@ -189,6 +194,9 @@ func GetToken(tex []rune, start int) (Token, int) {
 			default:
 				result = append(result, r)
 			}
+		case lxMacroArg:
+			result = append(result, r)
+			state = lxEnd
 		case lxWasBackslash:
 			switch {
 			case slices.Contains(OPEN, r):
@@ -237,7 +245,6 @@ const (
 	expr_fenced
 	expr_group
 )
-
 
 // Get the next single token or expression enclosed in brackets. Return the index immediately after the end of the
 // returned expression. Example:

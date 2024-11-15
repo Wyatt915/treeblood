@@ -1,0 +1,4 @@
+package golatex
+
+func init(){
+}
