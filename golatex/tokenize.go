@@ -255,8 +255,11 @@ const (
 func GetNextExpr(tokens []Token, idx int) ([]Token, int, exprKind) {
 	var result []Token
 	var kind exprKind
-	for tokens[idx].Kind&(tokWhitespace|tokComment) > 0 {
+	for idx < len(tokens) && tokens[idx].Kind&(tokWhitespace|tokComment) > 0 {
 		idx++
+	}
+	if idx >= len(tokens) {
+		return nil, idx, kind
 	}
 	if tokens[idx].MatchOffset > 0 {
 		switch tokens[idx].Value {

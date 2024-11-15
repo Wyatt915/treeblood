@@ -157,8 +157,20 @@ func restringify(n *MMLNode, sb *strings.Builder) {
 	n.Children = n.Children[:0]
 }
 
+func getOption(tokens []Token, idx int) ([]Token, int) {
+	if idx < len(tokens)-1 {
+		result, i, kind := GetNextExpr(tokens, idx+1)
+		if kind == expr_options {
+			return result, i
+		}
+	}
+	return nil, idx
+}
+
 func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int) int {
 	var nextExpr []Token
+	option, idx := getOption(tokens, idx)
+
 	if v, ok := MATH_VARIANTS[tok.Value]; ok {
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 		temp := ParseTex(nextExpr, context|v).Children
@@ -183,7 +195,6 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 	numArgs, ok := command_args[tok.Value]
 	if ok {
 		arguments := make([][]Token, 0)
-		//var option []Token
 		for range numArgs {
 			var expr []Token
 			expr, idx, _ = GetNextExpr(tokens, idx+1)
@@ -201,8 +212,10 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 			return idx
 		case "sqrt":
 			n.Tag = "msqrt"
-			for _, arg := range arguments {
-				n.Children = append(n.Children, ParseTex(arg, context))
+			n.Children = append(n.Children, ParseTex(arguments[0], context))
+			if option != nil {
+				n.Tag = "mroot"
+				n.Children = append(n.Children, ParseTex(option, context))
 			}
 		case "frac", "cfrac", "dfrac", "tfrac", "binom":
 			num := ParseTex(arguments[0], context)
