@@ -169,9 +169,7 @@ func getOption(tokens []Token, idx int) ([]Token, int) {
 }
 
 func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int) int {
-	var nextExpr []Token
-	option, idx := getOption(tokens, idx)
-
+	var option, nextExpr []Token
 	if v, ok := MATH_VARIANTS[tok.Value]; ok {
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 		temp := ParseTex(nextExpr, context|v).Children
@@ -197,9 +195,17 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 	numArgs, ok := command_args[tok.Value]
 	if ok {
 		arguments := make([][]Token, 0)
+		var expr []Token
+		var kind exprKind
+		expr, idx, kind = GetNextExpr(tokens, idx+1)
+		if kind == expr_options {
+			option = expr
+		} else {
+			arguments = append(arguments, expr)
+			numArgs--
+		}
 		for range numArgs {
-			var expr []Token
-			expr, idx, _ = GetNextExpr(tokens, idx+1)
+			expr, idx, kind = GetNextExpr(tokens, idx+1)
 			arguments = append(arguments, expr)
 		}
 		switch tok.Value {

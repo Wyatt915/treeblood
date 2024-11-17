@@ -54,24 +54,20 @@ func processTable(table *MMLNode) {
 				rowspans[cidx]--
 				continue
 			}
-			startRowSpan := false
-			if len(cell) == 1 && cell[0].Properties&prop_is_atomic_token > 0 {
-				cellNode = cell[0]
-				cellNode.Tag = "mtd"
-			} else {
-				cellNode = newMMLNode("mtd")
-				cellNode.Children = append(cellNode.Children, cell...)
-			}
-			if spanstr, ok := cellNode.Attrib["rowspan"]; ok {
-				span, err := strconv.ParseInt(spanstr, 10, 16)
-				if err != nil {
-					startRowSpan = true
-					rowspans[cidx] = int(span) - 1
+			cellNode = newMMLNode("mtd")
+			cellNode.Children = append(cellNode.Children, cell...)
+			for i, c := range cell {
+				if spanstr, ok := c.Attrib["rowspan"]; ok {
+					delete(cellNode.Children[i].Attrib, "rowspan")
+					cellNode.Attrib["rowspan"] = spanstr
+					span, err := strconv.ParseInt(spanstr, 10, 16)
+					if err == nil {
+						rowspans[cidx] = int(span) - 1
+					}
+					break
 				}
 			}
-			if startRowSpan || rowspans[cidx] == 0 {
-				rowNode.Children = append(rowNode.Children, cellNode)
-			}
+			rowNode.Children = append(rowNode.Children, cellNode)
 		}
 		rows = append(rows, rowNode)
 	}
