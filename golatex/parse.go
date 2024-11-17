@@ -20,6 +20,7 @@ const (
 	prop_limitsunderover
 	prop_cell_sep
 	prop_row_sep
+	prop_is_atomic_token // <mo>, <mi>, <mn>, <mtext>, <mspace>, <ms>
 )
 
 const (
@@ -28,6 +29,7 @@ const (
 	ctx_text
 	// ENVIRONMENTS
 	ctx_table
+	ctx_env_has_arg
 	// ONLY FONT VARIANTS AFTER THIS POINT
 	ctx_var_normal
 	ctx_var_bb
@@ -56,7 +58,7 @@ func Timer(name string, total_time *time.Duration, total_chars *int) func() {
 		elapsed := time.Since(start)
 		*total_time = *total_time + elapsed
 		*total_chars = *total_chars + len(name)
-		fmt.Printf("Completed in %v (%f characters/ms)\n", elapsed, float64(len(name))/(1000*elapsed.Seconds()))
+		fmt.Printf("%d characters in %v (%f characters/ms)\n", len(name), elapsed, float64(len(name))/(1000*elapsed.Seconds()))
 	}
 }
 
@@ -64,6 +66,7 @@ type MMLNode struct {
 	Tok        Token
 	Text       string
 	Tag        string
+	Option     string
 	Properties NodeProperties
 	Attrib     map[string]string
 	Children   []*MMLNode
@@ -85,8 +88,13 @@ func newMMLNode(opt ...string) *MMLNode {
 	}
 }
 
-func ParseTex(tokens []Token, context parseContext) *MMLNode {
-	node := newMMLNode()
+func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode {
+	var node *MMLNode
+	if len(parent) > 0 {
+		node = parent[0]
+	} else {
+		node = newMMLNode()
+	}
 	if context&ctx_root > 0 {
 		node.Tag = "math"
 		if context&ctx_display > 0 {
@@ -100,9 +108,15 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 		return node
 	}
 	node.Tag = "mrow"
-	var i int
+	var i, start int
 	var nextExpr []Token
-	for i = 0; i < len(tokens); i++ {
+	if context&ctx_env_has_arg > 0 {
+		nextExpr, start, _ = GetNextExpr(tokens, i)
+		node.Option = stringify_tokens(nextExpr)
+		context ^= ctx_env_has_arg
+		start++
+	}
+	for i = start; i < len(tokens); i++ {
 		tok := tokens[i]
 		child := newMMLNode()
 		if context&ctx_table > 0 {
@@ -134,11 +148,13 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 			child.Tok = tok
 			child.Text = tok.Value
 			child.Tag = "mi"
+			child.Properties |= prop_is_atomic_token
 			child.set_variants_from_context(context)
 		case tok.Kind&tokNumber > 0:
 			child.Tag = "mn"
 			child.Text = tok.Value
 			child.Tok = tok
+			child.Properties |= prop_is_atomic_token
 		case tok.Kind&tokFence > 0:
 			child.Tag = "mo"
 			child.Attrib["fence"] = "true"
@@ -148,11 +164,13 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 			} else {
 				child.Text = tok.Value
 			}
+			child.Properties |= prop_is_atomic_token
 		case tok.Kind&(tokOpen|tokClose) > 0:
 			child.Tag = "mo"
 			child.Text = tok.Value
 			child.Attrib["fence"] = "true"
 			child.Attrib["stretchy"] = "false"
+			child.Properties |= prop_is_atomic_token
 		case tok.Kind&tokWhitespace > 0:
 			if context&ctx_text > 0 {
 				child.Tag = "mspace"
@@ -160,6 +178,7 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 				child.Tok.Value = " "
 				child.Attrib["width"] = "1em"
 				node.Children = append(node.Children, child)
+				child.Properties |= prop_is_atomic_token
 				continue
 			} else {
 				continue
@@ -172,6 +191,7 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 			child.Tag = "mo"
 			child.Tok = tok
 			child.Text = tok.Value
+			child.Properties |= prop_is_atomic_token
 		}
 		if child.Tok.Value == "-" {
 			child.Text = "−" // Fuckin chrome not reading the spec...
@@ -180,7 +200,7 @@ func ParseTex(tokens []Token, context parseContext) *MMLNode {
 	}
 	node.PostProcessScripts()
 	node.PostProcessSpace()
-	//node.PostProcessChars()
+	node.PostProcessChars()
 	return node
 }
 
@@ -210,28 +230,34 @@ func (node *MMLNode) PostProcessSpace() {
 }
 
 func (node *MMLNode) PostProcessChars() {
-	//combinePrimes := func(idx int) {
-	//	children := node.Children
-	//	i := idx + 1
-	//	count := 1
-	//	for i < len(children) && children[i].Text == "'" {
-	//		count++
-	//		children[i] = nil
-	//		if count == 4 {
-	//			children[idx].Text = "⁗"
-	//			count = 0
-	//			idx = i + 1
-	//		}
-	//	}
-	//	switch count {
-	//	case 1:
-	//		children[idx].Text = "′"
-	//	case 2:
-	//		children[idx].Text = "″"
-	//	case 3:
-	//		children[idx].Text = "‴"
-	//	}
-	//}
+	combinePrimes := func(idx int) {
+		children := node.Children
+		i := idx + 1
+		count := 1
+		for i < len(children) && children[i] != nil && children[i].Text == "'" {
+			count++
+			i++
+		}
+		nillifyUpTo := i - 1
+		for count > 0 {
+			switch count {
+			case 1:
+				children[idx].Text = "′"
+			case 2:
+				children[idx].Text = "″"
+			case 3:
+				children[idx].Text = "‴"
+			case 4:
+				children[idx].Text = "⁗"
+			}
+			count -= 4
+			idx++
+		}
+		for idx <= nillifyUpTo {
+			children[idx] = nil
+			idx++
+		}
+	}
 	for i, n := range node.Children {
 		if n == nil {
 			continue
@@ -240,7 +266,7 @@ func (node *MMLNode) PostProcessChars() {
 		case "-":
 			node.Children[i].Text = "−"
 		case "'", "’":
-			node.Children[i].Text = "′"
+			combinePrimes(i)
 		}
 	}
 }
@@ -306,7 +332,8 @@ func MakeSupSubNode(nodes []*MMLNode) (*MMLNode, error) {
 	if base.Text == "∫" {
 		out.Tag = style_subsup[kind]
 	}
-	if base.Text == "|" {
+	if base.Text == "|" { // Need custom css for chrome to render this correctly
+		base.Attrib["class"] = "mathml-chrome-largeop"
 		base.Attrib["largeop"] = "true"
 		base.Attrib["stretchy"] = "true"
 	}

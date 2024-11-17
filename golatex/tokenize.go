@@ -38,6 +38,10 @@ const (
 	tokSubSup
 	tokMacroArg
 	tokReserved
+	tokBigness1
+	tokBigness2
+	tokBigness3
+	tokBigness4
 	tokNull = 0
 )
 
@@ -432,27 +436,55 @@ func fixFences(toks []Token) []Token {
 	out := make([]Token, 0, len(toks))
 	var i int
 	var temp Token
+	bigLevel := func(s string) TokenKind {
+		switch s {
+		case "big":
+			return tokBigness1
+		case "Big":
+			return tokBigness2
+		case "bigg":
+			return tokBigness3
+		case "Bigg":
+			return tokBigness4
+		}
+		return tokNull
+	}
 	for i < len(toks) {
+		if i == len(toks)-1 {
+			out = append(out, toks[i])
+			break
+		}
 		temp = toks[i]
+		val := toks[i+1].Value
 		switch toks[i].Value {
 		case "left":
 			i++
-			v := toks[i].Value
-			if v == "." {
+			if val == "." {
 				temp.Value = ""
 			} else {
-				temp.Value = v
+				temp.Value = val
 			}
 			temp.Kind |= tokFence | tokOpen
 		case "right":
 			i++
-			v := toks[i].Value
-			if v == "." {
+			if val == "." {
 				temp.Value = ""
 			} else {
-				temp.Value = v
+				temp.Value = val
 			}
 			temp.Kind |= tokFence | tokClose
+		case "big", "Big", "bigg", "Bigg":
+			i++
+			temp = toks[i]
+			temp.Kind |= bigLevel(val)
+		case "bigl", "Bigl", "biggl", "Biggl":
+			i++
+			temp = toks[i]
+			temp.Kind |= tokFence | tokOpen | bigLevel(val[:len(val)-1])
+		case "bigr", "Bigr", "biggr", "Biggr":
+			i++
+			temp = toks[i]
+			temp.Kind |= tokFence | tokOpen | bigLevel(val[:len(val)-1])
 		}
 		out = append(out, temp)
 		i++

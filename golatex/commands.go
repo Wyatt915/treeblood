@@ -8,6 +8,8 @@ import (
 var (
 	// maps commands to number of expected arguments
 	command_args = map[string]int{
+		"multirow":      3,
+		"multicol":      3,
 		"prescript":     3,
 		"sideset":       3,
 		"frac":          2,
@@ -187,6 +189,7 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 	if _, ok := space_widths[tok.Value]; ok {
 		n.Tok = tok
 		n.Tag = "mspace"
+		n.Properties |= prop_is_atomic_token
 		if tok.Value == `\` {
 			n.Attrib["linebreak"] = "newline"
 		}
@@ -201,6 +204,9 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 			arguments = append(arguments, expr)
 		}
 		switch tok.Value {
+		case "multirow":
+			ParseTex(arguments[2], context, n)
+			n.Attrib["rowspan"] = stringify_tokens(arguments[0])
 		case "underbrace", "overbrace":
 			doUnderOverBrace(tok, n, ParseTex(arguments[0], context))
 			return idx
@@ -209,6 +215,7 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 			n.Children = nil
 			n.Tag = "mtext"
 			n.Text = stringify_tokens(arguments[0])
+			n.Properties |= prop_is_atomic_token
 			return idx
 		case "sqrt":
 			n.Tag = "msqrt"
@@ -222,6 +229,7 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 			den := ParseTex(arguments[1], context)
 			doFraction(tok, n, num, den)
 		case "not":
+			n.Properties |= prop_is_atomic_token
 			if len(arguments[0]) == 1 {
 				t := arguments[0][0]
 				sym, ok := symbolTable[t.Value]
@@ -247,6 +255,8 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 			n.Children = ParseTex(arguments[0], context).Children
 		case "sideset":
 			sideset(n, arguments[0], arguments[1], arguments[2], context)
+		case "prescript":
+			prescript(n, arguments[0], arguments[1], arguments[2], context)
 		default:
 			n.Text = tok.Value
 			for _, arg := range arguments {
@@ -265,6 +275,7 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		}
 		n.Children = append(n.Children, base, acc)
 	} else {
+		n.Properties |= prop_is_atomic_token
 		if t, ok := symbolTable[tok.Value]; ok {
 			if t.char != "" {
 				n.Text = t.char
@@ -298,6 +309,20 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 	return idx
 }
 
+func prescript(multi *MMLNode, super, sub, base []Token, context parseContext) {
+	multi.Tag = "mmultiscripts"
+	multi.Children = append(multi.Children, ParseTex(base, context))
+	multi.Children = append(multi.Children, newMMLNode("none"), newMMLNode("none"), newMMLNode("mprescripts"))
+	temp := ParseTex(sub, context)
+	if temp != nil {
+		multi.Children = append(multi.Children, temp)
+	}
+	temp = ParseTex(super, context)
+	if temp != nil {
+		multi.Children = append(multi.Children, temp)
+	}
+}
+
 func sideset(multi *MMLNode, left, right, base []Token, context parseContext) {
 	multi.Tag = "mmultiscripts"
 	multi.Properties |= prop_limitsunderover
@@ -328,6 +353,12 @@ func sideset(multi *MMLNode, left, right, base []Token, context parseContext) {
 			default:
 				i += 1
 			}
+		}
+		if len(superscripts) == 0 {
+			superscripts = append(superscripts, newMMLNode("none"))
+		}
+		if len(subscripts) == 0 {
+			subscripts = append(subscripts, newMMLNode("none"))
 		}
 		result := make([]*MMLNode, len(subscripts)+len(superscripts))
 		for i := range len(subscripts) {

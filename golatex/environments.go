@@ -2,6 +2,7 @@ package golatex
 
 import (
 	"regexp"
+	"strconv"
 )
 
 var reMatchMatrix = regexp.MustCompile(`.*[mM]atrix\*?`)
@@ -16,7 +17,9 @@ func setEnvironmentContext(envBegin Token, context parseContext) parseContext {
 		return context | ctx_table
 	}
 	switch envBegin.Value {
-	case "table", "array", "align", "align*", "cases":
+	case "array":
+		return context | ctx_table | ctx_env_has_arg
+	case "table", "align", "align*", "cases":
 		return context | ctx_table
 	}
 	return context
@@ -42,15 +45,33 @@ func splitByFunc[T any](s []T, f func(T) bool) [][]T {
 func processTable(table *MMLNode) {
 	rows := make([]*MMLNode, 0)
 	var cellNode *MMLNode
+	rowspans := make(map[int]int)
 	for _, row := range splitByFunc(table.Children, func(n *MMLNode) bool { return n.Properties&prop_row_sep > 0 }) {
 		rowNode := newMMLNode()
 		rowNode.Tag = "mtr"
-		for _, cell := range splitByFunc(row, func(n *MMLNode) bool { return n.Properties&prop_cell_sep > 0 }) {
-			cellNode = newMMLNode("mtd")
-			if len(cell) > 0 {
+		for cidx, cell := range splitByFunc(row, func(n *MMLNode) bool { return n.Properties&prop_cell_sep > 0 }) {
+			if rowspans[cidx] > 0 {
+				rowspans[cidx]--
+				continue
+			}
+			startRowSpan := false
+			if len(cell) == 1 && cell[0].Properties&prop_is_atomic_token > 0 {
+				cellNode = cell[0]
+				cellNode.Tag = "mtd"
+			} else {
+				cellNode = newMMLNode("mtd")
 				cellNode.Children = append(cellNode.Children, cell...)
 			}
-			rowNode.Children = append(rowNode.Children, cellNode)
+			if spanstr, ok := cellNode.Attrib["rowspan"]; ok {
+				span, err := strconv.ParseInt(spanstr, 10, 16)
+				if err != nil {
+					startRowSpan = true
+					rowspans[cidx] = int(span) - 1
+				}
+			}
+			if startRowSpan || rowspans[cidx] == 0 {
+				rowNode.Children = append(rowNode.Children, cellNode)
+			}
 		}
 		rows = append(rows, rowNode)
 	}

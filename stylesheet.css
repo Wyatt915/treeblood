@@ -36,3 +36,9 @@ menclose[notation="updiagonalstrike"]{
     /* https://stackoverflow.com/a/40499367 */
     background: linear-gradient(to left top, transparent 47.75%, currentColor 49.5%, currentColor 50.5%, transparent 52.25%);
 }
+
+/* Strech out operators that need it */
+.mathml-chrome-largeop{
+    font-size: 200%;
+    font-stretch: 50%;
+}
