@@ -17,7 +17,7 @@ func setEnvironmentContext(envBegin Token, context parseContext) parseContext {
 		return context | ctx_table
 	}
 	switch envBegin.Value {
-	case "array":
+	case "array", "subarray":
 		return context | ctx_table | ctx_env_has_arg
 	case "table", "align", "align*", "cases":
 		return context | ctx_table
@@ -115,6 +115,8 @@ func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 	case "align", "align*":
 		node.Attrib["displaystyle"] = "true"
 		node.Attrib["columnalign"] = "left"
+	case "subarray":
+		node.Attrib["displaystyle"] = "false"
 	default:
 		return node
 	}

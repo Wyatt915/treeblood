@@ -2177,6 +2177,11 @@ var symbolTable = map[string]symbol{
 		entity: "&drcorn;",
 		kind:   sym_closing,
 	},
+	"lt": {
+		char:   "&lt;",
+		entity: "&lt;",
+		kind:   sym_binaryop,
+	},
 	"ltimes": {
 		char:   "⋉",
 		entity: "&ltimes;",

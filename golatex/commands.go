@@ -16,16 +16,15 @@ var (
 		"binom":         2,
 		"dfrac":         2,
 		"textfrac":      2,
+		"substack":      1,
 		"underbrace":    1,
 		"overbrace":     1,
 		"ElsevierGlyph": 1,
 		"ding":          1,
 		"fbox":          1,
 		"k":             1,
-		"left":          1,
 		"mbox":          1,
 		"not":           1,
-		"right":         1,
 		"sqrt":          1,
 		"text":          1,
 		"u":             1,
@@ -204,6 +203,11 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 			arguments = append(arguments, expr)
 		}
 		switch tok.Value {
+		case "substack":
+			ParseTex(arguments[0], context|ctx_table, n)
+			processTable(n)
+			n.Attrib["rowspacing"] = "0" // Incredibly, chrome does this by default
+			n.Attrib["displaystyle"] = "false"
 		case "multirow":
 			ParseTex(arguments[2], context, n)
 			n.Attrib["rowspan"] = stringify_tokens(arguments[0])

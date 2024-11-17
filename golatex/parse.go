@@ -120,16 +120,13 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 		tok := tokens[i]
 		child := newMMLNode()
 		if context&ctx_table > 0 {
-			cont := false
 			switch tok.Value {
 			case "&":
-				cont = true
 				child.Properties = prop_cell_sep
-			case "\\":
-				cont = true
+				node.Children = append(node.Children, child)
+				continue
+			case "\\", "cr":
 				child.Properties = prop_row_sep
-			}
-			if cont {
 				node.Children = append(node.Children, child)
 				continue
 			}
