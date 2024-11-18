@@ -19,6 +19,7 @@ const (
 	prop_limitsunderover
 	prop_cell_sep
 	prop_row_sep
+	prop_limitswitch
 	prop_is_atomic_token // <mo>, <mi>, <mn>, <mtext>, <mspace>, <ms>
 )
 
@@ -209,12 +210,25 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 		}
 		node.Children = append(node.Children, child)
 	}
+	node.PostProcessLimitSwitch()
 	node.PostProcessScripts()
 	node.PostProcessSpace()
 	node.PostProcessChars()
 	return node
 }
 
+func (node *MMLNode) PostProcessLimitSwitch() {
+	var i int
+	for i = 1; i < len(node.Children); i++ {
+		child := node.Children[i]
+		if child.Properties&prop_limitswitch > 0 {
+			node.Children[i-1].Properties ^= prop_limitsunderover
+			placeholder := newMMLNode()
+			placeholder.Properties = prop_nonprint
+			node.Children[i-1], node.Children[i] = placeholder, node.Children[i-1]
+		}
+	}
+}
 func (node *MMLNode) PostProcessSpace() {
 	i := 0
 	limit := len(node.Children)
@@ -347,13 +361,9 @@ func MakeSupSubNode(nodes []*MMLNode) (*MMLNode, error) {
 		kind = SCBOTH
 		out.Children = []*MMLNode{base, sub, sup}
 	}
-	_, ok := base.Attrib["largeop"]
-	if ok || base.Properties&prop_limitsunderover != 0 {
+	if base.Properties&prop_limitsunderover > 0 {
 		out.Tag = style_overunder[kind]
 	} else {
-		out.Tag = style_subsup[kind]
-	}
-	if base.Text == "∫" {
 		out.Tag = style_subsup[kind]
 	}
 	if base.Text == "|" { // Need custom css for chrome to render this correctly
@@ -409,6 +419,9 @@ func (n *MMLNode) printAST(depth int) {
 
 func (n *MMLNode) Write(w *strings.Builder, indent int) {
 	if n == nil {
+		return
+	}
+	if n.Properties&prop_nonprint > 0 {
 		return
 	}
 	var tag string

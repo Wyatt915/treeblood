@@ -30,6 +30,20 @@ var (
 		"text":          1,
 		"u":             1,
 	}
+
+	command_operators = map[string]NodeProperties{
+		"lim":    prop_movablelimits | prop_limitsunderover,
+		"sum":    prop_large | prop_movablelimits | prop_limitsunderover,
+		"prod":   prop_large | prop_movablelimits | prop_limitsunderover,
+		"int":    prop_large,
+		"sin":    0,
+		"cos":    0,
+		"tan":    0,
+		"log":    0,
+		"ln":     0,
+		"limits": prop_limitswitch | prop_nonprint,
+	}
+
 	math_variants = map[string]parseContext{
 		"mathbb":     ctx_var_bb,
 		"mathbf":     ctx_var_bold,
@@ -171,7 +185,7 @@ func getOption(tokens []Token, idx int) ([]Token, int) {
 }
 
 func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int) int {
-	var option, nextExpr []Token
+	var nextExpr []Token
 	if v, ok := math_variants[tok.Value]; ok {
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 		temp := ParseTex(nextExpr, context|v).Children
@@ -196,85 +210,7 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 	}
 	numArgs, ok := command_args[tok.Value]
 	if ok {
-		arguments := make([][]Token, 0)
-		var expr []Token
-		var kind exprKind
-		expr, idx, kind = GetNextExpr(tokens, idx+1)
-		if kind == expr_options {
-			option = expr
-		} else {
-			arguments = append(arguments, expr)
-			numArgs--
-		}
-		for range numArgs {
-			expr, idx, kind = GetNextExpr(tokens, idx+1)
-			arguments = append(arguments, expr)
-		}
-		switch tok.Value {
-		case "substack":
-			ParseTex(arguments[0], context|ctx_table, n)
-			processTable(n)
-			n.Attrib["rowspacing"] = "0" // Incredibly, chrome does this by default
-			n.Attrib["displaystyle"] = "false"
-		case "multirow":
-			ParseTex(arguments[2], context, n)
-			n.Attrib["rowspan"] = stringify_tokens(arguments[0])
-		case "underbrace", "overbrace":
-			doUnderOverBrace(tok, n, ParseTex(arguments[0], context))
-			return idx
-		case "text":
-			context |= ctx_text
-			n.Children = nil
-			n.Tag = "mtext"
-			n.Text = stringify_tokens(arguments[0])
-			n.Properties |= prop_is_atomic_token
-			return idx
-		case "sqrt":
-			n.Tag = "msqrt"
-			n.Children = append(n.Children, ParseTex(arguments[0], context))
-			if option != nil {
-				n.Tag = "mroot"
-				n.Children = append(n.Children, ParseTex(option, context))
-			}
-		case "frac", "cfrac", "dfrac", "tfrac", "binom":
-			num := ParseTex(arguments[0], context)
-			den := ParseTex(arguments[1], context)
-			doFraction(tok, n, num, den)
-		case "not":
-			n.Properties |= prop_is_atomic_token
-			if len(arguments[0]) == 1 {
-				t := arguments[0][0]
-				sym, ok := symbolTable[t.Value]
-				if ok {
-					n.Text = sym.char
-				} else {
-					n.Text = t.Value
-				}
-				if sym.kind == sym_alphabetic || (len(t.Value) == 1 && unicode.IsLetter([]rune(t.Value)[0])) {
-					n.Tag = "mi"
-				} else {
-					n.Tag = "mo"
-				}
-				if neg, ok := negation_map[t.Value]; ok {
-					n.Text = neg
-				} else {
-					n.Text += "̸" //Once again we have chrome to thank for not implementing menclose
-				}
-				return idx
-			}
-			n.Tag = "menclose"
-			n.Attrib["notation"] = "updiagonalstrike"
-			n.Children = ParseTex(arguments[0], context).Children
-		case "sideset":
-			sideset(n, arguments[0], arguments[1], arguments[2], context)
-		case "prescript":
-			prescript(n, arguments[0], arguments[1], arguments[2], context)
-		default:
-			n.Text = tok.Value
-			for _, arg := range arguments {
-				n.Children = append(n.Children, ParseTex(arg, context))
-			}
-		}
+		idx = processCommandArgs(n, context, tok, tokens, idx, numArgs)
 	} else if ch, ok := accents[tok.Value]; ok {
 		n.Tag = "mover"
 		n.Attrib["accent"] = "true"
@@ -287,8 +223,23 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		}
 		n.Children = append(n.Children, base, acc)
 	} else {
-		n.Properties |= prop_is_atomic_token
-		if t, ok := symbolTable[tok.Value]; ok {
+		if prop, ok := command_operators[tok.Value]; ok {
+			n.Tag = "mo"
+			n.Properties = prop
+			if prop&prop_large > 0 {
+				n.Attrib["largeop"] = "true"
+			}
+			if prop&prop_movablelimits > 0 {
+				n.Attrib["movablelimits"] = "true"
+			}
+			if t, ok := symbolTable[tok.Value]; ok {
+				if t.char != "" {
+					n.Text = t.char
+				} else {
+					n.Text = t.entity
+				}
+			}
+		} else if t, ok := symbolTable[tok.Value]; ok {
 			if t.char != "" {
 				n.Text = t.char
 			} else {
@@ -313,12 +264,94 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		} else {
 			log.Printf("NOTE: unknown command '%s'. Treating as operator or function name.\n", tok.Value)
 			n.Tag = "mo"
-			n.Attrib["movablelimits"] = "true"
-			n.Properties |= prop_limitsunderover | prop_movablelimits
 		}
 	}
 	n.Tok = tok
 	n.set_variants_from_context(context)
+	return idx
+}
+
+func processCommandArgs(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int, numArgs int) int {
+	var option []Token
+	arguments := make([][]Token, 0)
+	var expr []Token
+	var kind exprKind
+	expr, idx, kind = GetNextExpr(tokens, idx+1)
+	if kind == expr_options {
+		option = expr
+	} else {
+		arguments = append(arguments, expr)
+		numArgs--
+	}
+	for range numArgs {
+		expr, idx, kind = GetNextExpr(tokens, idx+1)
+		arguments = append(arguments, expr)
+	}
+	switch tok.Value {
+	case "substack":
+		ParseTex(arguments[0], context|ctx_table, n)
+		processTable(n)
+		n.Attrib["rowspacing"] = "0" // Incredibly, chrome does this by default
+		n.Attrib["displaystyle"] = "false"
+	case "multirow":
+		ParseTex(arguments[2], context, n)
+		n.Attrib["rowspan"] = stringify_tokens(arguments[0])
+	case "underbrace", "overbrace":
+		doUnderOverBrace(tok, n, ParseTex(arguments[0], context))
+		return idx
+	case "text":
+		context |= ctx_text
+		n.Children = nil
+		n.Tag = "mtext"
+		n.Text = stringify_tokens(arguments[0])
+		n.Properties |= prop_is_atomic_token
+		return idx
+	case "sqrt":
+		n.Tag = "msqrt"
+		n.Children = append(n.Children, ParseTex(arguments[0], context))
+		if option != nil {
+			n.Tag = "mroot"
+			n.Children = append(n.Children, ParseTex(option, context))
+		}
+	case "frac", "cfrac", "dfrac", "tfrac", "binom":
+		num := ParseTex(arguments[0], context)
+		den := ParseTex(arguments[1], context)
+		doFraction(tok, n, num, den)
+	case "not":
+		n.Properties |= prop_is_atomic_token
+		if len(arguments[0]) == 1 {
+			t := arguments[0][0]
+			sym, ok := symbolTable[t.Value]
+			if ok {
+				n.Text = sym.char
+			} else {
+				n.Text = t.Value
+			}
+			if sym.kind == sym_alphabetic || (len(t.Value) == 1 && unicode.IsLetter([]rune(t.Value)[0])) {
+				n.Tag = "mi"
+			} else {
+				n.Tag = "mo"
+			}
+			if neg, ok := negation_map[t.Value]; ok {
+				n.Text = neg
+			} else {
+				n.Text += "̸" //Once again we have chrome to thank for not implementing menclose
+			}
+			return idx
+		}
+		n.Tag = "menclose"
+		n.Attrib["notation"] = "updiagonalstrike"
+		n.Children = ParseTex(arguments[0], context).Children
+	case "sideset":
+		sideset(n, arguments[0], arguments[1], arguments[2], context)
+	case "prescript":
+		prescript(n, arguments[0], arguments[1], arguments[2], context)
+	default:
+		n.Text = tok.Value
+		for _, arg := range arguments {
+			n.Children = append(n.Children, ParseTex(arg, context))
+		}
+	}
 	return idx
 }
 
