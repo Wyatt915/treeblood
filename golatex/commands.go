@@ -1,6 +1,7 @@
 package golatex
 
 import (
+	"log"
 	"strings"
 	"unicode"
 )
@@ -309,6 +310,7 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 				}
 			}
 		} else {
+			log.Printf("NOTE: unknown command '%s'. Treating as operator or function name.\n", tok.Value)
 			n.Tag = "mo"
 			n.Attrib["movablelimits"] = "true"
 			n.Properties |= prop_limitsunderover | prop_movablelimits

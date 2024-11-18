@@ -37,6 +37,7 @@ const (
 	tokFence
 	tokSubSup
 	tokMacroArg
+	tokBadMacro
 	tokReserved
 	tokBigness1
 	tokBigness2
@@ -63,7 +64,6 @@ type Token struct {
 	Kind        TokenKind
 	MatchOffset int // offset from current index to matching paren, brace, etc.
 	Value       string
-	Pseudo      *MMLNode
 }
 
 type stack[T any] struct {
@@ -368,12 +368,12 @@ func matchBracesCritical(tokens []Token, kind TokenKind) error {
 				if t.Kind&tokEnv > 0 {
 					k = "environment (" + t.Value + ")"
 				}
-				context := errorContext(t, stringify_tokens(tokens[max(0, i-contextLength):i+1]))
+				context := errorContext(t, stringify_tokens(tokens[max(0, i-contextLength):min(i+contextLength, len(tokens))]))
 				return newMismatchedBraceError(k, "<pre>"+context+"</pre>", i)
 			}
 			mate := tokens[s.Peek()]
 			if kind == tokEnv && mate.Value != t.Value {
-				context := errorContext(t, stringify_tokens(tokens[max(0, i-contextLength):i+1]))
+				context := errorContext(t, stringify_tokens(tokens[max(0, i-contextLength):min(i+contextLength, len(tokens))]))
 				return newMismatchedBraceError("environment ("+mate.Value+")", "<pre>"+context+"</pre>", i)
 			}
 			if (mate.Kind&t.Kind)&kind > 0 {
@@ -393,7 +393,7 @@ func matchBracesCritical(tokens []Token, kind TokenKind) error {
 		if t.Kind&tokEnv > 0 {
 			kind = "environment (" + t.Value + ")"
 		}
-		context := errorContext(t, stringify_tokens(tokens[max(0, pos-contextLength):pos+1]))
+		context := errorContext(t, stringify_tokens(tokens[max(0, pos-contextLength):min(pos+1, len(tokens))]))
 		return newMismatchedBraceError(kind, "<pre>"+context+"</pre>", pos)
 	}
 	return nil

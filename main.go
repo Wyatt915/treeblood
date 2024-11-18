@@ -82,7 +82,7 @@ func srv(w http.ResponseWriter, req *http.Request) {
 	//	test = append(test, sb.String())
 	//	sb.Reset()
 	//}
-	writeHTML(w, test)
+	//	writeHTML(w, test)
 }
 
 func fserv(w http.ResponseWriter, req *http.Request) {
@@ -106,10 +106,10 @@ func main() {
 		panic(err.Error())
 	}
 	defer w.Close()
-	writeHTML(w, test)
+	writeHTML(w, test, nil)
 }
 
-func writeHTML(w io.Writer, test []string) {
+func writeHTML(w io.Writer, test []string, macros map[string]string) {
 	var total_time time.Duration
 	var total_chars int
 	head := `
@@ -144,8 +144,9 @@ func writeHTML(w io.Writer, test []string) {
 	// put this back in <head> if needed
 	//<link rel="stylesheet" type="text/css" href="/fonts/xits.css">
 	w.Write([]byte(head))
+	prepared := golatex.PrepareMacros(macros)
 	for _, tex := range test {
-		rendered, err := golatex.TexToMML(tex, nil, &total_time, &total_chars)
+		rendered, err := golatex.TexToMML(tex, prepared, &total_time, &total_chars)
 		if err != nil {
 			rendered = "ERROR: " + err.Error()
 		}
