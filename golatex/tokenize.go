@@ -27,6 +27,7 @@ const (
 	tokWhitespace TokenKind = 1 << iota
 	tokComment
 	tokCommand
+	tokEscaped
 	tokNumber
 	tokLetter
 	tokChar
@@ -47,7 +48,7 @@ const (
 )
 
 var (
-	BRACEMATCH = map[string]string{
+	brace_match_map = map[string]string{
 		"(": ")",
 		"{": "}",
 		"[": "]",
@@ -55,9 +56,9 @@ var (
 		"}": "{",
 		"]": "[",
 	}
-	OPEN     = []rune("([{")
-	CLOSE    = []rune(")]}")
-	RESERVED = []rune(`#$%^&_{}~\`)
+	char_open     = []rune("([{")
+	char_close    = []rune(")]}")
+	char_reserved = []rune(`#$%^&_{}~\`)
 )
 
 type Token struct {
@@ -110,14 +111,13 @@ func (s *stack[T]) empty() bool {
 func GetToken(tex []rune, start int) (Token, int) {
 	var state LexerState
 	var kind TokenKind
-	var fencing TokenKind
 	result := make([]rune, 0, 24)
 	var idx int
 	for idx = start; idx < len(tex); idx++ {
 		r := tex[idx]
 		switch state {
 		case lxEnd:
-			return Token{Kind: kind | fencing, Value: string(result)}, idx
+			return Token{Kind: kind, Value: string(result)}, idx
 		case lxBegin:
 			switch {
 			case unicode.IsLetter(r):
@@ -138,11 +138,11 @@ func GetToken(tex []rune, start int) (Token, int) {
 				state = lxEnd
 				kind = tokCurly | tokClose
 				result = append(result, r)
-			case slices.Contains(OPEN, r):
+			case slices.Contains(char_open, r):
 				state = lxEnd
 				kind = tokOpen
 				result = append(result, r)
-			case slices.Contains(CLOSE, r):
+			case slices.Contains(char_close, r):
 				state = lxEnd
 				kind = tokClose
 				result = append(result, r)
@@ -160,7 +160,7 @@ func GetToken(tex []rune, start int) (Token, int) {
 			case r == '#':
 				state = lxMacroArg
 				kind = tokMacroArg
-			case slices.Contains(RESERVED, r):
+			case slices.Contains(char_reserved, r):
 				state = lxEnd
 				kind = tokReserved
 				result = append(result, r)
@@ -203,18 +203,26 @@ func GetToken(tex []rune, start int) (Token, int) {
 			state = lxEnd
 		case lxWasBackslash:
 			switch {
-			case slices.Contains(OPEN, r):
+			case r == '|':
 				state = lxEnd
-				kind = tokOpen
+				kind = tokFence | tokEscaped
 				result = append(result, r)
-			case slices.Contains(CLOSE, r):
+			case slices.Contains(char_open, r):
 				state = lxEnd
-				kind = tokClose
+				kind = tokOpen | tokEscaped | tokFence
 				result = append(result, r)
-			case slices.Contains(RESERVED, r):
+			case slices.Contains(char_close, r):
 				state = lxEnd
-				kind = tokCommand
+				kind = tokClose | tokEscaped | tokFence
 				result = append(result, r)
+			case slices.Contains(char_reserved, r):
+				state = lxEnd
+				kind = tokReserved | tokEscaped
+				result = append(result, r)
+			case unicode.IsSpace(r):
+				state = lxEnd
+				kind = tokWhitespace | tokEscaped
+				result = append(result, ' ')
 			case unicode.IsLetter(r):
 				state = lxCommand
 				kind = tokCommand
@@ -232,7 +240,7 @@ func GetToken(tex []rune, start int) (Token, int) {
 				result = append(result, r)
 			case !unicode.IsLetter(r):
 				val := string(result)
-				return Token{Kind: kind | fencing, Value: val}, idx
+				return Token{Kind: kind, Value: val}, idx
 			default:
 				result = append(result, r)
 			}
@@ -419,7 +427,7 @@ func matchBracesLazy(tokens []Token) {
 				continue
 			}
 			mate := tokens[s.Peek()]
-			if (t.Kind&mate.Kind)&tokFence > 0 || BRACEMATCH[mate.Value] == t.Value {
+			if (t.Kind&mate.Kind)&tokFence > 0 || brace_match_map[mate.Value] == t.Value {
 				pos := s.Pop()
 				tokens[i].MatchOffset = pos - i
 				tokens[pos].MatchOffset = i - pos
@@ -456,19 +464,24 @@ func fixFences(toks []Token) []Token {
 		}
 		temp = toks[i]
 		val := toks[i+1].Value
+
 		switch toks[i].Value {
 		case "left":
 			i++
+			temp = toks[i]
 			if val == "." {
 				temp.Value = ""
+				temp.Kind = tokNull
 			} else {
 				temp.Value = val
 			}
 			temp.Kind |= tokFence | tokOpen
 		case "right":
 			i++
+			temp = toks[i]
 			if val == "." {
 				temp.Value = ""
+				temp.Kind = tokNull
 			} else {
 				temp.Value = val
 			}

@@ -141,6 +141,13 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			child.Text = tok.Value
 			child.Tag = "merror"
 			child.Attrib["title"] = "cyclic dependency in macro definition"
+		case tok.Kind&tokEscaped > 0:
+			child.Tok = tok
+			child.Text = tok.Value
+			child.Tag = "mo"
+			if tok.Kind&(tokOpen|tokClose|tokFence) > 0 {
+				child.Attrib["stretchy"] = "true"
+			}
 		case tok.Kind&(tokOpen|tokEnv) == tokOpen|tokEnv:
 			nextExpr, i, _ = GetNextExpr(tokens, i)
 			ctx := setEnvironmentContext(tok, context)
@@ -187,10 +194,10 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			} else {
 				continue
 			}
-		case tok.Kind&tokCommand > 0:
-			i = ProcessCommand(child, context, tok, tokens, i)
 		case tok.Kind&(tokClose|tokCurly) == tokClose|tokCurly, tok.Kind&(tokClose|tokEnv) == tokClose|tokEnv:
 			continue
+		case tok.Kind&tokCommand > 0:
+			i = ProcessCommand(child, context, tok, tokens, i)
 		default:
 			child.Tag = "mo"
 			child.Tok = tok
@@ -234,15 +241,21 @@ func (node *MMLNode) PostProcessSpace() {
 }
 
 func (node *MMLNode) PostProcessChars() {
-	combinePrimes := func(idx int) {
+	combinePrimes := func(idx int) int {
 		children := node.Children
-		i := idx + 1
+		var i int
 		count := 1
-		for i < len(children) && children[i] != nil && children[i].Text == "'" {
-			count++
-			i++
+		keepgoing := true
+		for i = idx + 1; i < len(children) && keepgoing; i++ {
+			if children[i] == nil {
+				continue
+			} else if children[i].Text == "'" {
+				count++
+			} else {
+				keepgoing = false
+			}
 		}
-		nillifyUpTo := i - 1
+		nillifyUpTo := i - 2
 		for count > 0 {
 			switch count {
 			case 1:
@@ -251,7 +264,7 @@ func (node *MMLNode) PostProcessChars() {
 				children[idx].Text = "″"
 			case 3:
 				children[idx].Text = "‴"
-			case 4:
+			default:
 				children[idx].Text = "⁗"
 			}
 			count -= 4
@@ -261,17 +274,24 @@ func (node *MMLNode) PostProcessChars() {
 			children[idx] = nil
 			idx++
 		}
+		return idx
 	}
-	for i, n := range node.Children {
+	i := 0
+	var n *MMLNode
+	for i < len(node.Children) {
+		n = node.Children[i]
 		if n == nil {
+			i++
 			continue
 		}
 		switch n.Text {
 		case "-":
 			node.Children[i].Text = "−"
 		case "'", "’":
-			combinePrimes(i)
+			i = combinePrimes(i)
+			continue
 		}
+		i++
 	}
 }
 

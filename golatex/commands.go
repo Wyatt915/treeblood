@@ -30,7 +30,7 @@ var (
 		"text":          1,
 		"u":             1,
 	}
-	MATH_VARIANTS = map[string]parseContext{
+	math_variants = map[string]parseContext{
 		"mathbb":     ctx_var_bb,
 		"mathbf":     ctx_var_bold,
 		"mathbfit":   ctx_var_bold | ctx_var_italic,
@@ -77,6 +77,7 @@ var (
 		",":     3,
 		":":     4,
 		";":     5,
+		" ":     9,
 		"quad":  18,
 		"qquad": 36,
 		"!":     -3,
@@ -171,7 +172,7 @@ func getOption(tokens []Token, idx int) ([]Token, int) {
 
 func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int) int {
 	var option, nextExpr []Token
-	if v, ok := MATH_VARIANTS[tok.Value]; ok {
+	if v, ok := math_variants[tok.Value]; ok {
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 		temp := ParseTex(nextExpr, context|v).Children
 		if len(temp) == 1 {
