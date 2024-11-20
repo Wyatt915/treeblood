@@ -298,14 +298,12 @@ func processCommandArgs(n *MMLNode, context parseContext, tok Token, tokens []To
 		n.Attrib["rowspan"] = stringify_tokens(arguments[0])
 	case "underbrace", "overbrace":
 		doUnderOverBrace(tok, n, ParseTex(arguments[0], context))
-		return idx
 	case "text":
 		context |= ctx_text
 		n.Children = nil
 		n.Tag = "mtext"
 		n.Text = stringify_tokens(arguments[0])
-		n.Properties |= prop_is_atomic_token
-		return idx
+		//n.Properties |= prop_is_atomic_token
 	case "sqrt":
 		n.Tag = "msqrt"
 		n.Children = append(n.Children, ParseTex(arguments[0], context))

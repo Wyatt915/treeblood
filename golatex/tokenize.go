@@ -217,7 +217,7 @@ func GetToken(tex []rune, start int) (Token, int) {
 				result = append(result, r)
 			case slices.Contains(char_reserved, r):
 				state = lxEnd
-				kind = tokReserved | tokEscaped
+				kind = tokChar | tokEscaped
 				result = append(result, r)
 			case unicode.IsSpace(r):
 				state = lxEnd

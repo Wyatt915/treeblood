@@ -15,6 +15,8 @@ const (
 	prop_null NodeProperties = 1 << iota
 	prop_nonprint
 	prop_large
+	prop_superscript
+	prop_subscript
 	prop_movablelimits
 	prop_limitsunderover
 	prop_cell_sep
@@ -90,13 +92,10 @@ func newMMLNode(opt ...string) *MMLNode {
 
 func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode {
 	var node *MMLNode
-	if len(parent) > 0 {
-		node = parent[0]
-	} else {
-		node = newMMLNode()
-	}
+	siblings := make([]*MMLNode, 0)
+	var optionString string
 	if context&ctx_root > 0 {
-		node.Tag = "math"
+		node = newMMLNode("math")
 		if context&ctx_display > 0 {
 			node.Attrib["mode"] = "display"
 			node.Attrib["display"] = "block"
@@ -104,18 +103,20 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 		}
 		semantics := newMMLNode("semantics")
 		semantics.Children = append(semantics.Children, ParseTex(tokens, context^ctx_root))
+		semantics.doPostProcess()
 		node.Children = append(node.Children, semantics)
 		return node
 	}
-	node.Tag = "mrow"
 	var i, start int
 	var nextExpr []Token
 	if context&ctx_env_has_arg > 0 {
 		nextExpr, start, _ = GetNextExpr(tokens, i)
-		node.Option = stringify_tokens(nextExpr)
+		optionString = stringify_tokens(nextExpr)
 		context ^= ctx_env_has_arg
 		start++
 	}
+	// properties granted by a previous node
+	var promotedProperties NodeProperties
 	for i = start; i < len(tokens); i++ {
 		tok := tokens[i]
 		child := newMMLNode()
@@ -125,17 +126,26 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 				// dont count an escaped \& command!
 				if tok.Kind&tokReserved > 0 {
 					child.Properties = prop_cell_sep
-					node.Children = append(node.Children, child)
+					siblings = append(siblings, child)
 					continue
 				}
 			case "\\", "cr":
 				child.Properties = prop_row_sep
-				node.Children = append(node.Children, child)
+				siblings = append(siblings, child)
 				continue
 			}
 		}
 		switch {
 		case tok.Kind&tokComment > 0:
+			continue
+		case tok.Kind&tokSubSup > 0:
+			switch tok.Value {
+			case "^":
+				promotedProperties |= prop_superscript
+			case "_":
+				promotedProperties |= prop_subscript
+			}
+			// tell the next sibling to be a super- or subscript
 			continue
 		case tok.Kind&tokBadMacro > 0:
 			child.Tok = tok
@@ -189,7 +199,7 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 				child.Text = " "
 				child.Tok.Value = " "
 				child.Attrib["width"] = "1em"
-				node.Children = append(node.Children, child)
+				siblings = append(siblings, child)
 				child.Properties |= prop_is_atomic_token
 				continue
 			} else {
@@ -205,22 +215,47 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			child.Text = tok.Value
 			child.Properties |= prop_is_atomic_token
 		}
-		if child.Tok.Value == "-" {
-			child.Text = "−" // Fuckin chrome not reading the spec...
+		if child == nil {
+			continue
 		}
-		node.Children = append(node.Children, child)
+		// apply properties granted by previous sibling, if any
+		if promotedProperties != 0 {
+			child.Properties |= promotedProperties
+			promotedProperties = 0
+		}
+		siblings = append(siblings, child)
 	}
-	node.PostProcessLimitSwitch()
-	node.PostProcessScripts()
-	node.PostProcessSpace()
-	node.PostProcessChars()
+	if len(parent) > 0 {
+		node = parent[0]
+		node.Children = append(node.Children, siblings...)
+		node.Option = optionString
+	} else { // if len(siblings) > 1 {
+		node = newMMLNode("mrow")
+		node.Children = append(node.Children, siblings...)
+		node.Option = optionString
+		//} else if len(siblings) == 1 {
+		//	node = siblings[0]
+	}
+	node.doPostProcess()
 	return node
 }
 
-func (node *MMLNode) PostProcessLimitSwitch() {
+func (node *MMLNode) doPostProcess() {
+	if node != nil {
+		node.postProcessLimitSwitch()
+		node.postProcessScripts()
+		node.postProcessSpace()
+		node.postProcessChars()
+	}
+}
+
+func (node *MMLNode) postProcessLimitSwitch() {
 	var i int
 	for i = 1; i < len(node.Children); i++ {
 		child := node.Children[i]
+		if child == nil {
+			continue
+		}
 		if child.Properties&prop_limitswitch > 0 {
 			node.Children[i-1].Properties ^= prop_limitsunderover
 			placeholder := newMMLNode()
@@ -229,12 +264,12 @@ func (node *MMLNode) PostProcessLimitSwitch() {
 		}
 	}
 }
-func (node *MMLNode) PostProcessSpace() {
+func (node *MMLNode) postProcessSpace() {
 	i := 0
 	limit := len(node.Children)
 	for ; i < limit; i++ {
 		//if len(node.Children[i].Children) > 0 {
-		//	node.Children[i].PostProcessSpace()
+		//	node.Children[i].postProcessSpace()
 		//}
 		if node.Children[i] == nil || space_widths[node.Children[i].Tok.Value] == 0 {
 			continue
@@ -254,10 +289,10 @@ func (node *MMLNode) PostProcessSpace() {
 	}
 }
 
-func (node *MMLNode) PostProcessChars() {
+func (node *MMLNode) postProcessChars() {
 	combinePrimes := func(idx int) int {
 		children := node.Children
-		var i int
+		var i, nillifyUpTo int
 		count := 1
 		keepgoing := true
 		for i = idx + 1; i < len(children) && keepgoing; i++ {
@@ -265,30 +300,33 @@ func (node *MMLNode) PostProcessChars() {
 				continue
 			} else if children[i].Text == "'" {
 				count++
+				nillifyUpTo = i
 			} else {
 				keepgoing = false
 			}
 		}
-		nillifyUpTo := i - 2
+		var temp rune
+		text := make([]rune, 0, 1+(count/4))
 		for count > 0 {
 			switch count {
 			case 1:
-				children[idx].Text = "′"
+				temp = '′'
 			case 2:
-				children[idx].Text = "″"
+				temp = '″'
 			case 3:
-				children[idx].Text = "‴"
+				temp = '‴'
 			default:
-				children[idx].Text = "⁗"
+				temp = '⁗'
 			}
 			count -= 4
-			idx++
+			text = append(text, temp)
 		}
-		for idx <= nillifyUpTo {
-			children[idx] = nil
-			idx++
+		node.Children[idx].Text = string(text)
+		idx++
+		for i = idx; i <= nillifyUpTo; i++ {
+			node.Children[i] = nil
 		}
-		return idx
+		return i
 	}
 	i := 0
 	var n *MMLNode
@@ -309,101 +347,81 @@ func (node *MMLNode) PostProcessChars() {
 	}
 }
 
-// Slide a kernel to idx and see if the types match
-func KernelTest(ary []*MMLNode, kernel []TokenKind, idx int) bool {
-	for i, t := range kernel {
-		// Null matches anything
-		if t == tokNull {
+// Look for any ^ or _ among siblings and convert to a msub, msup, or msubsup
+func (node *MMLNode) postProcessScripts() {
+	var base, super, sub *MMLNode
+	var i int
+	for i = 0; i < len(node.Children); i++ {
+		child := node.Children[i]
+		if child == nil {
 			continue
 		}
-		if t != ary[idx+i].Tok.Kind {
-			return false
+		if child.Properties&(prop_subscript|prop_superscript) == 0 {
+			continue
 		}
-	}
-	return true
-}
-
-const (
-	SCSUPER = iota
-	SCSUB
-	SCBOTH
-)
-
-func MakeSupSubNode(nodes []*MMLNode) (*MMLNode, error) {
-	out := newMMLNode()
-	var base, sub, sup *MMLNode
-	base = nodes[0]
-	kind := 0
-	style_subsup := []string{"msup", "msub", "msubsup"}
-	style_overunder := []string{"mover", "munder", "munderover"}
-	switch len(nodes) {
-	case 3:
-		switch nodes[1].Tok.Value {
-		case "^":
-			kind = SCSUPER
-		case "_":
-			kind = SCSUB
+		var hasSuper, hasSub, hasBoth bool
+		var script, next *MMLNode
+		skip := 0
+		if i < len(node.Children)-1 {
+			next = node.Children[i+1]
 		}
-		out.Children = []*MMLNode{nodes[0], nodes[2]}
-	case 5:
-		if nodes[1].Tok.Value == nodes[3].Tok.Value {
-			return nil, fmt.Errorf("ambiguous multiscript")
+		if i > 0 {
+			base = node.Children[i-1]
 		}
-		if nodes[1].Tok.Value == "_" && nodes[3].Tok.Value == "^" {
-			sub = nodes[2]
-			sup = nodes[4]
-		} else if nodes[1].Tok.Value == "^" && nodes[3].Tok.Value == "_" {
-			sub = nodes[4]
-			sup = nodes[2]
-		} else {
-			return nil, fmt.Errorf("ambiguous multiscript")
-		}
-		kind = SCBOTH
-		out.Children = []*MMLNode{base, sub, sup}
-	}
-	if base.Properties&prop_limitsunderover > 0 {
-		out.Tag = style_overunder[kind]
-	} else {
-		out.Tag = style_subsup[kind]
-	}
-	if base.Text == "|" { // Need custom css for chrome to render this correctly
-		base.Attrib["class"] = "mathml-chrome-largeop"
-		base.Attrib["largeop"] = "true"
-		base.Attrib["stretchy"] = "true"
-	}
-	return out, nil
-}
-
-// Look for any ^ or _ among siblings and convert to a msub, msup, or msubsup
-func (node *MMLNode) PostProcessScripts() {
-	twoScriptKernel := []TokenKind{tokNull, tokSubSup, tokNull, tokSubSup, tokNull}
-	oneScriptKernel := []TokenKind{tokNull, tokSubSup, tokNull}
-	processKernel := func(kernel []TokenKind) {
-		i := 0
-		n := len(kernel)
-		limit := len(node.Children) - n
-		for i <= limit {
-			if KernelTest(node.Children, kernel, i) {
-				ssNode, err := MakeSupSubNode(node.Children[i : i+n])
-				if err != nil {
-					i++
-					continue
-				}
-				node.Children[i] = ssNode
-				copy(node.Children[i+1:], node.Children[i+n:])
-				// free up memory if needed
-				for j := len(node.Children) - n + 1; j < len(node.Children); j++ {
-					node.Children[j] = nil
-				}
-				node.Children = node.Children[:len(node.Children)-n+1]
-				limit = len(node.Children) - n
-				//i--
+		if child.Properties&prop_subscript > 0 {
+			hasSub = true
+			sub = child
+			skip++
+			if next != nil && next.Properties&prop_superscript > 0 {
+				hasBoth = true
+				super = next
+				skip++
 			}
-			i++
+		} else if child.Properties&prop_superscript > 0 {
+			hasSuper = true
+			super = child
+			skip++
+			if next != nil && next.Properties&prop_subscript > 0 {
+				hasBoth = true
+				sub = next
+				skip++
+			}
+		}
+		pos := i - 1 //we want to replace the base with our script node
+		if base == nil {
+			pos++ //there is no base so we have to replace the zeroth node
+			base = newMMLNode("none")
+			//skip-- // there is one less node to nillify
+		}
+		if hasBoth {
+			if base.Properties&prop_limitsunderover > 0 {
+				script = newMMLNode("munderover")
+			} else {
+				script = newMMLNode("msubsup")
+			}
+			script.Children = append(script.Children, base, sub, super)
+		} else if hasSub {
+			if base.Properties&prop_limitsunderover > 0 {
+				script = newMMLNode("munder")
+			} else {
+				script = newMMLNode("msub")
+			}
+			script.Children = append(script.Children, base, sub)
+		} else if hasSuper {
+			if base.Properties&prop_limitsunderover > 0 {
+				script = newMMLNode("mover")
+			} else {
+				script = newMMLNode("msup")
+			}
+			script.Children = append(script.Children, base, super)
+		} else {
+			continue
+		}
+		node.Children[pos] = script
+		for j := pos + 1; j <= skip+pos && j < len(node.Children); j++ {
+			node.Children[j] = nil
 		}
 	}
-	processKernel(twoScriptKernel)
-	processKernel(oneScriptKernel)
 }
 
 func (n *MMLNode) printAST(depth int) {
@@ -447,10 +465,10 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 		w.WriteString(val)
 		w.WriteRune('"')
 	}
-	if self_closing_tags[tag] {
-		w.WriteString(" />")
-		return
-	}
+	//if self_closing_tags[tag] {
+	//	w.WriteString(" />")
+	//	return
+	//}
 	w.WriteRune('>')
 	if len(n.Children) == 0 {
 		if len(n.Text) > 0 {
@@ -471,8 +489,27 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 
 var lt = regexp.MustCompile("<")
 
-func TexToMML(tex string, macros map[string]MacroInfo, total_time *time.Duration, total_chars *int) (string, error) {
+func TestTexToMML(tex string, macros map[string]MacroInfo, total_time *time.Duration, total_chars *int) (string, error) {
 	defer Timer(tex, total_time, total_chars)()
+	tokens, err := tokenize(tex)
+	if err != nil {
+		return "", err
+	}
+	if macros != nil {
+		tokens, err = ExpandMacros(tokens, macros)
+		if err != nil {
+			return "", err
+		}
+	}
+	annotation := newMMLNode("annotation", lt.ReplaceAllString(tex, "&lt;"))
+	annotation.Attrib["encoding"] = "application/x-tex"
+	ast := ParseTex(tokens, ctx_root|ctx_display)
+	ast.Children[0].Children = append(ast.Children[0].Children, annotation)
+	var builder strings.Builder
+	ast.Write(&builder, 1)
+	return builder.String(), err
+}
+func TexToMML(tex string, macros map[string]MacroInfo) (string, error) {
 	tokens, err := tokenize(tex)
 	if err != nil {
 		return "", err

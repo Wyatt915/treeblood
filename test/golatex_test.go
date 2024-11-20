@@ -1,22 +1,69 @@
-package main
+package golatex_test
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
+	"testing"
 	"time"
 
 	"golatex/golatex"
 )
 
-func main() {
-	reader := bufio.NewReader(os.Stdin)
-	tex, _ := reader.ReadString('\n')
-	fmt.Println(golatex.TexToMML(tex, nil))
+func TestScripts(t *testing.T) {
+	f, err := os.Create("scripts_test.html")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer f.Close()
+	writeHTML(f, "scripts", readTestFile("scripts.tex"), nil)
 }
 
-func writeHTML(w io.Writer, test []string, macros map[string]string) {
+func TestArrays(t *testing.T) {
+	f, err := os.Create("arrays_test.html")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer f.Close()
+	writeHTML(f, "arrays", readTestFile("arrays.tex"), nil)
+}
+
+func TestLimits(t *testing.T) {
+	f, err := os.Create("limits_test.html")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer f.Close()
+	writeHTML(f, "limits", readTestFile("limits.tex"), nil)
+}
+
+func TestBasic(t *testing.T) {
+	f, err := os.Create("basic_test.html")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer f.Close()
+	writeHTML(f, "basic", readTestFile("basic.tex"), nil)
+}
+
+func readTestFile(name string) []string {
+	testcases, err := os.ReadFile(name)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	test := make([]string, 0)
+
+	for _, s := range bytes.Split(testcases, []byte{'\n', '\n'}) {
+		if len(s) > 1 {
+			test = append(test, string(s))
+		}
+	}
+	return test
+}
+
+func writeHTML(w io.Writer, testname string, test []string, macros map[string]string) {
 	var total_time time.Duration
 	var total_chars int
 	head := `
@@ -47,7 +94,7 @@ func writeHTML(w io.Writer, test []string, macros map[string]string) {
 		</style>
 	</head>
 	<body>
-	<table><tbody><tr><th colspan="2">GoLaTeX Test</th></tr>`
+	<table><tbody><tr><th colspan="2">GoLaTeX ` + testname + ` test</th></tr>`
 	// put this back in <head> if needed
 	//<link rel="stylesheet" type="text/css" href="/fonts/xits.css">
 	w.Write([]byte(head))
@@ -63,5 +110,4 @@ func writeHTML(w io.Writer, test []string, macros map[string]string) {
 	fmt.Println("time: ", total_time)
 	fmt.Println("chars: ", total_chars)
 	fmt.Printf("throughput: %.4f character/ms\n", float64(total_chars)/(1000*total_time.Seconds()))
-
 }
