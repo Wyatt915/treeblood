@@ -86,11 +86,6 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 	var optionString string
 	if context&CTX_ROOT > 0 {
 		node = NewMMLNode("math")
-		if context&CTX_DISPLAY > 0 {
-			node.Attrib["mode"] = "display"
-			node.Attrib["display"] = "block"
-			node.Attrib["xmlns"] = "http://www.w3.org/1998/Math/MathML"
-		}
 		semantics := NewMMLNode("semantics")
 		semantics.Children = append(semantics.Children, ParseTex(tokens, context^CTX_ROOT))
 		semantics.doPostProcess()
