@@ -64,14 +64,15 @@ func readTestFile(name string) []string {
 }
 
 func writeHTML(w io.Writer, testname string, test []string, macros map[string]string) {
+	fmt.Println(testname, "test:")
 	var total_time time.Duration
 	var total_chars int
-	head := `
-<!DOCTYPE html>
-<html lang="en">
+	fmt.Fprintf(w, `
+	<!DOCTYPE html>
+	<html lang="en">
 	<head>
-		<title>GoLaTex MathML Test</title>
-		<meta name="description" content="GoLaTex MathML Test"/>
+		<title>TreeBlood %s Test</title>
+		<meta name="description" content="TreeBlood %s Test"/>
 		<meta charset="utf-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1"/>
 		<link rel="stylesheet" href="stylesheet.css">
@@ -87,27 +88,29 @@ func writeHTML(w io.Writer, testname string, test []string, macros map[string]st
 			}
 			.tex{
 				max-width: 50em;
-				height: 100%;
+				height: 100%%;
 				overflow: auto;
 				font-size: 0.7em;
 			}
 		</style>
 	</head>
 	<body>
-	<table><tbody><tr><th colspan="2">GoLaTeX ` + testname + ` test</th></tr>`
-	// put this back in <head> if needed
-	//<link rel="stylesheet" type="text/css" href="/fonts/xits.css">
-	w.Write([]byte(head))
+	<table><tbody><tr><th colspan="2">TreeBlood %s Test</th></tr>`, testname, testname, testname)
 	prepared := golatex.PrepareMacros(macros)
 	for _, tex := range test {
-		rendered, err := golatex.TestTexToMML(tex, prepared, &total_time, &total_chars)
+		begin := time.Now()
+		rendered, err := golatex.TexToMML(tex, prepared)
+		elapsed := time.Since(begin)
 		if err != nil {
 			rendered = "ERROR: " + err.Error()
 		}
+		total_time += elapsed
+		total_chars += len(tex)
 		fmt.Fprintf(w, `<tr><td><div class="tex"><pre>%s</pre></div></td><td>%s</td></tr>`, tex, rendered)
+		fmt.Printf("%d characters in %v (%f characters/ms)\n", len(tex), elapsed, float64(len(tex))/(1000*elapsed.Seconds()))
 	}
 	w.Write([]byte(`</tbody></table></body></html>`))
 	fmt.Println("time: ", total_time)
 	fmt.Println("chars: ", total_chars)
-	fmt.Printf("throughput: %.4f character/ms\n", float64(total_chars)/(1000*total_time.Seconds()))
+	fmt.Printf("throughput: %.4f character/ms\n\n", float64(total_chars)/(1000*total_time.Seconds()))
 }

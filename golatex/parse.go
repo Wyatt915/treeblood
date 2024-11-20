@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"time"
 )
 
 type NodeClass uint64
@@ -53,16 +52,6 @@ var (
 		"none":        true,
 	}
 )
-
-func Timer(name string, total_time *time.Duration, total_chars *int) func() {
-	start := time.Now()
-	return func() {
-		elapsed := time.Since(start)
-		*total_time = *total_time + elapsed
-		*total_chars = *total_chars + len(name)
-		fmt.Printf("%d characters in %v (%f characters/ms)\n", len(name), elapsed, float64(len(name))/(1000*elapsed.Seconds()))
-	}
-}
 
 type MMLNode struct {
 	Tok        Token
@@ -268,9 +257,6 @@ func (node *MMLNode) postProcessSpace() {
 	i := 0
 	limit := len(node.Children)
 	for ; i < limit; i++ {
-		//if len(node.Children[i].Children) > 0 {
-		//	node.Children[i].postProcessSpace()
-		//}
 		if node.Children[i] == nil || space_widths[node.Children[i].Tok.Value] == 0 {
 			continue
 		}
@@ -465,21 +451,19 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 		w.WriteString(val)
 		w.WriteRune('"')
 	}
-	//if self_closing_tags[tag] {
-	//	w.WriteString(" />")
-	//	return
-	//}
 	w.WriteRune('>')
-	if len(n.Children) == 0 {
-		if len(n.Text) > 0 {
-			w.WriteString(n.Text)
+	if !self_closing_tags[tag] {
+		if len(n.Children) == 0 {
+			if len(n.Text) > 0 {
+				w.WriteString(n.Text)
+			} else {
+				w.WriteString(n.Tok.Value)
+			}
 		} else {
-			w.WriteString(n.Tok.Value)
-		}
-	} else {
-		w.WriteRune('\n')
-		for _, child := range n.Children {
-			child.Write(w, indent+1)
+			w.WriteRune('\n')
+			for _, child := range n.Children {
+				child.Write(w, indent+1)
+			}
 		}
 	}
 	w.WriteString("</")
@@ -489,26 +473,6 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 
 var lt = regexp.MustCompile("<")
 
-func TestTexToMML(tex string, macros map[string]MacroInfo, total_time *time.Duration, total_chars *int) (string, error) {
-	defer Timer(tex, total_time, total_chars)()
-	tokens, err := tokenize(tex)
-	if err != nil {
-		return "", err
-	}
-	if macros != nil {
-		tokens, err = ExpandMacros(tokens, macros)
-		if err != nil {
-			return "", err
-		}
-	}
-	annotation := newMMLNode("annotation", lt.ReplaceAllString(tex, "&lt;"))
-	annotation.Attrib["encoding"] = "application/x-tex"
-	ast := ParseTex(tokens, ctx_root|ctx_display)
-	ast.Children[0].Children = append(ast.Children[0].Children, annotation)
-	var builder strings.Builder
-	ast.Write(&builder, 1)
-	return builder.String(), err
-}
 func TexToMML(tex string, macros map[string]MacroInfo) (string, error) {
 	tokens, err := tokenize(tex)
 	if err != nil {
