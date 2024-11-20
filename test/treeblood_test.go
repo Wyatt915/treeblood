@@ -1,4 +1,4 @@
-package golatex_test
+package treeblood_test
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"golatex/golatex"
+	"github.com/wyatt915/treeblood"
 )
 
 func TestScripts(t *testing.T) {
@@ -96,10 +96,10 @@ func writeHTML(w io.Writer, testname string, test []string, macros map[string]st
 	</head>
 	<body>
 	<table><tbody><tr><th colspan="2">TreeBlood %s Test</th></tr>`, testname, testname, testname)
-	prepared := golatex.PrepareMacros(macros)
+	//prepared := treeblood.PrepareMacros(macros)
 	for _, tex := range test {
 		begin := time.Now()
-		rendered, err := golatex.TexToMML(tex, prepared)
+		rendered, err := treeblood.TexToMML(tex, nil)
 		elapsed := time.Since(begin)
 		if err != nil {
 			rendered = "ERROR: " + err.Error()

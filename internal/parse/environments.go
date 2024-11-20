@@ -1,26 +1,28 @@
-package golatex
+package parse
 
 import (
 	"regexp"
 	"strconv"
+
+	. "github.com/wyatt915/treeblood/internal/token"
 )
 
 var reMatchMatrix = regexp.MustCompile(`.*[mM]atrix\*?`)
 
 func isolateEnvironmentContext(ctx parseContext) parseContext {
-	return ctx & ((ctx_var_normal - 1) ^ (ctx_table - 1))
+	return ctx & ((CTX_VAR_NORMAL - 1) ^ (CTX_TABLE - 1))
 }
 
 func setEnvironmentContext(envBegin Token, context parseContext) parseContext {
 	context = context ^ isolateEnvironmentContext(context) // clear other environments
 	if reMatchMatrix.MatchString(envBegin.Value) {
-		return context | ctx_table
+		return context | CTX_TABLE
 	}
 	switch envBegin.Value {
 	case "array", "subarray":
-		return context | ctx_table | ctx_env_has_arg
+		return context | CTX_TABLE | CTX_ENV_HAS_ARG
 	case "table", "align", "align*", "cases":
-		return context | ctx_table
+		return context | CTX_TABLE
 	}
 	return context
 }
@@ -47,14 +49,14 @@ func processTable(table *MMLNode) {
 	var cellNode *MMLNode
 	rowspans := make(map[int]int)
 	for _, row := range splitByFunc(table.Children, func(n *MMLNode) bool { return n != nil && n.Properties&prop_row_sep > 0 }) {
-		rowNode := newMMLNode()
+		rowNode := NewMMLNode()
 		rowNode.Tag = "mtr"
 		for cidx, cell := range splitByFunc(row, func(n *MMLNode) bool { return n != nil && n.Properties&prop_cell_sep > 0 }) {
 			if rowspans[cidx] > 0 {
 				rowspans[cidx]--
 				continue
 			}
-			cellNode = newMMLNode("mtd")
+			cellNode = NewMMLNode("mtd")
 			cellNode.Children = append(cellNode.Children, cell...)
 			for i, c := range cell {
 				if c == nil {
@@ -79,7 +81,7 @@ func processTable(table *MMLNode) {
 }
 
 func strechyOP(c string) *MMLNode {
-	n := newMMLNode("mo", c)
+	n := NewMMLNode("mo", c)
 	n.Attrib["strechy"] = "true"
 	n.Attrib["fence"] = "true"
 	return n
@@ -87,10 +89,10 @@ func strechyOP(c string) *MMLNode {
 
 func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 	switch {
-	case ctx&ctx_table > 0:
+	case ctx&CTX_TABLE > 0:
 		processTable(node)
 	}
-	row := newMMLNode("mrow")
+	row := NewMMLNode("mrow")
 	var left, right *MMLNode
 	switch env {
 	case "pmatrix", "pmatrix*":

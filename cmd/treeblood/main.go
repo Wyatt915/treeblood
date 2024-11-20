@@ -5,20 +5,17 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
-	"golatex/golatex"
+	"github.com/wyatt915/treeblood"
 )
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 	tex, _ := reader.ReadString('\n')
-	fmt.Println(golatex.TexToMML(tex, nil))
+	fmt.Println(treeblood.TexToMML(tex, nil))
 }
 
 func writeHTML(w io.Writer, test []string, macros map[string]string) {
-	var total_time time.Duration
-	var total_chars int
 	head := `
 <!DOCTYPE html>
 <html lang="en">
@@ -51,17 +48,14 @@ func writeHTML(w io.Writer, test []string, macros map[string]string) {
 	// put this back in <head> if needed
 	//<link rel="stylesheet" type="text/css" href="/fonts/xits.css">
 	w.Write([]byte(head))
-	prepared := golatex.PrepareMacros(macros)
+	//prepared := treeblood.PrepareMacros(macros)
 	for _, tex := range test {
-		rendered, err := golatex.TestTexToMML(tex, prepared, &total_time, &total_chars)
+		rendered, err := treeblood.TexToMML(tex, nil)
 		if err != nil {
 			rendered = "ERROR: " + err.Error()
 		}
 		fmt.Fprintf(w, `<tr><td><div class="tex"><pre>%s</pre></div></td><td>%s</td></tr>`, tex, rendered)
 	}
 	w.Write([]byte(`</tbody></table></body></html>`))
-	fmt.Println("time: ", total_time)
-	fmt.Println("chars: ", total_chars)
-	fmt.Printf("throughput: %.4f character/ms\n", float64(total_chars)/(1000*total_time.Seconds()))
 
 }

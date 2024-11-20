@@ -1,4 +1,4 @@
-package golatex
+package token
 
 import (
 	"fmt"
@@ -70,7 +70,7 @@ func resolve_dependency_graph(macros map[string][]Token) []string {
 	for i, macro := range idx_macro {
 		toks := macros[macro]
 		for _, t := range toks {
-			if j, ok := macro_idx[t.Value]; ok && t.Kind == tokCommand {
+			if j, ok := macro_idx[t.Value]; ok && t.Kind == TOK_COMMAND {
 				//j has dependent i
 				graph[j][i] = true
 				has_incoming[i] = true
@@ -103,7 +103,7 @@ func resolve_dependency_graph(macros map[string][]Token) []string {
 func expandSingleMacro(def []Token, args [][]Token) ([]Token, error) {
 	result := make([]Token, 0, len(def)*2) // twice the original capacity is probably fine?
 	for i, t := range def {
-		if t.Kind&tokMacroArg > 0 {
+		if t.Kind&TOK_MACROARG > 0 {
 			n, err := strconv.ParseInt(t.Value, 10, 8)
 			if err != nil {
 				return nil, err
@@ -123,14 +123,14 @@ func PrepareMacros(macros map[string]string) map[string]MacroInfo {
 	info := make(map[string]MacroInfo)
 	argcounts := make(map[string]int)
 	for macro, def := range macros {
-		toks, err := tokenize(def)
+		toks, err := Tokenize(def)
 		if err != nil {
 			log.Println(err.Error())
 			continue
 		}
 		argcounts[macro] = 0
 		for _, t := range toks {
-			if t.Kind&tokMacroArg > 0 {
+			if t.Kind&TOK_MACROARG > 0 {
 				argcounts[macro]++
 			}
 		}
@@ -158,7 +158,7 @@ func PrepareMacros(macros map[string]string) map[string]MacroInfo {
 	for macro := range tokenized_macros {
 		if _, ok := flattened[macro]; !ok {
 			flattened[macro] = MacroInfo{
-				toks:     []Token{{Value: macro, Kind: tokBadMacro}},
+				toks:     []Token{{Value: macro, Kind: TOK_BADMACRO}},
 				argcount: 0,
 			}
 		}
@@ -176,7 +176,7 @@ func ExpandMacros(toks []Token, macros map[string]MacroInfo) ([]Token, error) {
 		i := 0
 		for i < len(toks) {
 			t := toks[i]
-			if def, ok := macros[t.Value]; ok && t.Kind&tokCommand > 0 {
+			if def, ok := macros[t.Value]; ok && t.Kind&TOK_COMMAND > 0 {
 				has_unexpanded_macros = true
 				args := make([][]Token, macros[t.Value].argcount)
 				for n := range macros[t.Value].argcount {

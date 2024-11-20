@@ -1,9 +1,10 @@
-package golatex
+package parse
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
+
+	. "github.com/wyatt915/treeblood/internal/token"
 )
 
 type NodeClass uint64
@@ -25,22 +26,22 @@ const (
 )
 
 const (
-	ctx_root parseContext = 1 << iota
-	ctx_display
-	ctx_text
+	CTX_ROOT parseContext = 1 << iota
+	CTX_DISPLAY
+	CTX_TEXT
 	// ENVIRONMENTS
-	ctx_table
-	ctx_env_has_arg
+	CTX_TABLE
+	CTX_ENV_HAS_ARG
 	// ONLY FONT VARIANTS AFTER THIS POINT
-	ctx_var_normal
-	ctx_var_bb
-	ctx_var_mono
-	ctx_var_script_chancery
-	ctx_var_script_roundhand
-	ctx_var_frak
-	ctx_var_bold
-	ctx_var_italic
-	ctx_var_sans
+	CTX_VAR_NORMAL
+	CTX_VAR_BB
+	CTX_VAR_MONO
+	CTX_VAR_SCRIPT_CHANCERY
+	CTX_VAR_SCRIPT_ROUNDHAND
+	CTX_VAR_FRAK
+	CTX_VAR_BOLD
+	CTX_VAR_ITALIC
+	CTX_VAR_SANS
 )
 
 var (
@@ -63,7 +64,7 @@ type MMLNode struct {
 	Children   []*MMLNode
 }
 
-func newMMLNode(opt ...string) *MMLNode {
+func NewMMLNode(opt ...string) *MMLNode {
 	tagText := make([]string, 2)
 	for i, o := range opt {
 		if i > 2 {
@@ -83,37 +84,37 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 	var node *MMLNode
 	siblings := make([]*MMLNode, 0)
 	var optionString string
-	if context&ctx_root > 0 {
-		node = newMMLNode("math")
-		if context&ctx_display > 0 {
+	if context&CTX_ROOT > 0 {
+		node = NewMMLNode("math")
+		if context&CTX_DISPLAY > 0 {
 			node.Attrib["mode"] = "display"
 			node.Attrib["display"] = "block"
 			node.Attrib["xmlns"] = "http://www.w3.org/1998/Math/MathML"
 		}
-		semantics := newMMLNode("semantics")
-		semantics.Children = append(semantics.Children, ParseTex(tokens, context^ctx_root))
+		semantics := NewMMLNode("semantics")
+		semantics.Children = append(semantics.Children, ParseTex(tokens, context^CTX_ROOT))
 		semantics.doPostProcess()
 		node.Children = append(node.Children, semantics)
 		return node
 	}
 	var i, start int
 	var nextExpr []Token
-	if context&ctx_env_has_arg > 0 {
+	if context&CTX_ENV_HAS_ARG > 0 {
 		nextExpr, start, _ = GetNextExpr(tokens, i)
-		optionString = stringify_tokens(nextExpr)
-		context ^= ctx_env_has_arg
+		optionString = StringifyTokens(nextExpr)
+		context ^= CTX_ENV_HAS_ARG
 		start++
 	}
 	// properties granted by a previous node
 	var promotedProperties NodeProperties
 	for i = start; i < len(tokens); i++ {
 		tok := tokens[i]
-		child := newMMLNode()
-		if context&ctx_table > 0 {
+		child := NewMMLNode()
+		if context&CTX_TABLE > 0 {
 			switch tok.Value {
 			case "&":
 				// dont count an escaped \& command!
-				if tok.Kind&tokReserved > 0 {
+				if tok.Kind&TOK_RESERVED > 0 {
 					child.Properties = prop_cell_sep
 					siblings = append(siblings, child)
 					continue
@@ -125,9 +126,9 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			}
 		}
 		switch {
-		case tok.Kind&tokComment > 0:
+		case tok.Kind&TOK_COMMENT > 0:
 			continue
-		case tok.Kind&tokSubSup > 0:
+		case tok.Kind&TOK_SUBSUP > 0:
 			switch tok.Value {
 			case "^":
 				promotedProperties |= prop_superscript
@@ -136,54 +137,54 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			}
 			// tell the next sibling to be a super- or subscript
 			continue
-		case tok.Kind&tokBadMacro > 0:
+		case tok.Kind&TOK_BADMACRO > 0:
 			child.Tok = tok
 			child.Text = tok.Value
 			child.Tag = "merror"
 			child.Attrib["title"] = "cyclic dependency in macro definition"
-		case tok.Kind&tokEscaped > 0:
+		case tok.Kind&TOK_ESCAPED > 0:
 			child.Tok = tok
 			child.Text = tok.Value
 			child.Tag = "mo"
-			if tok.Kind&(tokOpen|tokClose|tokFence) > 0 {
+			if tok.Kind&(TOK_OPEN|TOK_CLOSE|TOK_FENCE) > 0 {
 				child.Attrib["stretchy"] = "true"
 			}
-		case tok.Kind&(tokOpen|tokEnv) == tokOpen|tokEnv:
+		case tok.Kind&(TOK_OPEN|TOK_ENV) == TOK_OPEN|TOK_ENV:
 			nextExpr, i, _ = GetNextExpr(tokens, i)
 			ctx := setEnvironmentContext(tok, context)
 			child = processEnv(ParseTex(nextExpr, ctx), tok.Value, ctx)
-		case tok.Kind&(tokCurly|tokOpen) == tokCurly|tokOpen:
+		case tok.Kind&(TOK_CURLY|TOK_OPEN) == TOK_CURLY|TOK_OPEN:
 			nextExpr, i, _ = GetNextExpr(tokens, i)
 			child = ParseTex(nextExpr, context)
-		case tok.Kind&tokLetter > 0:
+		case tok.Kind&TOK_LETTER > 0:
 			child.Tok = tok
 			child.Text = tok.Value
 			child.Tag = "mi"
 			child.Properties |= prop_is_atomic_token
 			child.set_variants_from_context(context)
-		case tok.Kind&tokNumber > 0:
+		case tok.Kind&TOK_NUMBER > 0:
 			child.Tag = "mn"
 			child.Text = tok.Value
 			child.Tok = tok
 			child.Properties |= prop_is_atomic_token
-		case tok.Kind&tokFence > 0:
+		case tok.Kind&TOK_FENCE > 0:
 			child.Tag = "mo"
 			child.Attrib["fence"] = "true"
 			child.Attrib["stretchy"] = "true"
-			if tok.Kind&tokCommand > 0 {
+			if tok.Kind&TOK_COMMAND > 0 {
 				i = ProcessCommand(child, context, tok, tokens, i)
 			} else {
 				child.Text = tok.Value
 			}
 			child.Properties |= prop_is_atomic_token
-		case tok.Kind&(tokOpen|tokClose) > 0:
+		case tok.Kind&(TOK_OPEN|TOK_CLOSE) > 0:
 			child.Tag = "mo"
 			child.Text = tok.Value
 			child.Attrib["fence"] = "true"
 			child.Attrib["stretchy"] = "false"
 			child.Properties |= prop_is_atomic_token
-		case tok.Kind&tokWhitespace > 0:
-			if context&ctx_text > 0 {
+		case tok.Kind&TOK_WHITESPACE > 0:
+			if context&CTX_TEXT > 0 {
 				child.Tag = "mspace"
 				child.Text = " "
 				child.Tok.Value = " "
@@ -194,9 +195,9 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			} else {
 				continue
 			}
-		case tok.Kind&(tokClose|tokCurly) == tokClose|tokCurly, tok.Kind&(tokClose|tokEnv) == tokClose|tokEnv:
+		case tok.Kind&(TOK_CLOSE|TOK_CURLY) == TOK_CLOSE|TOK_CURLY, tok.Kind&(TOK_CLOSE|TOK_ENV) == TOK_CLOSE|TOK_ENV:
 			continue
-		case tok.Kind&tokCommand > 0:
+		case tok.Kind&TOK_COMMAND > 0:
 			i = ProcessCommand(child, context, tok, tokens, i)
 		default:
 			child.Tag = "mo"
@@ -219,7 +220,7 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 		node.Children = append(node.Children, siblings...)
 		node.Option = optionString
 	} else { // if len(siblings) > 1 {
-		node = newMMLNode("mrow")
+		node = NewMMLNode("mrow")
 		node.Children = append(node.Children, siblings...)
 		node.Option = optionString
 		//} else if len(siblings) == 1 {
@@ -247,7 +248,7 @@ func (node *MMLNode) postProcessLimitSwitch() {
 		}
 		if child.Properties&prop_limitswitch > 0 {
 			node.Children[i-1].Properties ^= prop_limitsunderover
-			placeholder := newMMLNode()
+			placeholder := NewMMLNode()
 			placeholder.Properties = prop_nonprint
 			node.Children[i-1], node.Children[i] = placeholder, node.Children[i-1]
 		}
@@ -260,12 +261,12 @@ func (node *MMLNode) postProcessSpace() {
 		if node.Children[i] == nil || space_widths[node.Children[i].Tok.Value] == 0 {
 			continue
 		}
-		if node.Children[i].Tok.Kind&tokCommand == 0 {
+		if node.Children[i].Tok.Kind&TOK_COMMAND == 0 {
 			continue
 		}
 		j := i + 1
 		width := space_widths[node.Children[i].Tok.Value]
-		for j < limit && space_widths[node.Children[j].Tok.Value] > 0 && node.Children[j].Tok.Kind&tokCommand > 0 {
+		for j < limit && space_widths[node.Children[j].Tok.Value] > 0 && node.Children[j].Tok.Kind&TOK_COMMAND > 0 {
 			width += space_widths[node.Children[j].Tok.Value]
 			node.Children[j] = nil
 			j++
@@ -376,28 +377,28 @@ func (node *MMLNode) postProcessScripts() {
 		pos := i - 1 //we want to replace the base with our script node
 		if base == nil {
 			pos++ //there is no base so we have to replace the zeroth node
-			base = newMMLNode("none")
+			base = NewMMLNode("none")
 			//skip-- // there is one less node to nillify
 		}
 		if hasBoth {
 			if base.Properties&prop_limitsunderover > 0 {
-				script = newMMLNode("munderover")
+				script = NewMMLNode("munderover")
 			} else {
-				script = newMMLNode("msubsup")
+				script = NewMMLNode("msubsup")
 			}
 			script.Children = append(script.Children, base, sub, super)
 		} else if hasSub {
 			if base.Properties&prop_limitsunderover > 0 {
-				script = newMMLNode("munder")
+				script = NewMMLNode("munder")
 			} else {
-				script = newMMLNode("msub")
+				script = NewMMLNode("msub")
 			}
 			script.Children = append(script.Children, base, sub)
 		} else if hasSuper {
 			if base.Properties&prop_limitsunderover > 0 {
-				script = newMMLNode("mover")
+				script = NewMMLNode("mover")
 			} else {
-				script = newMMLNode("msup")
+				script = NewMMLNode("msup")
 			}
 			script.Children = append(script.Children, base, super)
 		} else {
@@ -433,9 +434,9 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 		tag = n.Tag
 	} else {
 		switch n.Tok.Kind {
-		case tokNumber:
+		case TOK_NUMBER:
 			tag = "mn"
-		case tokLetter:
+		case TOK_LETTER:
 			tag = "mi"
 		default:
 			tag = "mo"
@@ -469,26 +470,4 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 	w.WriteString("</")
 	w.WriteString(tag)
 	w.WriteRune('>')
-}
-
-var lt = regexp.MustCompile("<")
-
-func TexToMML(tex string, macros map[string]MacroInfo) (string, error) {
-	tokens, err := tokenize(tex)
-	if err != nil {
-		return "", err
-	}
-	if macros != nil {
-		tokens, err = ExpandMacros(tokens, macros)
-		if err != nil {
-			return "", err
-		}
-	}
-	annotation := newMMLNode("annotation", lt.ReplaceAllString(tex, "&lt;"))
-	annotation.Attrib["encoding"] = "application/x-tex"
-	ast := ParseTex(tokens, ctx_root|ctx_display)
-	ast.Children[0].Children = append(ast.Children[0].Children, annotation)
-	var builder strings.Builder
-	ast.Write(&builder, 1)
-	return builder.String(), err
 }

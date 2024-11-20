@@ -1,4 +1,4 @@
-package golatex
+package parse
 
 type symbolKind int
 

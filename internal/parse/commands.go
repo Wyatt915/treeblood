@@ -1,9 +1,11 @@
-package golatex
+package parse
 
 import (
 	"log"
 	"strings"
 	"unicode"
+
+	. "github.com/wyatt915/treeblood/internal/token"
 )
 
 var (
@@ -45,19 +47,19 @@ var (
 	}
 
 	math_variants = map[string]parseContext{
-		"mathbb":     ctx_var_bb,
-		"mathbf":     ctx_var_bold,
-		"mathbfit":   ctx_var_bold | ctx_var_italic,
-		"mathcal":    ctx_var_script_chancery,
-		"mathfrak":   ctx_var_frak,
-		"mathit":     ctx_var_italic,
-		"mathrm":     ctx_var_normal,
-		"mathscr":    ctx_var_script_roundhand,
-		"mathsf":     ctx_var_sans,
-		"mathsfbf":   ctx_var_sans | ctx_var_bold,
-		"mathsfbfsl": ctx_var_sans | ctx_var_bold | ctx_var_italic,
-		"mathsfsl":   ctx_var_sans | ctx_var_italic,
-		"mathtt":     ctx_var_mono,
+		"mathbb":     CTX_VAR_BB,
+		"mathbf":     CTX_VAR_BOLD,
+		"mathbfit":   CTX_VAR_BOLD | CTX_VAR_ITALIC,
+		"mathcal":    CTX_VAR_SCRIPT_CHANCERY,
+		"mathfrak":   CTX_VAR_FRAK,
+		"mathit":     CTX_VAR_ITALIC,
+		"mathrm":     CTX_VAR_NORMAL,
+		"mathscr":    CTX_VAR_SCRIPT_ROUNDHAND,
+		"mathsf":     CTX_VAR_SANS,
+		"mathsfbf":   CTX_VAR_SANS | CTX_VAR_BOLD,
+		"mathsfbfsl": CTX_VAR_SANS | CTX_VAR_BOLD | CTX_VAR_ITALIC,
+		"mathsfsl":   CTX_VAR_SANS | CTX_VAR_ITALIC,
+		"mathtt":     CTX_VAR_MONO,
 	}
 
 	accents = map[string]rune{
@@ -159,7 +161,7 @@ var (
 )
 
 func isolateMathVariant(ctx parseContext) parseContext {
-	return ctx & ^(ctx_var_normal - 1)
+	return ctx & ^(CTX_VAR_NORMAL - 1)
 }
 func restringify(n *MMLNode, sb *strings.Builder) {
 	for i, c := range n.Children {
@@ -177,7 +179,7 @@ func restringify(n *MMLNode, sb *strings.Builder) {
 func getOption(tokens []Token, idx int) ([]Token, int) {
 	if idx < len(tokens)-1 {
 		result, i, kind := GetNextExpr(tokens, idx+1)
-		if kind == expr_options {
+		if kind == EXPR_OPTIONS {
 			return result, i
 		}
 	}
@@ -215,7 +217,7 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		n.Tag = "mover"
 		n.Attrib["accent"] = "true"
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
-		acc := newMMLNode("mo", string(ch))
+		acc := NewMMLNode("mo", string(ch))
 		acc.Attrib["stretchy"] = "true" // once more for chrome...
 		base := ParseTex(nextExpr, context)
 		if base.Tag == "mrow" && len(base.Children) == 1 {
@@ -255,7 +257,7 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 			case sym_alphabetic:
 				n.Tag = "mi"
 			default:
-				if tok.Kind&tokFence > 0 {
+				if tok.Kind&TOK_FENCE > 0 {
 					n.Tag = "mo"
 				} else {
 					n.Tag = "mi"
@@ -275,9 +277,9 @@ func processCommandArgs(n *MMLNode, context parseContext, tok Token, tokens []To
 	var option []Token
 	arguments := make([][]Token, 0)
 	var expr []Token
-	var kind exprKind
+	var kind ExprKind
 	expr, idx, kind = GetNextExpr(tokens, idx+1)
-	if kind == expr_options {
+	if kind == EXPR_OPTIONS {
 		option = expr
 	} else {
 		arguments = append(arguments, expr)
@@ -289,20 +291,20 @@ func processCommandArgs(n *MMLNode, context parseContext, tok Token, tokens []To
 	}
 	switch tok.Value {
 	case "substack":
-		ParseTex(arguments[0], context|ctx_table, n)
+		ParseTex(arguments[0], context|CTX_TABLE, n)
 		processTable(n)
 		n.Attrib["rowspacing"] = "0" // Incredibly, chrome does this by default
 		n.Attrib["displaystyle"] = "false"
 	case "multirow":
 		ParseTex(arguments[2], context, n)
-		n.Attrib["rowspan"] = stringify_tokens(arguments[0])
+		n.Attrib["rowspan"] = StringifyTokens(arguments[0])
 	case "underbrace", "overbrace":
 		doUnderOverBrace(tok, n, ParseTex(arguments[0], context))
 	case "text":
-		context |= ctx_text
+		context |= CTX_TEXT
 		n.Children = nil
 		n.Tag = "mtext"
-		n.Text = stringify_tokens(arguments[0])
+		n.Text = StringifyTokens(arguments[0])
 		//n.Properties |= prop_is_atomic_token
 	case "sqrt":
 		n.Tag = "msqrt"
@@ -356,7 +358,7 @@ func processCommandArgs(n *MMLNode, context parseContext, tok Token, tokens []To
 func prescript(multi *MMLNode, super, sub, base []Token, context parseContext) {
 	multi.Tag = "mmultiscripts"
 	multi.Children = append(multi.Children, ParseTex(base, context))
-	multi.Children = append(multi.Children, newMMLNode("none"), newMMLNode("none"), newMMLNode("mprescripts"))
+	multi.Children = append(multi.Children, NewMMLNode("none"), NewMMLNode("none"), NewMMLNode("mprescripts"))
 	temp := ParseTex(sub, context)
 	if temp != nil {
 		multi.Children = append(multi.Children, temp)
@@ -382,14 +384,14 @@ func sideset(multi *MMLNode, left, right, base []Token, context parseContext) {
 			switch t.Value {
 			case "^":
 				if last == t.Value {
-					subscripts = append(subscripts, newMMLNode("none"))
+					subscripts = append(subscripts, NewMMLNode("none"))
 				}
 				expr, i, _ = GetNextExpr(side, i+1)
 				superscripts = append(superscripts, ParseTex(expr, context))
 				last = t.Value
 			case "_":
 				if last == t.Value {
-					superscripts = append(superscripts, newMMLNode("none"))
+					superscripts = append(superscripts, NewMMLNode("none"))
 				}
 				expr, i, _ = GetNextExpr(side, i+1)
 				subscripts = append(subscripts, ParseTex(expr, context))
@@ -399,10 +401,10 @@ func sideset(multi *MMLNode, left, right, base []Token, context parseContext) {
 			}
 		}
 		if len(superscripts) == 0 {
-			superscripts = append(superscripts, newMMLNode("none"))
+			superscripts = append(superscripts, NewMMLNode("none"))
 		}
 		if len(subscripts) == 0 {
-			subscripts = append(subscripts, newMMLNode("none"))
+			subscripts = append(subscripts, NewMMLNode("none"))
 		}
 		result := make([]*MMLNode, len(subscripts)+len(superscripts))
 		for i := range len(subscripts) {
@@ -412,7 +414,7 @@ func sideset(multi *MMLNode, left, right, base []Token, context parseContext) {
 		return result
 	}
 	multi.Children = append(multi.Children, getScripts(right)...)
-	multi.Children = append(multi.Children, newMMLNode("mprescripts"))
+	multi.Children = append(multi.Children, NewMMLNode("mprescripts"))
 	multi.Children = append(multi.Children, getScripts(left)...)
 }
 
@@ -442,7 +444,7 @@ func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
 func doFraction(tok Token, parent, numerator, denominator *MMLNode) {
 	var frac *MMLNode
 	if tok.Value == "binom" {
-		frac = newMMLNode()
+		frac = NewMMLNode()
 		parent.Tag = "mrow"
 	} else {
 		frac = parent
@@ -458,5 +460,4 @@ func doFraction(tok Token, parent, numerator, denominator *MMLNode) {
 		frac.Attrib["linethickness"] = "0"
 		parent.Children = append(parent.Children, strechyOP("("), frac, strechyOP(")"))
 	}
-
 }

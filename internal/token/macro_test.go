@@ -1,4 +1,4 @@
-package golatex
+package token
 
 import (
 	"fmt"

@@ -1,4 +1,4 @@
-package golatex
+package parse
 
 import "log"
 
@@ -30,30 +30,30 @@ func (n *MMLNode) transformByVariant(variant string) {
 func (n *MMLNode) set_variants_from_context(context parseContext) {
 	var variant string
 	switch isolateMathVariant(context) {
-	case ctx_var_normal:
+	case CTX_VAR_NORMAL:
 		n.Attrib["mathvariant"] = "normal"
 		return
-	case ctx_var_bb:
+	case CTX_VAR_BB:
 		variant = "double-struck"
-	case ctx_var_bold:
+	case CTX_VAR_BOLD:
 		variant = "bold"
-	case ctx_var_bold | ctx_var_italic:
+	case CTX_VAR_BOLD | CTX_VAR_ITALIC:
 		variant = "bold-italic"
-	case ctx_var_script_chancery, ctx_var_script_roundhand:
+	case CTX_VAR_SCRIPT_CHANCERY, CTX_VAR_SCRIPT_ROUNDHAND:
 		variant = "script"
-	case ctx_var_frak:
+	case CTX_VAR_FRAK:
 		variant = "fraktur"
-	case ctx_var_italic:
+	case CTX_VAR_ITALIC:
 		variant = "italic"
-	case ctx_var_sans:
+	case CTX_VAR_SANS:
 		variant = "sans-serif"
-	case ctx_var_sans | ctx_var_bold:
+	case CTX_VAR_SANS | CTX_VAR_BOLD:
 		variant = "sans-serif-bold"
-	case ctx_var_sans | ctx_var_bold | ctx_var_italic:
+	case CTX_VAR_SANS | CTX_VAR_BOLD | CTX_VAR_ITALIC:
 		variant = "sans-serif-bold-italic"
-	case ctx_var_sans | ctx_var_italic:
+	case CTX_VAR_SANS | CTX_VAR_ITALIC:
 		variant = "sans-serif-italic"
-	case ctx_var_mono:
+	case CTX_VAR_MONO:
 		variant = "monospace"
 	case 0:
 		return
@@ -61,10 +61,10 @@ func (n *MMLNode) set_variants_from_context(context parseContext) {
 	n.transformByVariant(variant)
 	var variationselector rune
 	switch isolateMathVariant(context) {
-	case ctx_var_script_chancery:
+	case CTX_VAR_SCRIPT_CHANCERY:
 		variationselector = 0xfe00
 		n.Attrib["class"] = "calligraphic"
-	case ctx_var_script_roundhand:
+	case CTX_VAR_SCRIPT_ROUNDHAND:
 		variationselector = 0xfe01
 	}
 	if variationselector > 0 {
