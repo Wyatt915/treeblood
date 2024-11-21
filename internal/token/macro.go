@@ -1,7 +1,6 @@
 package token
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 )
@@ -93,9 +92,6 @@ func resolve_dependency_graph(macros map[string][]Token) []string {
 		//if has_incoming[i] {
 		result = append(result, idx_macro[idx])
 		//}
-	}
-	for _, idx := range process_order {
-		fmt.Println(idx_macro[idx])
 	}
 	return result
 }

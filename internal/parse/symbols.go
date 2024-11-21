@@ -1547,6 +1547,11 @@ var symbolTable = map[string]symbol{
 		entity: "&plusdo;",
 		kind:   sym_binaryop,
 	},
+	"dots": {
+		char:   "…",
+		entity: "&#x2026;",
+		kind:   sym_other,
+	},
 	"doublebarwedge ?": {
 		char:   "⌆",
 		entity: "&Barwed;",
@@ -1952,6 +1957,11 @@ var symbolTable = map[string]symbol{
 		entity: "&homtht;",
 		kind:   sym_other,
 	},
+	"lVert": {
+		char:   "‖",
+		entity: "&Vert;",
+		kind:   sym_opening,
+	},
 	"lambda": {
 		char:   "λ",
 		entity: "&lambda;",
@@ -2186,6 +2196,11 @@ var symbolTable = map[string]symbol{
 		char:   "⋉",
 		entity: "&ltimes;",
 		kind:   sym_binaryop,
+	},
+	"lvert": {
+		char:   "|",
+		entity: "|",
+		kind:   sym_opening,
 	},
 	"lvertneqq": {
 		char:   "≨︀",
@@ -2727,6 +2742,11 @@ var symbolTable = map[string]symbol{
 		entity: "&equest;",
 		kind:   sym_relation,
 	},
+	"rVert": {
+		char:   "‖",
+		entity: "&Vert;",
+		kind:   sym_opening,
+	},
 	"rangle": {
 		char:   "⟩",
 		entity: "&rang;",
@@ -2847,6 +2867,11 @@ var symbolTable = map[string]symbol{
 		entity: "&rtimes;",
 		kind:   sym_binaryop,
 	},
+	"rvert": {
+		char:   "|",
+		entity: "|",
+		kind:   sym_closing,
+	},
 	"saturn": {
 		char:   "♄",
 		entity: "",
@@ -2856,6 +2881,11 @@ var symbolTable = map[string]symbol{
 		char:   "↘",
 		entity: "&drarr;",
 		kind:   sym_relation,
+	},
+	"sector": {
+		char:   "⌔",
+		entity: "&#x2314",
+		kind:   sym_other,
 	},
 	"seovnearrow": {
 		char:   "⤭",
@@ -2887,11 +2917,12 @@ var symbolTable = map[string]symbol{
 		entity: "&sim;",
 		kind:   sym_relation,
 	},
-	"sim\\joinrel\\leadsto": {
-		char:   "⟿",
-		entity: "&dzigrarr;",
-		kind:   sym_relation,
-	},
+	// SPURIOUS
+	//"sim\\joinrel\\leadsto": {
+	//	char:   "⟿",
+	//	entity: "&dzigrarr;",
+	//	kind:   sym_relation,
+	//},
 	"simeq": {
 		char:   "≃",
 		entity: "&sime;",
@@ -3131,6 +3162,11 @@ var symbolTable = map[string]symbol{
 		char:   "⤪",
 		entity: "&swnwar;",
 		kind:   sym_relation,
+	},
+	"triangle": {
+		char:   "△",
+		entity: "&#x25B3;",
+		kind:   sym_other,
 	},
 	"triangledown": {
 		char:   "▿",

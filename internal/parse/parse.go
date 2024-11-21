@@ -7,6 +7,13 @@ import (
 	. "github.com/wyatt915/treeblood/internal/token"
 )
 
+func init() {
+	//Symbol Aliases
+	symbolTable["implies"] = symbolTable["Longleftrightarrow"]
+	symbolTable["land"] = symbolTable["wedge"]
+	symbolTable["lor"] = symbolTable["vee"]
+}
+
 type NodeClass uint64
 type NodeProperties uint64
 type parseContext uint64

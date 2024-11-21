@@ -19,6 +19,7 @@ var (
 		"binom":         2,
 		"dfrac":         2,
 		"textfrac":      2,
+		"dv":            2,
 		"substack":      1,
 		"underbrace":    1,
 		"overbrace":     1,
