@@ -1,7 +1,6 @@
 package token
 
 import (
-	"log"
 	"strconv"
 )
 
@@ -30,7 +29,7 @@ func topological_sort(graph [][]bool, sources *stack[int]) ([]int, error) {
 	for _, row := range graph {
 		for i, edge := range row {
 			if edge {
-				log.Println("WARN: cyclic or recursive macro definition")
+				logger.Println("WARN: cyclic or recursive macro definition")
 			} else {
 				cycle_free[i] = true
 			}
@@ -84,7 +83,7 @@ func resolve_dependency_graph(macros map[string][]Token) []string {
 	}
 	process_order, err := topological_sort(graph, sources)
 	if err != nil {
-		log.Println(err.Error())
+		logger.Println(err.Error())
 	}
 	result := make([]string, 0, len(macros))
 	for _, idx := range process_order {
@@ -121,7 +120,7 @@ func PrepareMacros(macros map[string]string) map[string]MacroInfo {
 	for macro, def := range macros {
 		toks, err := Tokenize(def)
 		if err != nil {
-			log.Println(err.Error())
+			logger.Println(err.Error())
 			continue
 		}
 		argcounts[macro] = 0
@@ -139,7 +138,7 @@ func PrepareMacros(macros map[string]string) map[string]MacroInfo {
 		toks := tokenized_macros[macro]
 		result, err := ExpandMacros(toks, info)
 		if err != nil {
-			log.Printf("could not flatten macro '%s': %s\n", macro, err.Error())
+			logger.Printf("could not flatten macro '%s': %s\n", macro, err.Error())
 		} else {
 			flattened[macro] = MacroInfo{result, argcounts[macro]}
 			tokenized_macros[macro] = result

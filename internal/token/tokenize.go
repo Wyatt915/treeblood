@@ -1,7 +1,8 @@
 package token
 
 import (
-	"fmt"
+	"log"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -48,6 +49,7 @@ const (
 )
 
 var (
+	logger          *log.Logger
 	brace_match_map = map[string]string{
 		"(": ")",
 		"{": "}",
@@ -60,6 +62,10 @@ var (
 	char_close    = []rune(")]}")
 	char_reserved = []rune(`#$%^&_{}~\`)
 )
+
+func init() {
+	logger = log.New(os.Stderr, "TreeBlood: ", log.LstdFlags)
+}
 
 type Token struct {
 	Kind        TokenKind
@@ -401,7 +407,7 @@ func matchBracesCritical(tokens []Token, kind TokenKind) error {
 		if t.Kind&TOK_ENV > 0 {
 			kind = "environment (" + t.Value + ")"
 		}
-		context := errorContext(t, StringifyTokens(tokens[max(0, pos-contextLength):min(pos+1, len(tokens))]))
+		context := errorContext(t, StringifyTokens(tokens[max(0, pos-contextLength):min(pos+contextLength, len(tokens))]))
 		return newMismatchedBraceError(kind, "<pre>"+context+"</pre>", pos)
 	}
 	return nil
@@ -421,9 +427,9 @@ func matchBracesLazy(tokens []Token) {
 		}
 		if t.Kind&TOK_CLOSE > 0 {
 			if s.empty() {
-				fmt.Println("WARN: Potentially unmatched closing delimeter")
-				context := StringifyTokens(tokens[max(0, i-contextLength) : i+1])
-				fmt.Println(errorContext(t, context))
+				logger.Println("WARN: Potentially unmatched closing delimeter")
+				context := StringifyTokens(tokens[max(0, i-contextLength):min(i+contextLength, len(tokens))])
+				logger.Println(errorContext(t, context))
 				continue
 			}
 			mate := tokens[s.Peek()]
@@ -432,9 +438,9 @@ func matchBracesLazy(tokens []Token) {
 				tokens[i].MatchOffset = pos - i
 				tokens[pos].MatchOffset = i - pos
 			} else {
-				fmt.Println("WARN: Potentially unmatched closing delimeter")
-				context := StringifyTokens(tokens[max(0, i-contextLength) : i+1])
-				fmt.Println(errorContext(t, context))
+				logger.Println("WARN: Potentially unmatched closing delimeter")
+				context := StringifyTokens(tokens[max(0, i-contextLength):min(i+contextLength, len(tokens))])
+				logger.Println(errorContext(t, context))
 			}
 		}
 	}

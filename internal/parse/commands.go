@@ -1,7 +1,6 @@
 package parse
 
 import (
-	"log"
 	"strings"
 	"unicode"
 
@@ -255,6 +254,7 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 				n.Tag = "mo"
 				n.Attrib["largeop"] = "true"
 				n.Attrib["movablelimits"] = "true"
+				n.Properties |= prop_limitsunderover
 			case sym_alphabetic:
 				n.Tag = "mi"
 			default:
@@ -265,7 +265,7 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 				}
 			}
 		} else {
-			log.Printf("NOTE: unknown command '%s'. Treating as operator or function name.\n", tok.Value)
+			logger.Printf("NOTE: unknown command '%s'. Treating as operator or function name.\n", tok.Value)
 			n.Tag = "mo"
 		}
 	}

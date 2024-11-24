@@ -2,12 +2,15 @@ package parse
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"strings"
 
 	. "github.com/wyatt915/treeblood/internal/token"
 )
 
 func init() {
+	logger = log.New(os.Stderr, "TreeBlood: ", log.LstdFlags)
 	//Symbol Aliases
 	symbolTable["implies"] = symbolTable["Longleftrightarrow"]
 	symbolTable["land"] = symbolTable["wedge"]
@@ -52,6 +55,7 @@ const (
 )
 
 var (
+	logger            *log.Logger
 	self_closing_tags = map[string]bool{
 		"malignmark":  true,
 		"maligngroup": true,

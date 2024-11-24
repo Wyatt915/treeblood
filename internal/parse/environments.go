@@ -44,6 +44,21 @@ func splitByFunc[T any](s []T, f func(T) bool) [][]T {
 	return out
 }
 
+type align int
+
+const (
+	alignLeft align = iota
+	alignRight
+	alignCenter
+)
+
+type alignInfo struct {
+	colNum    int
+	isFirst   bool
+	isLast    bool
+	alignment align
+}
+
 func processTable(table *MMLNode) {
 	rows := make([]*MMLNode, 0)
 	var cellNode *MMLNode
@@ -116,6 +131,13 @@ func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 	case "align", "align*":
 		node.Attrib["displaystyle"] = "true"
 		node.Attrib["columnalign"] = "left"
+		for r, row := range node.Children {
+			firstcol := 0
+			for firstcol < len(row.Children) && (row.Children[firstcol] == nil || row.Children[firstcol].Tag != "mtd") {
+				firstcol++
+			}
+			node.Children[r].Children[firstcol].Attrib["columnalign"] = "right"
+		}
 	case "subarray":
 		node.Attrib["displaystyle"] = "false"
 	default:

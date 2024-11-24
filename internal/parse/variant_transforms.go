@@ -1,11 +1,9 @@
 package parse
 
-import "log"
-
 func (n *MMLNode) transformByVariant(variant string) {
 	rules, ok := transforms[variant]
 	if !ok {
-		log.Println("Unknown variant transform:", variant)
+		logger.Println("Unknown variant transform:", variant)
 		return
 	}
 	chars := []rune(n.Text)
