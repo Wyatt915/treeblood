@@ -1,26 +1,132 @@
 package parse
 
-type symbolKind int
+type symbolKind uint64
 
 const (
-	symNormal symbolKind = iota
+	sym_normal symbolKind = 1 << iota
 	sym_alphabetic
 	sym_binaryop
 	sym_other
 	sym_relation
-	sym_normal
 	sym_opening
 	sym_closing
 	sym_diacritic
 	sym_large
 )
 
+var (
+	accents = map[string]rune{
+		"acute":          0x00b4,
+		"bar":            0x0305,
+		"breve":          0x0306,
+		"check":          0x030c,
+		"dot":            0x02d9,
+		"ddot":           0x0308,
+		"dddot":          0x20db,
+		"ddddot":         0x20dc,
+		"frown":          0x0311,
+		"grave":          0x0060,
+		"hat":            0x0302,
+		"mathring":       0x030a,
+		"overleftarrow":  0x2190,
+		"overline":       0x0332,
+		"overrightarrow": 0x2192,
+		"tilde":          0x0303,
+		"vec":            0x20d7,
+		"widehat":        0x0302,
+		"widetilde":      0x0360,
+	}
+	accents_below = map[string]rune{
+		"underline": 0x0332,
+	}
+
+	// Measured in 18ths of an em
+	space_widths = map[string]int{
+		`\`:     0, // newline
+		",":     3,
+		":":     4,
+		";":     5,
+		" ":     9,
+		"quad":  18,
+		"qquad": 36,
+		"!":     -3,
+	}
+
+	negation_map = map[string]string{
+		"<":               "≮",
+		"=":               "≠",
+		">":               "≯",
+		"Bumpeq":          "≎̸",
+		"Leftarrow":       "⇍",
+		"Rightarrow":      "⇏",
+		"VDash":           "⊯",
+		"Vdash":           "⊮",
+		"apid":            "≋̸",
+		"approx":          "≉",
+		"bumpeq":          "≏̸",
+		"cong":            "≇",
+		"doteq":           "≐̸",
+		"eqsim":           "≂̸",
+		"equiv":           "≢",
+		"exists":          "∄",
+		"geq":             "≱",
+		"geqslant":        "⩾̸",
+		"greaterless":     "≹",
+		"gt":              "≯",
+		"in":              "∉",
+		"leftarrow":       "↚",
+		"leftrightarrow":  "↮",
+		"leq":             "≰",
+		"leqslant":        "⩽̸",
+		"lessgreater":     "≸",
+		"lt":              "≮",
+		"mid":             "∤",
+		"ni":              "∌",
+		"otgreaterless":   "≹",
+		"otlessgreater":   "≸",
+		"parallel":        "∦",
+		"prec":            "⊀",
+		"preceq":          "⪯̸",
+		"precsim":         "≾̸",
+		"rightarrow":      "↛",
+		"sim":             "≁",
+		"sime":            "≄",
+		"simeq":           "≄",
+		"sqsubseteq":      "⋢",
+		"sqsupseteq":      "⋣",
+		"subset":          "⊄",
+		"subseteq":        "⊈",
+		"subseteqq":       "⫅̸",
+		"succ":            "⊁",
+		"succeq":          "⪰̸",
+		"succsim":         "≿̸",
+		"supset":          "⊅",
+		"supseteq":        "⊉",
+		"supseteqq":       "⫆̸",
+		"triangleleft":    "⋪",
+		"trianglelefteq":  "⋬",
+		"triangleright":   "⋫",
+		"trianglerighteq": "⋭",
+		"vDash":           "⊭",
+		"vdash":           "⊬",
+	}
+)
+
 type symbol struct {
-	char   string
-	entity string
-	kind   symbolKind
+	char       string
+	entity     string
+	kind       symbolKind
+	properties NodeProperties
 }
 
+// NOTE ABOUT PROPERTIES FIELD
+// All integral symbols have the property prop_limitsunderover. This is the
+// OPPOSITE of what we want, so in commands.go, we use an XOR rather than an OR
+// when setting the properties for the emitted MMLNode.
+
+// Greek Capital letters are upright, unless prefixed by 'var', in which case
+// they are italic. (follows https://www.ams.org/arc/tex/amsmath/amsldoc.pdf
+// §9.4 "Italic Greek Letters")
 var symbolTable = map[string]symbol{
 	"$": {
 		char:   "$",
@@ -33,9 +139,10 @@ var symbolTable = map[string]symbol{
 		kind:   sym_other,
 	},
 	"Alpha": {
-		char:   "Α",
-		entity: "&Alpha;",
-		kind:   sym_alphabetic,
+		char:       "Α",
+		entity:     "&Alpha;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"Angle": {
 		char:   "⦜",
@@ -48,9 +155,10 @@ var symbolTable = map[string]symbol{
 		kind:   sym_alphabetic,
 	},
 	"Beta": {
-		char:   "Β",
-		entity: "&Bgr;",
-		kind:   sym_alphabetic,
+		char:       "Β",
+		entity:     "&Bgr;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"Bumpeq": {
 		char:   "≎",
@@ -63,9 +171,10 @@ var symbolTable = map[string]symbol{
 		kind:   sym_binaryop,
 	},
 	"Chi": {
-		char:   "Χ",
-		entity: "&KHgr;",
-		kind:   sym_alphabetic,
+		char:       "Χ",
+		entity:     "&KHgr;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"Colon": {
 		char:   "∷",
@@ -88,14 +197,16 @@ var symbolTable = map[string]symbol{
 		kind:   sym_relation,
 	},
 	"Delta": {
-		char:   "Δ",
-		entity: "&Delta;",
-		kind:   sym_alphabetic,
+		char:       "Δ",
+		entity:     "&Delta;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"Digamma": {
-		char:   "Ϝ",
-		entity: "&Gammad;",
-		kind:   sym_alphabetic,
+		char:       "Ϝ",
+		entity:     "&Gammad;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"Doteq": {
 		char:   "≑",
@@ -563,9 +674,10 @@ var symbolTable = map[string]symbol{
 		kind:   sym_other,
 	},
 	"Epsilon": {
-		char:   "Ε",
-		entity: "&Egr;",
-		kind:   sym_alphabetic,
+		char:       "Ε",
+		entity:     "&Egr;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"Equal": {
 		char:   "⩵",
@@ -573,9 +685,10 @@ var symbolTable = map[string]symbol{
 		kind:   sym_relation,
 	},
 	"Eta": {
-		char:   "Η",
-		entity: "&EEgr;",
-		kind:   sym_alphabetic,
+		char:       "Η",
+		entity:     "&EEgr;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"Game": {
 		char:   "⅁",
@@ -583,9 +696,10 @@ var symbolTable = map[string]symbol{
 		kind:   sym_normal,
 	},
 	"Gamma": {
-		char:   "Γ",
-		entity: "&Gamma;",
-		kind:   sym_alphabetic,
+		char:       "Γ",
+		entity:     "&Gamma;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"Im": {
 		char:   "ℑ",
@@ -593,14 +707,16 @@ var symbolTable = map[string]symbol{
 		kind:   sym_alphabetic,
 	},
 	"Iota": {
-		char:   "Ι",
-		entity: "&Igr;",
-		kind:   sym_alphabetic,
+		char:       "Ι",
+		entity:     "&Igr;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"Kappa": {
-		char:   "Κ",
-		entity: "&Kgr;",
-		kind:   sym_alphabetic,
+		char:       "Κ",
+		entity:     "&Kgr;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"Koppa": {
 		char:   "Ϟ",
@@ -608,9 +724,10 @@ var symbolTable = map[string]symbol{
 		kind:   sym_alphabetic,
 	},
 	"Lambda": {
-		char:   "Λ",
-		entity: "&Lambda;",
-		kind:   sym_alphabetic,
+		char:       "Λ",
+		entity:     "&Lambda;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"LeftDownTeeVector": {
 		char:   "⥡",
@@ -753,9 +870,10 @@ var symbolTable = map[string]symbol{
 		kind:   sym_relation,
 	},
 	"Omega": {
-		char:   "Ω",
-		entity: "&OHgr;",
-		kind:   sym_alphabetic,
+		char:       "Ω",
+		entity:     "&OHgr;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"P": {
 		char:   "¶",
@@ -763,19 +881,22 @@ var symbolTable = map[string]symbol{
 		kind:   sym_normal,
 	},
 	"Phi": {
-		char:   "Φ",
-		entity: "&PHgr;",
-		kind:   sym_alphabetic,
+		char:       "Φ",
+		entity:     "&PHgr;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"Pi": {
-		char:   "Π",
-		entity: "&Pgr;",
-		kind:   sym_alphabetic,
+		char:       "Π",
+		entity:     "&Pgr;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"Psi": {
-		char:   "Ψ",
-		entity: "&PSgr;",
-		kind:   sym_alphabetic,
+		char:       "Ψ",
+		entity:     "&PSgr;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"Re": {
 		char:   "ℜ",
@@ -788,9 +909,10 @@ var symbolTable = map[string]symbol{
 		kind:   sym_relation,
 	},
 	"Rho": {
-		char:   "Ρ",
-		entity: "&Rgr;",
-		kind:   sym_alphabetic,
+		char:       "Ρ",
+		entity:     "&Rgr;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"RightDownTeeVector": {
 		char:   "⥝",
@@ -868,9 +990,10 @@ var symbolTable = map[string]symbol{
 		kind:   sym_alphabetic,
 	},
 	"Sigma": {
-		char:   "Σ",
-		entity: "&Sgr;",
-		kind:   sym_alphabetic,
+		char:       "Σ",
+		entity:     "&Sgr;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"Stigma": {
 		char:   "Ϛ",
@@ -888,14 +1011,16 @@ var symbolTable = map[string]symbol{
 		kind:   sym_relation,
 	},
 	"Tau": {
-		char:   "Τ",
-		entity: "&Tgr;",
-		kind:   sym_alphabetic,
+		char:       "Τ",
+		entity:     "&Tgr;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"Theta": {
-		char:   "Θ",
-		entity: "&THgr;",
-		kind:   sym_alphabetic,
+		char:       "Θ",
+		entity:     "&THgr;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"UpArrowBar": {
 		char:   "⤒",
@@ -918,9 +1043,10 @@ var symbolTable = map[string]symbol{
 		kind:   sym_relation,
 	},
 	"Upsilon": {
-		char:   "Υ",
-		entity: "&Ugr;",
-		kind:   sym_alphabetic,
+		char:       "Υ",
+		entity:     "&Ugr;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"Uuparrow": {
 		char:   "⤊",
@@ -953,14 +1079,16 @@ var symbolTable = map[string]symbol{
 		kind:   sym_other,
 	},
 	"Xi": {
-		char:   "Ξ",
-		entity: "&Xgr;",
-		kind:   sym_alphabetic,
+		char:       "Ξ",
+		entity:     "&Xgr;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"Zeta": {
-		char:   "Ζ",
-		entity: "&Zgr;",
-		kind:   sym_alphabetic,
+		char:       "Ζ",
+		entity:     "&Zgr;",
+		kind:       sym_alphabetic,
+		properties: prop_sym_upright,
 	},
 	"_": {
 		char:   "_",
@@ -1343,14 +1471,16 @@ var symbolTable = map[string]symbol{
 		kind:   sym_binaryop,
 	},
 	"clockoint": {
-		char:   "⨏",
-		entity: "&slint;",
-		kind:   sym_large,
+		char:       "⨏",
+		entity:     "&slint;",
+		kind:       sym_large,
+		properties: prop_limitsunderover,
 	},
 	"clwintegral": {
-		char:   "∱",
-		entity: "&cwint;",
-		kind:   sym_large,
+		char:       "∱",
+		entity:     "&cwint;",
+		kind:       sym_large,
+		properties: prop_limitsunderover,
 	},
 	"complement": {
 		char:   "∁",
@@ -1848,19 +1978,22 @@ var symbolTable = map[string]symbol{
 		kind:   sym_relation,
 	},
 	"iiiint": {
-		char:   "⨌",
-		entity: "&qint;",
-		kind:   sym_large,
+		char:       "⨌",
+		entity:     "&qint;",
+		kind:       sym_large,
+		properties: prop_limitsunderover,
 	},
 	"iiint": {
-		char:   "∭",
-		entity: "&tint;",
-		kind:   sym_large,
+		char:       "∭",
+		entity:     "&tint;",
+		kind:       sym_large,
+		properties: prop_limitsunderover,
 	},
 	"iint": {
-		char:   "∬",
-		entity: "&Int;",
-		kind:   sym_large,
+		char:       "∬",
+		entity:     "&Int;",
+		kind:       sym_large,
+		properties: prop_limitsunderover,
 	},
 	"image": {
 		char:   "⊷",
@@ -1883,29 +2016,34 @@ var symbolTable = map[string]symbol{
 		kind:   sym_normal,
 	},
 	"int": {
-		char:   "∫",
-		entity: "&int;",
-		kind:   sym_large,
+		char:       "∫",
+		entity:     "&int;",
+		kind:       sym_large,
+		properties: prop_limitsunderover,
 	},
 	"intBar": {
-		char:   "⨎",
-		entity: "&Barint;",
-		kind:   sym_large,
+		char:       "⨎",
+		entity:     "&Barint;",
+		kind:       sym_large,
+		properties: prop_limitsunderover,
 	},
 	"intbar": {
-		char:   "⨍",
-		entity: "&fpartint;",
-		kind:   sym_large,
+		char:       "⨍",
+		entity:     "&fpartint;",
+		kind:       sym_large,
+		properties: prop_limitsunderover,
 	},
 	"intcap": {
-		char:   "⨙",
-		entity: "&capint;",
-		kind:   sym_large,
+		char:       "⨙",
+		entity:     "&capint;",
+		kind:       sym_large,
+		properties: prop_limitsunderover,
 	},
 	"intcup": {
-		char:   "⨚",
-		entity: "&cupint;",
-		kind:   sym_large,
+		char:       "⨚",
+		entity:     "&cupint;",
+		kind:       sym_large,
+		properties: prop_limitsunderover,
 	},
 	"intercal": {
 		char:   "⊺",
@@ -1928,9 +2066,10 @@ var symbolTable = map[string]symbol{
 		kind:   sym_binaryop,
 	},
 	"intx": {
-		char:   "⨘",
-		entity: "&timeint;",
-		kind:   sym_large,
+		char:       "⨘",
+		entity:     "&timeint;",
+		kind:       sym_large,
+		properties: prop_limitsunderover,
 	},
 	"iota": {
 		char:   "ι",
@@ -2173,9 +2312,10 @@ var symbolTable = map[string]symbol{
 		kind:   sym_relation,
 	},
 	"lowint": {
-		char:   "⨜",
-		entity: "&lowint;",
-		kind:   sym_large,
+		char:       "⨜",
+		entity:     "&lowint;",
+		kind:       sym_large,
+		properties: prop_limitsunderover,
 	},
 	"lozenge": {
 		char:   "◊",
@@ -2573,19 +2713,22 @@ var symbolTable = map[string]symbol{
 		kind:   sym_binaryop,
 	},
 	"oiiint": {
-		char:   "∰",
-		entity: "&Cconint;",
-		kind:   sym_large,
+		char:       "∰",
+		entity:     "&Cconint;",
+		kind:       sym_large,
+		properties: prop_limitsunderover,
 	},
 	"oiint": {
-		char:   "∯",
-		entity: "&Conint;",
-		kind:   sym_large,
+		char:       "∯",
+		entity:     "&Conint;",
+		kind:       sym_large,
+		properties: prop_limitsunderover,
 	},
 	"oint": {
-		char:   "∮",
-		entity: "&oint;",
-		kind:   sym_large,
+		char:       "∮",
+		entity:     "&oint;",
+		kind:       sym_large,
+		properties: prop_limitsunderover,
 	},
 	"omega": {
 		char:   "ω",
@@ -2949,9 +3092,10 @@ var symbolTable = map[string]symbol{
 		kind:   sym_binaryop,
 	},
 	"sqrint": {
-		char:   "⨖",
-		entity: "&quatint;",
-		kind:   sym_large,
+		char:       "⨖",
+		entity:     "&quatint;",
+		kind:       sym_large,
+		properties: prop_limitsunderover,
 	},
 	"sqsubset": {
 		char:   "⊏",
@@ -3244,9 +3388,10 @@ var symbolTable = map[string]symbol{
 		kind:   sym_relation,
 	},
 	"upint": {
-		char:   "⨛",
-		entity: "&upint;",
-		kind:   sym_large,
+		char:       "⨛",
+		entity:     "&upint;",
+		kind:       sym_large,
+		properties: prop_limitsunderover,
 	},
 	"uplus": {
 		char:   "⊎",
@@ -3277,6 +3422,111 @@ var symbolTable = map[string]symbol{
 		char:   "⊨",
 		entity: "&vDash;",
 		kind:   sym_relation,
+	},
+	"varAlpha": {
+		char:   "Α",
+		entity: "&Alpha;",
+		kind:   sym_alphabetic,
+	},
+	"varBeta": {
+		char:   "Β",
+		entity: "&Bgr;",
+		kind:   sym_alphabetic,
+	},
+	"varGamma": {
+		char:   "Γ",
+		entity: "&Gamma;",
+		kind:   sym_alphabetic,
+	},
+	"varDelta": {
+		char:   "Δ",
+		entity: "&Delta;",
+		kind:   sym_alphabetic,
+	},
+	"varEpsilon": {
+		char:   "Ε",
+		entity: "&Egr;",
+		kind:   sym_alphabetic,
+	},
+	"varZeta": {
+		char:   "Ζ",
+		entity: "&Zgr;",
+		kind:   sym_alphabetic,
+	},
+	"varEta": {
+		char:   "Η",
+		entity: "&EEgr;",
+		kind:   sym_alphabetic,
+	},
+	"varTheta": {
+		char:   "Θ",
+		entity: "&THgr;",
+		kind:   sym_alphabetic,
+	},
+	"varIota": {
+		char:   "Ι",
+		entity: "&Igr;",
+		kind:   sym_alphabetic,
+	},
+	"varKappa": {
+		char:   "Κ",
+		entity: "&Kgr;",
+		kind:   sym_alphabetic,
+	},
+	"varLambda": {
+		char:   "Λ",
+		entity: "&Lambda;",
+		kind:   sym_alphabetic,
+	},
+	"varXi": {
+		char:   "Ξ",
+		entity: "&Xgr;",
+		kind:   sym_alphabetic,
+	},
+	"varPi": {
+		char:   "Π",
+		entity: "&Pgr;",
+		kind:   sym_alphabetic,
+	},
+	"varRho": {
+		char:   "Ρ",
+		entity: "&Rgr;",
+		kind:   sym_alphabetic,
+	},
+	"varSigma": {
+		char:   "Σ",
+		entity: "&Sgr;",
+		kind:   sym_alphabetic,
+	},
+	"varTau": {
+		char:   "Τ",
+		entity: "&Tgr;",
+		kind:   sym_alphabetic,
+	},
+	"varUpsilon": {
+		char:   "Υ",
+		entity: "&Ugr;",
+		kind:   sym_alphabetic,
+	},
+	"varPhi": {
+		char:   "Φ",
+		entity: "&PHgr;",
+		kind:   sym_alphabetic,
+	},
+	"varChi": {
+		char:   "Χ",
+		entity: "&KHgr;",
+		kind:   sym_alphabetic,
+	},
+	"varPsi": {
+		char:   "Ψ",
+		entity: "&PSgr;",
+		kind:   sym_alphabetic,
+	},
+	"varOmega": {
+		char:   "Ω",
+		entity: "&OHgr;",
+		kind:   sym_alphabetic,
 	},
 	"varepsilon": {
 		char:   "ɛ",

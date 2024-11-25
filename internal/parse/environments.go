@@ -63,10 +63,12 @@ func processTable(table *MMLNode) {
 	rows := make([]*MMLNode, 0)
 	var cellNode *MMLNode
 	rowspans := make(map[int]int)
-	for _, row := range splitByFunc(table.Children, func(n *MMLNode) bool { return n != nil && n.Properties&prop_row_sep > 0 }) {
-		rowNode := NewMMLNode()
-		rowNode.Tag = "mtr"
-		for cidx, cell := range splitByFunc(row, func(n *MMLNode) bool { return n != nil && n.Properties&prop_cell_sep > 0 }) {
+	separateRows := func(n *MMLNode) bool { return n != nil && n.Properties&prop_row_sep > 0 }
+	separateCells := func(n *MMLNode) bool { return n != nil && n.Properties&prop_cell_sep > 0 }
+	for _, row := range splitByFunc(table.Children, separateRows) {
+		rowNode := NewMMLNode("mtr")
+		for cidx, cell := range splitByFunc(row, separateCells) {
+			// If a cell in this column spans multiple rows, do not emit an <mtd> here.
 			if rowspans[cidx] > 0 {
 				rowspans[cidx]--
 				continue

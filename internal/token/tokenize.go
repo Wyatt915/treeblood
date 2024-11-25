@@ -117,6 +117,8 @@ func (s *stack[T]) empty() bool {
 func GetToken(tex []rune, start int) (Token, int) {
 	var state LexerState
 	var kind TokenKind
+	// A capacity of 24 is reasonable. Most commands, numbers, etc are not more than 24 chars in length, and setting
+	// this capacity grants a huge speedup by avoiding extra allocations.
 	result := make([]rune, 0, 24)
 	var idx int
 	for idx = start; idx < len(tex); idx++ {
@@ -152,11 +154,7 @@ func GetToken(tex []rune, start int) (Token, int) {
 				state = lxEnd
 				kind = TOK_CLOSE
 				result = append(result, r)
-			case r == '^':
-				state = lxEnd
-				kind = TOK_SUBSUP
-				result = append(result, r)
-			case r == '_':
+			case r == '^' || r == '_':
 				state = lxEnd
 				kind = TOK_SUBSUP
 				result = append(result, r)
@@ -241,7 +239,7 @@ func GetToken(tex []rune, start int) (Token, int) {
 			}
 		case lxCommand:
 			switch {
-			case r == '*':
+			case r == '*': // the asterisk should only occur at the end of a command.
 				state = lxEnd
 				result = append(result, r)
 			case !unicode.IsLetter(r):

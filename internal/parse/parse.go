@@ -24,7 +24,7 @@ type parseContext uint64
 const (
 	prop_null NodeProperties = 1 << iota
 	prop_nonprint
-	prop_large
+	prop_largeop
 	prop_superscript
 	prop_subscript
 	prop_movablelimits
@@ -32,7 +32,7 @@ const (
 	prop_cell_sep
 	prop_row_sep
 	prop_limitswitch
-	prop_is_atomic_token // <mo>, <mi>, <mn>, <mtext>, <mspace>, <ms>
+	prop_sym_upright
 )
 
 const (
@@ -65,16 +65,20 @@ var (
 	}
 )
 
+// An MMLNode is the representation of a MathML tag or tree.
 type MMLNode struct {
-	Tok        Token
-	Text       string
-	Tag        string
-	Option     string
-	Properties NodeProperties
-	Attrib     map[string]string
-	Children   []*MMLNode
+	Tok        Token             // the token from which this node was created
+	Text       string            // the <tag>text</tag> enclosed in the Tag.
+	Tag        string            // the value of the MathML tag, e.g. <mrow>, <msqrt>, <mo>....
+	Option     string            // container for any options that may be passed and processed for a tex command
+	Properties NodeProperties    // bitfield of NodeProperties
+	Attrib     map[string]string // key value pairs of XML attributes
+	Children   []*MMLNode        // ordered list of child MathML elements
 }
 
+// NewMMLNode allocates a new MathML node.
+// The first optional argument sets the value of Tag.
+// The second optional argument sets the value of Text.
 func NewMMLNode(opt ...string) *MMLNode {
 	tagText := make([]string, 2)
 	for i, o := range opt {
@@ -88,6 +92,21 @@ func NewMMLNode(opt ...string) *MMLNode {
 		Text:     tagText[1],
 		Children: make([]*MMLNode, 0),
 		Attrib:   make(map[string]string),
+	}
+}
+
+// set the attribute "name" to "true"
+func (n *MMLNode) setTrue(name string) {
+	n.Attrib[name] = "true"
+}
+
+// If a property corresponds to an attribute in the final XML representation, set it here.
+func (n *MMLNode) setAttribsFromProperties() {
+	if n.Properties&prop_largeop > 0 {
+		n.setTrue("largeop")
+	}
+	if n.Properties&prop_movablelimits > 0 {
+		n.setTrue("movablelimits")
 	}
 }
 
@@ -166,13 +185,11 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			child.Tok = tok
 			child.Text = tok.Value
 			child.Tag = "mi"
-			child.Properties |= prop_is_atomic_token
 			child.set_variants_from_context(context)
 		case tok.Kind&TOK_NUMBER > 0:
 			child.Tag = "mn"
 			child.Text = tok.Value
 			child.Tok = tok
-			child.Properties |= prop_is_atomic_token
 		case tok.Kind&TOK_FENCE > 0:
 			child.Tag = "mo"
 			child.Attrib["fence"] = "true"
@@ -182,13 +199,11 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			} else {
 				child.Text = tok.Value
 			}
-			child.Properties |= prop_is_atomic_token
 		case tok.Kind&(TOK_OPEN|TOK_CLOSE) > 0:
 			child.Tag = "mo"
 			child.Text = tok.Value
 			child.Attrib["fence"] = "true"
 			child.Attrib["stretchy"] = "false"
-			child.Properties |= prop_is_atomic_token
 		case tok.Kind&TOK_WHITESPACE > 0:
 			if context&CTX_TEXT > 0 {
 				child.Tag = "mspace"
@@ -196,7 +211,6 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 				child.Tok.Value = " "
 				child.Attrib["width"] = "1em"
 				siblings = append(siblings, child)
-				child.Properties |= prop_is_atomic_token
 				continue
 			} else {
 				continue
@@ -209,7 +223,6 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			child.Tag = "mo"
 			child.Tok = tok
 			child.Text = tok.Value
-			child.Properties |= prop_is_atomic_token
 		}
 		if child == nil {
 			continue

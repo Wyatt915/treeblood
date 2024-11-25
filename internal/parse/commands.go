@@ -18,7 +18,6 @@ var (
 		"binom":         2,
 		"dfrac":         2,
 		"textfrac":      2,
-		"dv":            2,
 		"substack":      1,
 		"underbrace":    1,
 		"overbrace":     1,
@@ -31,19 +30,33 @@ var (
 		"sqrt":          1,
 		"text":          1,
 		"u":             1,
+		"dv":            0, // Can accept one or two arguments which MUST BE {ENCLOSED IN CURLY BRACES}
 	}
 
 	command_operators = map[string]NodeProperties{
-		"lim":    prop_movablelimits | prop_limitsunderover,
-		"sum":    prop_large | prop_movablelimits | prop_limitsunderover,
-		"prod":   prop_large | prop_movablelimits | prop_limitsunderover,
-		"int":    prop_large,
-		"sin":    0,
+		"arccos": 0,
+		"arcsin": 0,
+		"arctan": 0,
 		"cos":    0,
-		"tan":    0,
-		"log":    0,
-		"ln":     0,
+		"cosh":   0,
+		"cot":    0,
+		"csc":    0,
+		"det":    0,
+		"inf":    0,
+		"lim":    prop_movablelimits | prop_limitsunderover,
 		"limits": prop_limitswitch | prop_nonprint,
+		"ln":     0,
+		"log":    0,
+		"max":    0,
+		"min":    0,
+		"prod":   prop_largeop | prop_movablelimits | prop_limitsunderover,
+		"sec":    0,
+		"sin":    0,
+		"sinh":   0,
+		"sum":    prop_largeop | prop_movablelimits | prop_limitsunderover,
+		"sup":    0,
+		"tan":    0,
+		"tanh":   0,
 	}
 
 	math_variants = map[string]parseContext{
@@ -61,103 +74,6 @@ var (
 		"mathsfsl":   CTX_VAR_SANS | CTX_VAR_ITALIC,
 		"mathtt":     CTX_VAR_MONO,
 	}
-
-	accents = map[string]rune{
-		"acute":          0x00b4,
-		"bar":            0x0305,
-		"breve":          0x0306,
-		"check":          0x030c,
-		"dot":            0x02d9,
-		"ddot":           0x0308,
-		"dddot":          0x20db,
-		"ddddot":         0x20dc,
-		"frown":          0x0311,
-		"grave":          0x0060,
-		"hat":            0x0302,
-		"mathring":       0x030a,
-		"overleftarrow":  0x2190,
-		"overline":       0x0332,
-		"overrightarrow": 0x2192,
-		"tilde":          0x0303,
-		"vec":            0x20d7,
-		"widehat":        0x0302,
-		"widetilde":      0x0360,
-	}
-	accents_below = map[string]rune{
-		"underline": 0x0332,
-	}
-
-	// Measured in 18ths of an em
-	space_widths = map[string]int{
-		`\`:     0, // newline
-		",":     3,
-		":":     4,
-		";":     5,
-		" ":     9,
-		"quad":  18,
-		"qquad": 36,
-		"!":     -3,
-	}
-
-	negation_map = map[string]string{
-		"<":               "≮",
-		"=":               "≠",
-		">":               "≯",
-		"Bumpeq":          "≎̸",
-		"Leftarrow":       "⇍",
-		"Rightarrow":      "⇏",
-		"VDash":           "⊯",
-		"Vdash":           "⊮",
-		"apid":            "≋̸",
-		"approx":          "≉",
-		"bumpeq":          "≏̸",
-		"cong":            "≇",
-		"doteq":           "≐̸",
-		"eqsim":           "≂̸",
-		"equiv":           "≢",
-		"exists":          "∄",
-		"geq":             "≱",
-		"geqslant":        "⩾̸",
-		"greaterless":     "≹",
-		"gt":              "≯",
-		"in":              "∉",
-		"leftarrow":       "↚",
-		"leftrightarrow":  "↮",
-		"leq":             "≰",
-		"leqslant":        "⩽̸",
-		"lessgreater":     "≸",
-		"lt":              "≮",
-		"mid":             "∤",
-		"ni":              "∌",
-		"otgreaterless":   "≹",
-		"otlessgreater":   "≸",
-		"parallel":        "∦",
-		"prec":            "⊀",
-		"preceq":          "⪯̸",
-		"precsim":         "≾̸",
-		"rightarrow":      "↛",
-		"sim":             "≁",
-		"sime":            "≄",
-		"simeq":           "≄",
-		"sqsubseteq":      "⋢",
-		"sqsupseteq":      "⋣",
-		"subset":          "⊄",
-		"subseteq":        "⊈",
-		"subseteqq":       "⫅̸",
-		"succ":            "⊁",
-		"succeq":          "⪰̸",
-		"succsim":         "≿̸",
-		"supset":          "⊅",
-		"supseteq":        "⊉",
-		"supseteqq":       "⫆̸",
-		"triangleleft":    "⋪",
-		"trianglelefteq":  "⋬",
-		"triangleright":   "⋫",
-		"trianglerighteq": "⋭",
-		"vDash":           "⊭",
-		"vdash":           "⊬",
-	}
-	//PROPERTIES = map[string]NodeProperties{}
 )
 
 func isolateMathVariant(ctx parseContext) parseContext {
@@ -204,7 +120,6 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 	if _, ok := space_widths[tok.Value]; ok {
 		n.Tok = tok
 		n.Tag = "mspace"
-		n.Properties |= prop_is_atomic_token
 		if tok.Value == `\` {
 			n.Attrib["linebreak"] = "newline"
 		}
@@ -215,10 +130,10 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		idx = processCommandArgs(n, context, tok, tokens, idx, numArgs)
 	} else if ch, ok := accents[tok.Value]; ok {
 		n.Tag = "mover"
-		n.Attrib["accent"] = "true"
+		n.setTrue("accent")
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 		acc := NewMMLNode("mo", string(ch))
-		acc.Attrib["stretchy"] = "true" // once more for chrome...
+		acc.setTrue("stretchy") // once more for chrome...
 		base := ParseTex(nextExpr, context)
 		if base.Tag == "mrow" && len(base.Children) == 1 {
 			base = base.Children[0]
@@ -228,20 +143,17 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		if prop, ok := command_operators[tok.Value]; ok {
 			n.Tag = "mo"
 			n.Properties = prop
-			if prop&prop_large > 0 {
-				n.Attrib["largeop"] = "true"
-			}
-			if prop&prop_movablelimits > 0 {
-				n.Attrib["movablelimits"] = "true"
-			}
 			if t, ok := symbolTable[tok.Value]; ok {
 				if t.char != "" {
 					n.Text = t.char
 				} else {
 					n.Text = t.entity
 				}
+			} else {
+				n.Text = tok.Value
 			}
 		} else if t, ok := symbolTable[tok.Value]; ok {
+			n.Properties = t.properties
 			if t.char != "" {
 				n.Text = t.char
 			} else {
@@ -252,11 +164,15 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 				n.Tag = "mo"
 			case sym_large:
 				n.Tag = "mo"
-				n.Attrib["largeop"] = "true"
-				n.Attrib["movablelimits"] = "true"
-				n.Properties |= prop_limitsunderover
+				// we do an XOR rather than an OR here to remove this property
+				// from any of the integral symbols from symbolTable.
+				n.Properties ^= prop_limitsunderover
+				n.Properties |= prop_largeop | prop_movablelimits
 			case sym_alphabetic:
 				n.Tag = "mi"
+				if n.Properties&prop_sym_upright > 0 {
+					context |= CTX_VAR_NORMAL
+				}
 			default:
 				if tok.Kind&TOK_FENCE > 0 {
 					n.Tag = "mo"
@@ -271,6 +187,7 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 	}
 	n.Tok = tok
 	n.set_variants_from_context(context)
+	n.setAttribsFromProperties()
 	return idx
 }
 
@@ -291,6 +208,7 @@ func processCommandArgs(n *MMLNode, context parseContext, tok Token, tokens []To
 		arguments = append(arguments, expr)
 	}
 	switch tok.Value {
+	//case "dv"
 	case "substack":
 		ParseTex(arguments[0], context|CTX_TABLE, n)
 		processTable(n)
@@ -306,7 +224,6 @@ func processCommandArgs(n *MMLNode, context parseContext, tok Token, tokens []To
 		n.Children = nil
 		n.Tag = "mtext"
 		n.Text = StringifyTokens(arguments[0])
-		//n.Properties |= prop_is_atomic_token
 	case "sqrt":
 		n.Tag = "msqrt"
 		n.Children = append(n.Children, ParseTex(arguments[0], context))
@@ -319,7 +236,6 @@ func processCommandArgs(n *MMLNode, context parseContext, tok Token, tokens []To
 		den := ParseTex(arguments[1], context)
 		doFraction(tok, n, num, den)
 	case "not":
-		n.Properties |= prop_is_atomic_token
 		if len(arguments[0]) == 1 {
 			t := arguments[0][0]
 			sym, ok := symbolTable[t.Value]
@@ -454,7 +370,7 @@ func doFraction(tok Token, parent, numerator, denominator *MMLNode) {
 	frac.Children = append(frac.Children, numerator, denominator)
 	switch tok.Value {
 	case "cfrac", "dfrac":
-		frac.Attrib["displaystyle"] = "true"
+		frac.setTrue("displaystyle")
 	case "tfrac":
 		frac.Attrib["displaystyle"] = "false"
 	case "binom":
