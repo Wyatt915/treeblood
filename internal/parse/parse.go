@@ -232,22 +232,22 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			continue
 		}
 		// apply properties granted by previous sibling, if any
-		if promotedProperties != 0 {
-			child.Properties |= promotedProperties
-			promotedProperties = 0
-		}
+		child.Properties |= promotedProperties
+		promotedProperties = 0
 		siblings = append(siblings, child)
 	}
 	if len(parent) > 0 {
 		node = parent[0]
 		node.Children = append(node.Children, siblings...)
 		node.Option = optionString
-	} else { // if len(siblings) > 1 {
+	} else if len(siblings) > 1 {
 		node = NewMMLNode("mrow")
 		node.Children = append(node.Children, siblings...)
 		node.Option = optionString
-		//} else if len(siblings) == 1 {
-		//	node = siblings[0]
+	} else if len(siblings) == 1 {
+		return siblings[0]
+	} else {
+		return nil
 	}
 	node.doPostProcess()
 	return node
@@ -304,11 +304,12 @@ func (node *MMLNode) postProcessChars() {
 		children := node.Children
 		var i, nillifyUpTo int
 		count := 1
+		nillifyUpTo = idx
 		keepgoing := true
 		for i = idx + 1; i < len(children) && keepgoing; i++ {
 			if children[i] == nil {
 				continue
-			} else if children[i].Text == "'" {
+			} else if children[i].Text == "'" && children[i].Tok.Kind != TOK_COMMAND {
 				count++
 				nillifyUpTo = i
 			} else {
@@ -331,8 +332,12 @@ func (node *MMLNode) postProcessChars() {
 			count -= 4
 			text = append(text, temp)
 		}
-		node.Children[idx].Text = string(text)
-		idx++
+		if idx > 0 {
+			node.Children[idx-1] = makeSuperscript(node.Children[idx-1], NewMMLNode("mo", string(text)))
+		} else {
+			node.Children[0] = makeSuperscript(NewMMLNode("none"), NewMMLNode("mo", string(text)))
+			idx++
+		}
 		for i = idx; i <= nillifyUpTo; i++ {
 			node.Children[i] = nil
 		}
@@ -350,8 +355,7 @@ func (node *MMLNode) postProcessChars() {
 		case "-":
 			node.Children[i].Text = "−"
 		case "'", "’":
-			i = combinePrimes(i)
-			continue
+			combinePrimes(i)
 		}
 		i++
 	}

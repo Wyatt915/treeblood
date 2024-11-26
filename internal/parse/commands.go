@@ -121,15 +121,7 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 	}
 	if v, ok := math_variants[name]; ok {
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
-		temp := ParseTex(nextExpr, context|v).Children
-		if len(temp) == 1 {
-			n.Tag = temp[0].Tag
-			n.Text = temp[0].Text
-			n.Attrib = temp[0].Attrib
-		} else {
-			n.Children = temp
-			n.Tag = "mrow"
-		}
+		ParseTex(nextExpr, context|v, n)
 		return idx
 	}
 	if _, ok := space_widths[name]; ok {
