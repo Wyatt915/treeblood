@@ -18,7 +18,7 @@ already be computed by the browser, with MathJax only making minor tweaks.
 ### TreeBlood is 1000 times faster than MathJax
 
 TreeBlood is written in Go with a hand-rolled finite state automaton for lexing. In normal use, TreeBlood can process
-over 8000 characters of $\Latex$ input per millisecond. This speed includes the amount of time taken to write the
+over 8000 characters of $\LaTeX$ input per millisecond. This speed includes the amount of time taken to write the
 corresponding MathML data to a string. Shorter input strings will have a smaller throughput due to constant-time
 overhead, but still have a smaller absolute run time. I have only encountered a handful of inputs that regularly take
 more than 100 microseconds (one tenth of a millisecond) on my machine.
@@ -37,7 +37,7 @@ configuration that I had completely forgotten that it was using the compromised 
 coincidence.
 
 I do not have any deep love for javascript and use it only grudgingly. This latest vulnerability crystallized my
-motivation to finally tackle server-side $\Latex$ rendering.
+motivation to finally tackle server-side $\LaTeX$ rendering.
 
 ### Oh you mean the name?
 
