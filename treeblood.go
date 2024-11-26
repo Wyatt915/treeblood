@@ -43,10 +43,16 @@ func TexToMML(tex string, macros map[string]string, block, displaystyle bool) (s
 	return builder.String(), err
 }
 
+// DisplayStyle renders a tex string as display-style MathML.
+// macros are key-value pairs of a user-defined command (without a leading backslash) with its expanded LaTeX
+// definition.
 func DisplayStyle(tex string, macros map[string]string) (string, error) {
 	return TexToMML(tex, macros, true, false)
 }
 
+// DisplayStyle renders a tex string as inline-style MathML.
+// macros are key-value pairs of a user-defined command (without a leading backslash) with its expanded LaTeX
+// definition.
 func InlineStyle(tex string, macros map[string]string) (string, error) {
 	return TexToMML(tex, macros, false, false)
 }
