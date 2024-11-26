@@ -369,9 +369,7 @@ func matchBracesCritical(tokens []Token, kind TokenKind) error {
 	for i, t := range tokens {
 		if t.Kind&(TOK_OPEN|kind) == TOK_OPEN|kind {
 			s.Push(i)
-			continue
-		}
-		if t.Kind&(TOK_CLOSE|kind) == TOK_CLOSE|kind {
+		} else if t.Kind&(TOK_CLOSE|kind) == TOK_CLOSE|kind {
 			if s.empty() {
 				var k string
 				if t.Kind&TOK_CURLY > 0 {
@@ -521,6 +519,7 @@ func postProcessTokens(toks []Token) ([]Token, error) {
 	var name []Token
 	for i < len(toks) {
 		temp = toks[i]
+		temp.MatchOffset = 0 //ABSOLUTELY CRITICAL
 		switch toks[i].Value {
 		case "begin":
 			name, i, _ = GetNextExpr(toks, i+1)

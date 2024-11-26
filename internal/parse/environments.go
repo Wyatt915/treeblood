@@ -118,6 +118,7 @@ func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 	}
 	row := NewMMLNode("mrow")
 	var left, right *MMLNode
+	attrib := make(map[string]string)
 	switch env {
 	case "pmatrix", "pmatrix*":
 		left = strechyOP("(")
@@ -136,13 +137,11 @@ func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 		right = strechyOP("‖")
 	case "cases":
 		left = strechyOP("{")
-		if node != nil {
-			node.Attrib["columnalign"] = "left"
-		}
+		attrib["columnalign"] = "left"
 	case "align", "align*":
+		attrib["displaystyle"] = "true"
+		attrib["columnalign"] = "left"
 		if node != nil {
-			node.Attrib["displaystyle"] = "true"
-			node.Attrib["columnalign"] = "left"
 			for r, row := range node.Children {
 				firstcol := 0
 				for firstcol < len(row.Children) && (row.Children[firstcol] == nil || row.Children[firstcol].Tag != "mtd") {
@@ -152,11 +151,12 @@ func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 			}
 		}
 	case "subarray":
-		if node != nil {
-			node.Attrib["displaystyle"] = "false"
-		}
+		attrib["displaystyle"] = "false"
 	default:
 		return node
+	}
+	if node != nil {
+		node.Attrib = attrib
 	}
 	row.Children = append(row.Children, left, node, right)
 	return row

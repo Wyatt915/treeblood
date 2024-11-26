@@ -4,9 +4,11 @@ GOROOT := $(shell go env GOROOT)
 all: build
 
 .PHONY: build
-build:
-	GOOS=js GOARCH=wasm go build -o $(EXEC)
+wasm_exec.js:
 	cp "$(GOROOT)/misc/wasm/wasm_exec.js" .
+
+build: wasm_exec.js
+	GOOS=js GOARCH=wasm go build -o $(EXEC)
 
 .PHONY: clean
 
