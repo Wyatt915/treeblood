@@ -32,13 +32,6 @@ var (
 		"sqrt":          1,
 		"text":          1,
 		"u":             1,
-		"dv":            0, // Synonym for odv. Can accept 1-2 arguments which MUST BE {ENCLOSED IN CURLY BRACES}
-		"adv":           0,
-		"jdv":           0,
-		"fdv":           0,
-		"mdv":           0,
-		"odv":           0,
-		"pdv":           0,
 	}
 
 	command_operators = map[string]NodeProperties{
@@ -110,6 +103,7 @@ func getOption(tokens []Token, idx int) ([]Token, int) {
 	return nil, idx
 }
 
+// ProcessCommand sets the value of n and returns the next index of tokens to be processed.
 func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int) int {
 	var nextExpr []Token
 	star := strings.HasSuffix(tok.Value, "*")
@@ -118,6 +112,11 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		name = strings.TrimRight(tok.Value, "*")
 	} else {
 		name = tok.Value
+	}
+	// dv and family take a variable number of arguments so try them first
+	switch name {
+	case "dv", "adv", "odv", "mdv", "fdv", "jdv", "pdv":
+		return doDerivative(n, name, star, context, tokens, idx+1)
 	}
 	if v, ok := math_variants[name]; ok {
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
@@ -204,11 +203,6 @@ func processCommandArgs(n *MMLNode, context parseContext, name string, star bool
 	var expr []Token
 	var kind ExprKind
 	tok := tokens[idx]
-	// dv and family take a variable number of arguments so try them first
-	switch name {
-	case "dv", "adv", "odv", "mdv", "fdv", "jdv", "pdv":
-		return doDerivative(n, name, star, context, tokens, idx+1)
-	}
 
 	expr, idx, kind = GetNextExpr(tokens, idx+1)
 	if kind == EXPR_OPTIONS {
