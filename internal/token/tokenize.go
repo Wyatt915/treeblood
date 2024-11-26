@@ -270,7 +270,7 @@ const (
 // .    ╰───────── idx (initial position)
 func GetNextExpr(tokens []Token, idx int) ([]Token, int, ExprKind) {
 	var result []Token
-	var kind ExprKind
+	kind := EXPR_SINGLE_TOK
 	for idx < len(tokens) && tokens[idx].Kind&(TOK_WHITESPACE|TOK_COMMENT) > 0 {
 		idx++
 	}

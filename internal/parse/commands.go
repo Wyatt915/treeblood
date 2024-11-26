@@ -1,6 +1,8 @@
 package parse
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -30,7 +32,13 @@ var (
 		"sqrt":          1,
 		"text":          1,
 		"u":             1,
-		"dv":            0, // Can accept one or two arguments which MUST BE {ENCLOSED IN CURLY BRACES}
+		"dv":            0, // Synonym for odv. Can accept 1-2 arguments which MUST BE {ENCLOSED IN CURLY BRACES}
+		"adv":           0,
+		"jdv":           0,
+		"fdv":           0,
+		"mdv":           0,
+		"odv":           0,
+		"pdv":           0,
 	}
 
 	command_operators = map[string]NodeProperties{
@@ -104,7 +112,14 @@ func getOption(tokens []Token, idx int) ([]Token, int) {
 
 func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int) int {
 	var nextExpr []Token
-	if v, ok := math_variants[tok.Value]; ok {
+	star := strings.HasSuffix(tok.Value, "*")
+	var name string
+	if star {
+		name = strings.TrimRight(tok.Value, "*")
+	} else {
+		name = tok.Value
+	}
+	if v, ok := math_variants[name]; ok {
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 		temp := ParseTex(nextExpr, context|v).Children
 		if len(temp) == 1 {
@@ -117,18 +132,18 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		}
 		return idx
 	}
-	if _, ok := space_widths[tok.Value]; ok {
+	if _, ok := space_widths[name]; ok {
 		n.Tok = tok
 		n.Tag = "mspace"
-		if tok.Value == `\` {
+		if name == `\` {
 			n.Attrib["linebreak"] = "newline"
 		}
 		return idx
 	}
-	numArgs, ok := command_args[tok.Value]
+	numArgs, ok := command_args[name]
 	if ok {
-		idx = processCommandArgs(n, context, tok, tokens, idx, numArgs)
-	} else if ch, ok := accents[tok.Value]; ok {
+		idx = processCommandArgs(n, context, name, star, tokens, idx, numArgs)
+	} else if ch, ok := accents[name]; ok {
 		n.Tag = "mover"
 		n.setTrue("accent")
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
@@ -138,21 +153,21 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		if base.Tag == "mrow" && len(base.Children) == 1 {
 			base = base.Children[0]
 		}
-		n.Children = append(n.Children, base, acc)
+		n.appendChild(base, acc)
 	} else {
-		if prop, ok := command_operators[tok.Value]; ok {
+		if prop, ok := command_operators[name]; ok {
 			n.Tag = "mo"
 			n.Properties = prop
-			if t, ok := symbolTable[tok.Value]; ok {
+			if t, ok := symbolTable[name]; ok {
 				if t.char != "" {
 					n.Text = t.char
 				} else {
 					n.Text = t.entity
 				}
 			} else {
-				n.Text = tok.Value
+				n.Text = name
 			}
-		} else if t, ok := symbolTable[tok.Value]; ok {
+		} else if t, ok := symbolTable[name]; ok {
 			n.Properties = t.properties
 			if t.char != "" {
 				n.Text = t.char
@@ -181,7 +196,7 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 				}
 			}
 		} else {
-			logger.Printf("NOTE: unknown command '%s'. Treating as operator or function name.\n", tok.Value)
+			logger.Printf("NOTE: unknown command '%s'. Treating as operator or function name.\n", name)
 			n.Tag = "mo"
 		}
 	}
@@ -191,11 +206,18 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 	return idx
 }
 
-func processCommandArgs(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int, numArgs int) int {
+func processCommandArgs(n *MMLNode, context parseContext, name string, star bool, tokens []Token, idx int, numArgs int) int {
 	var option []Token
 	arguments := make([][]Token, 0)
 	var expr []Token
 	var kind ExprKind
+	tok := tokens[idx]
+	// dv and family take a variable number of arguments so try them first
+	switch name {
+	case "dv", "adv", "odv", "mdv", "fdv", "jdv", "pdv":
+		return doDerivative(n, name, star, context, tokens, idx+1)
+	}
+
 	expr, idx, kind = GetNextExpr(tokens, idx+1)
 	if kind == EXPR_OPTIONS {
 		option = expr
@@ -207,8 +229,7 @@ func processCommandArgs(n *MMLNode, context parseContext, tok Token, tokens []To
 		expr, idx, kind = GetNextExpr(tokens, idx+1)
 		arguments = append(arguments, expr)
 	}
-	switch tok.Value {
-	//case "dv"
+	switch name {
 	case "substack":
 		ParseTex(arguments[0], context|CTX_TABLE, n)
 		processTable(n)
@@ -226,10 +247,10 @@ func processCommandArgs(n *MMLNode, context parseContext, tok Token, tokens []To
 		n.Text = StringifyTokens(arguments[0])
 	case "sqrt":
 		n.Tag = "msqrt"
-		n.Children = append(n.Children, ParseTex(arguments[0], context))
+		n.appendChild(ParseTex(arguments[0], context))
 		if option != nil {
 			n.Tag = "mroot"
-			n.Children = append(n.Children, ParseTex(option, context))
+			n.appendChild(ParseTex(option, context))
 		}
 	case "frac", "cfrac", "dfrac", "tfrac", "binom":
 		num := ParseTex(arguments[0], context)
@@ -254,11 +275,11 @@ func processCommandArgs(n *MMLNode, context parseContext, tok Token, tokens []To
 			} else {
 				n.Text += "̸" //Once again we have chrome to thank for not implementing menclose
 			}
-			return idx
+		} else {
+			n.Tag = "menclose"
+			n.Attrib["notation"] = "updiagonalstrike"
+			n.Children = ParseTex(arguments[0], context).Children
 		}
-		n.Tag = "menclose"
-		n.Attrib["notation"] = "updiagonalstrike"
-		n.Children = ParseTex(arguments[0], context).Children
 	case "sideset":
 		sideset(n, arguments[0], arguments[1], arguments[2], context)
 	case "prescript":
@@ -266,30 +287,224 @@ func processCommandArgs(n *MMLNode, context parseContext, tok Token, tokens []To
 	default:
 		n.Text = tok.Value
 		for _, arg := range arguments {
-			n.Children = append(n.Children, ParseTex(arg, context))
+			n.appendChild(ParseTex(arg, context))
 		}
 	}
 	return idx
 }
 
+// based on https://github.com/sjelatex/derivative
+func doDerivative(n *MMLNode, name string, star bool, context parseContext, tokens []Token, index int) int {
+	var opts []Token
+	arguments := make([][]Token, 0)
+	var expr []Token
+	var kind ExprKind
+	var idx int
+	var slashfrac, shorthand bool
+	expr, idx, kind = GetNextExpr(tokens, index)
+	switch kind {
+	case EXPR_OPTIONS:
+		opts = expr
+	case EXPR_GROUP:
+		arguments = append(arguments, expr)
+	default:
+		n.Tag = "merror"
+		n.Text = fmt.Sprintf("%s expects an argument", name)
+		return idx
+	}
+	keepConsuming := true
+	temp := idx
+	for keepConsuming && len(arguments) < 2 {
+		expr, temp, kind = GetNextExpr(tokens, idx+1)
+		switch kind {
+		case EXPR_GROUP:
+			arguments = append(arguments, expr)
+		case EXPR_SINGLE_TOK:
+			if len(arguments) < 1 {
+				n.Tag = "merror"
+				n.Text = fmt.Sprintf("%s expects an argument", name)
+				return idx
+			} else if len(arguments) > 1 {
+				keepConsuming = false
+			} else if len(expr) == 0 {
+				keepConsuming = false
+			} else {
+				switch expr[0].Value {
+				case "/":
+					slashfrac = true
+					n.Tag = "mrow"
+				case "!":
+					shorthand = true
+					n.Tag = "mrow"
+				default:
+					keepConsuming = false
+				}
+			}
+		default:
+			keepConsuming = false
+		}
+		if keepConsuming {
+			idx = temp
+		}
+	}
+	if len(arguments) == 0 {
+		n.Tag = "merror"
+		n.Text = fmt.Sprintf("%s expects an argument", name)
+		return idx
+	}
+	var inf string
+	upright := false
+	jacobian := false
+	switch name[0] {
+	case 'd':
+		inf = "d"
+		upright = true
+		slashfrac = slashfrac || star
+	case 'o':
+		inf = "d"
+		upright = true
+	case 'p':
+		inf = "𝜕" // U+1D715 MATHEMATICAL ITALIC PARTIAL DIFFERENTIAL
+	case 'j':
+		inf = "𝜕" // U+1D715 MATHEMATICAL ITALIC PARTIAL DIFFERENTIAL
+		jacobian = true
+	case 'm':
+		inf = "D"
+		upright = true
+	case 'a':
+		inf = "Δ"
+		upright = true
+	case 'f':
+		inf = "δ"
+	}
+	_ = jacobian //TODO: handle jacobian
+	isComma := func(t Token) bool { return t.Value == "," }
+	var denominator [][]Token
+	var numerator []Token
+	switch len(arguments) {
+	case 1:
+		denominator = splitByFunc(arguments[0], isComma)
+	case 2:
+		numerator = arguments[0]
+		denominator = splitByFunc(arguments[1], isComma)
+	}
+	options := splitByFunc(opts, isComma)
+	makeOperator := func() *MMLNode {
+		op := NewMMLNode("mo", inf)
+		if !upright {
+			op.Attrib["mathvariant"] = "italic"
+		}
+		op.Attrib["rspace"] = "verythinmathspace"
+		op.Attrib["lspace"] = "verythinmathspace"
+		return op
+	}
+	order := make([]Token, 0, 2*len(options))
+	temp = 0
+	onlyNumbers := true
+	for _, opt := range options {
+		for _, t := range opt {
+			switch t.Kind {
+			case TOK_NUMBER:
+				val, _ := strconv.ParseInt(t.Value, 10, 32)
+				temp += int(val)
+			case TOK_COMMAND, TOK_LETTER:
+				onlyNumbers = false
+				order = append(order, t, Token{Kind: TOK_CHAR, Value: "+"})
+				temp++
+			}
+		}
+	}
+	temp += len(denominator) - len(options)
+	if onlyNumbers && temp > 1 {
+		order = append(order, Token{Kind: TOK_NUMBER, Value: strconv.Itoa(temp)})
+	} else if temp > 1 {
+		order = append(order, Token{Kind: TOK_NUMBER, Value: strconv.Itoa(temp)})
+	}
+	if slashfrac && shorthand {
+		for i, v := range denominator {
+			n.appendChild(makeOperator())
+			if i < len(options) {
+				n.appendChild(makeSuperscript(ParseTex(v, context), ParseTex(options[i], context)))
+			} else {
+				n.appendChild(ParseTex(v, context))
+			}
+		}
+		if len(numerator) > 0 {
+			n.appendChild(ParseTex(numerator, context))
+		}
+	} else if shorthand {
+		for i, v := range denominator {
+			if i < len(options) {
+				n.appendChild(makeSubSup(makeOperator(), ParseTex(v, context), ParseTex(options[i], context)))
+			} else {
+				n.appendChild(makeSubscript(makeOperator(), ParseTex(v, context)))
+			}
+		}
+		if len(numerator) > 0 {
+			n.appendChild(ParseTex(numerator, context))
+		}
+	} else {
+		num := NewMMLNode("mrow")
+		if len(order) > 0 {
+			num.appendChild(makeSuperscript(makeOperator(), ParseTex(order, context)), ParseTex(numerator, context))
+		} else {
+			num.appendChild(makeOperator(), ParseTex(numerator, context))
+		}
+		den := NewMMLNode("mrow")
+		for i, v := range denominator {
+			den.appendChild(makeOperator())
+			if i < len(options) {
+				den.appendChild(makeSuperscript(ParseTex(v, context), ParseTex(options[i], context)))
+			} else {
+				den.appendChild(ParseTex(v, context))
+			}
+		}
+		if slashfrac {
+			slash := NewMMLNode("mo", "/")
+			slash.Attrib["rspace"] = "verythinmathspace"
+			n.appendChild(num, slash, den)
+		} else {
+			doFraction(Token{}, n, num, den)
+		}
+	}
+
+	return idx
+}
+
+func makeSubSup(base, sub, sup *MMLNode) *MMLNode {
+	s := NewMMLNode("msubsup")
+	s.appendChild(base, sub, sup)
+	return s
+}
+func makeSuperscript(base, radical *MMLNode) *MMLNode {
+	s := NewMMLNode("msup")
+	s.appendChild(base, radical)
+	return s
+}
+func makeSubscript(base, radical *MMLNode) *MMLNode {
+	s := NewMMLNode("msub")
+	s.appendChild(base, radical)
+	return s
+}
+
 func prescript(multi *MMLNode, super, sub, base []Token, context parseContext) {
 	multi.Tag = "mmultiscripts"
-	multi.Children = append(multi.Children, ParseTex(base, context))
-	multi.Children = append(multi.Children, NewMMLNode("none"), NewMMLNode("none"), NewMMLNode("mprescripts"))
+	multi.appendChild(ParseTex(base, context))
+	multi.appendChild(NewMMLNode("none"), NewMMLNode("none"), NewMMLNode("mprescripts"))
 	temp := ParseTex(sub, context)
 	if temp != nil {
-		multi.Children = append(multi.Children, temp)
+		multi.appendChild(temp)
 	}
 	temp = ParseTex(super, context)
 	if temp != nil {
-		multi.Children = append(multi.Children, temp)
+		multi.appendChild(temp)
 	}
 }
 
 func sideset(multi *MMLNode, left, right, base []Token, context parseContext) {
 	multi.Tag = "mmultiscripts"
 	multi.Properties |= prop_limitsunderover
-	multi.Children = append(multi.Children, ParseTex(base, context))
+	multi.appendChild(ParseTex(base, context))
 	getScripts := func(side []Token) []*MMLNode {
 		i := 0
 		subscripts := make([]*MMLNode, 0)
@@ -330,9 +545,9 @@ func sideset(multi *MMLNode, left, right, base []Token, context parseContext) {
 		}
 		return result
 	}
-	multi.Children = append(multi.Children, getScripts(right)...)
-	multi.Children = append(multi.Children, NewMMLNode("mprescripts"))
-	multi.Children = append(multi.Children, getScripts(left)...)
+	multi.appendChild(getScripts(right)...)
+	multi.appendChild(NewMMLNode("mprescripts"))
+	multi.appendChild(getScripts(left)...)
 }
 
 func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
@@ -340,7 +555,7 @@ func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
 	case "overbrace":
 		parent.Properties |= prop_limitsunderover
 		parent.Tag = "mover"
-		parent.Children = append(parent.Children, annotation,
+		parent.appendChild(annotation,
 			&MMLNode{
 				Text:   "&OverBrace;",
 				Tag:    "mo",
@@ -349,7 +564,7 @@ func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
 	case "underbrace":
 		parent.Properties |= prop_limitsunderover
 		parent.Tag = "munder"
-		parent.Children = append(parent.Children, annotation,
+		parent.appendChild(annotation,
 			&MMLNode{
 				Text:   "&UnderBrace;",
 				Tag:    "mo",
@@ -360,6 +575,8 @@ func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
 
 func doFraction(tok Token, parent, numerator, denominator *MMLNode) {
 	var frac *MMLNode
+	// for a binomial coefficient, we need to wrap it in parentheses, so the "fraction" must
+	// be a child of parent, and parent must be an mrow.
 	if tok.Value == "binom" {
 		frac = NewMMLNode()
 		parent.Tag = "mrow"
@@ -367,7 +584,7 @@ func doFraction(tok Token, parent, numerator, denominator *MMLNode) {
 		frac = parent
 	}
 	frac.Tag = "mfrac"
-	frac.Children = append(frac.Children, numerator, denominator)
+	frac.appendChild(numerator, denominator)
 	switch tok.Value {
 	case "cfrac", "dfrac":
 		frac.setTrue("displaystyle")
@@ -375,6 +592,6 @@ func doFraction(tok Token, parent, numerator, denominator *MMLNode) {
 		frac.Attrib["displaystyle"] = "false"
 	case "binom":
 		frac.Attrib["linethickness"] = "0"
-		parent.Children = append(parent.Children, strechyOP("("), frac, strechyOP(")"))
+		parent.appendChild(strechyOP("("), frac, strechyOP(")"))
 	}
 }

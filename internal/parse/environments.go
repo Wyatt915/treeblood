@@ -40,7 +40,9 @@ func splitByFunc[T any](s []T, f func(T) bool) [][]T {
 		}
 		temp = append(temp, t)
 	}
-	out = append(out, temp)
+	if len(temp) > 0 {
+		out = append(out, temp)
+	}
 	return out
 }
 

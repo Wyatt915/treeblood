@@ -110,6 +110,10 @@ func (n *MMLNode) setAttribsFromProperties() {
 	}
 }
 
+func (n *MMLNode) appendChild(child ...*MMLNode) {
+	n.Children = append(n.Children, child...)
+}
+
 func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode {
 	var node *MMLNode
 	siblings := make([]*MMLNode, 0)
