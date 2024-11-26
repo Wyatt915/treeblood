@@ -463,6 +463,9 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 			tag = "mi"
 		default:
 			tag = "mo"
+			if len(n.Children) > 0 {
+				tag = "mrow"
+			}
 		}
 	}
 	//w.WriteString(strings.Repeat("\t", indent))
@@ -484,7 +487,7 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 				w.WriteString(n.Tok.Value)
 			}
 		} else {
-			w.WriteRune('\n')
+			//w.WriteRune('\n')
 			for _, child := range n.Children {
 				child.Write(w, indent+1)
 			}

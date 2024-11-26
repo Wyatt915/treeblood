@@ -394,8 +394,9 @@ func doDerivative(n *MMLNode, name string, star bool, context parseContext, toke
 		if !upright {
 			op.Attrib["mathvariant"] = "italic"
 		}
-		op.Attrib["rspace"] = "verythinmathspace"
-		op.Attrib["lspace"] = "verythinmathspace"
+		op.Attrib["form"] = "prefix"
+		op.Attrib["rspace"] = "veryverythinmathspace"
+		op.Attrib["lspace"] = "thinmathspace"
 		return op
 	}
 	order := make([]Token, 0, 2*len(options))
@@ -461,8 +462,9 @@ func doDerivative(n *MMLNode, name string, star bool, context parseContext, toke
 			}
 		}
 		if slashfrac {
+			n.Tag = "mrow"
 			slash := NewMMLNode("mo", "/")
-			slash.Attrib["rspace"] = "verythinmathspace"
+			slash.Attrib["form"] = "infix"
 			n.appendChild(num, slash, den)
 		} else {
 			doFraction(Token{}, n, num, den)
