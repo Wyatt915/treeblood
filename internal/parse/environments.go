@@ -32,16 +32,18 @@ func setEnvironmentContext(envBegin Token, context parseContext) parseContext {
 func splitByFunc[T any](s []T, f func(T) bool) [][]T {
 	out := make([][]T, 0)
 	temp := make([]T, 0)
-	for _, t := range s {
-		if f(t) {
-			out = append(out, temp)
-			temp = make([]T, 0)
-			continue
+	if s != nil {
+		for _, t := range s {
+			if f(t) {
+				out = append(out, temp)
+				temp = make([]T, 0)
+				continue
+			}
+			temp = append(temp, t)
 		}
-		temp = append(temp, t)
-	}
-	if len(temp) > 0 {
-		out = append(out, temp)
+		if len(temp) > 0 {
+			out = append(out, temp)
+		}
 	}
 	return out
 }
@@ -62,6 +64,9 @@ type alignInfo struct {
 }
 
 func processTable(table *MMLNode) {
+	if table == nil {
+		return
+	}
 	rows := make([]*MMLNode, 0)
 	var cellNode *MMLNode
 	rowspans := make(map[int]int)
@@ -131,19 +136,25 @@ func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 		right = strechyOP("‖")
 	case "cases":
 		left = strechyOP("{")
-		node.Attrib["columnalign"] = "left"
+		if node != nil {
+			node.Attrib["columnalign"] = "left"
+		}
 	case "align", "align*":
-		node.Attrib["displaystyle"] = "true"
-		node.Attrib["columnalign"] = "left"
-		for r, row := range node.Children {
-			firstcol := 0
-			for firstcol < len(row.Children) && (row.Children[firstcol] == nil || row.Children[firstcol].Tag != "mtd") {
-				firstcol++
+		if node != nil {
+			node.Attrib["displaystyle"] = "true"
+			node.Attrib["columnalign"] = "left"
+			for r, row := range node.Children {
+				firstcol := 0
+				for firstcol < len(row.Children) && (row.Children[firstcol] == nil || row.Children[firstcol].Tag != "mtd") {
+					firstcol++
+				}
+				node.Children[r].Children[firstcol].Attrib["columnalign"] = "right"
 			}
-			node.Children[r].Children[firstcol].Attrib["columnalign"] = "right"
 		}
 	case "subarray":
-		node.Attrib["displaystyle"] = "false"
+		if node != nil {
+			node.Attrib["displaystyle"] = "false"
+		}
 	default:
 		return node
 	}
