@@ -410,15 +410,16 @@ func doDerivative(n *MMLNode, name string, star bool, context parseContext, toke
 			case TOK_COMMAND, TOK_LETTER:
 				onlyNumbers = false
 				order = append(order, t, Token{Kind: TOK_CHAR, Value: "+"})
-				temp++
 			}
 		}
 	}
 	temp += len(denominator) - len(options)
 	if onlyNumbers && temp > 1 {
 		order = append(order, Token{Kind: TOK_NUMBER, Value: strconv.Itoa(temp)})
-	} else if temp > 1 {
+	} else if temp > 0 {
 		order = append(order, Token{Kind: TOK_NUMBER, Value: strconv.Itoa(temp)})
+	} else if len(order) > 1 {
+		order = order[:len(order)-1]
 	}
 	if slashfrac && shorthand {
 		for i, v := range denominator {
