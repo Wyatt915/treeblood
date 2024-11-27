@@ -20,6 +20,7 @@ var (
 		"binom":         2,
 		"dfrac":         2,
 		"textfrac":      2,
+		"overset":       2,
 		"substack":      1,
 		"underbrace":    1,
 		"overbrace":     1,
@@ -231,6 +232,11 @@ func processCommandArgs(n *MMLNode, context parseContext, name string, star bool
 		n.Attrib["rowspan"] = StringifyTokens(arguments[0])
 	case "underbrace", "overbrace":
 		doUnderOverBrace(tok, n, ParseTex(arguments[0], context))
+	case "overset":
+		overset := makeSuperscript(ParseTex(arguments[1], context), ParseTex(arguments[0], context))
+		overset.Tag = "mover"
+		n.Tag = "mrow"
+		n.appendChild(overset)
 	case "text":
 		context |= CTX_TEXT
 		n.Children = nil
