@@ -175,6 +175,11 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			child.Text = tok.Value
 			child.Tag = "merror"
 			child.Attrib["title"] = "cyclic dependency in macro definition"
+		case tok.Kind&TOK_MACROARG > 0:
+			child.Tok = tok
+			child.Text = "?" + tok.Value
+			child.Tag = "merror"
+			child.Attrib["title"] = "Unexpanded macro argument"
 		case tok.Kind&TOK_ESCAPED > 0:
 			child.Tok = tok
 			child.Text = tok.Value
