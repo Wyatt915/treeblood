@@ -182,7 +182,7 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			nextExpr, i, _ = GetNextExpr(tokens, i)
 			ctx := setEnvironmentContext(tok, context)
 			child = processEnv(ParseTex(nextExpr, ctx), tok.Value, ctx)
-		case tok.Kind&(TOK_CURLY|TOK_OPEN) == TOK_CURLY|TOK_OPEN:
+		case tok.Kind&(TOK_OPEN|TOK_CURLY) == TOK_OPEN|TOK_CURLY:
 			nextExpr, i, _ = GetNextExpr(tokens, i)
 			child = ParseTex(nextExpr, context)
 		case tok.Kind&TOK_LETTER > 0:
@@ -194,6 +194,25 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			child.Tag = "mn"
 			child.Text = tok.Value
 			child.Tok = tok
+		case tok.Kind&(TOK_OPEN|TOK_CLOSE) > 0:
+			// process the (bracketed expression) as a standalone mrow
+			if tok.Kind&TOK_OPEN > 0 && tok.MatchOffset > 0 {
+				offset := tok.MatchOffset
+				tokens[i].MatchOffset = 0
+				tokens[i+offset].MatchOffset = 0
+				child.Tag = "mrow"
+				ParseTex(tokens[i:i+offset+1], context, child)
+				i += offset
+			} else {
+				child.Tag = "mo"
+				child.Attrib["fence"] = "true"
+				child.Attrib["stretchy"] = "true"
+				if tok.Kind&TOK_COMMAND > 0 {
+					i = ProcessCommand(child, context, tok, tokens, i)
+				} else {
+					child.Text = tok.Value
+				}
+			}
 		case tok.Kind&TOK_FENCE > 0:
 			child.Tag = "mo"
 			child.Attrib["fence"] = "true"
@@ -203,11 +222,6 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			} else {
 				child.Text = tok.Value
 			}
-		case tok.Kind&(TOK_OPEN|TOK_CLOSE) > 0:
-			child.Tag = "mo"
-			child.Text = tok.Value
-			child.Attrib["fence"] = "true"
-			child.Attrib["stretchy"] = "false"
 		case tok.Kind&TOK_WHITESPACE > 0:
 			if context&CTX_TEXT > 0 {
 				child.Tag = "mspace"
