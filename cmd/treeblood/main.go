@@ -17,7 +17,7 @@ func main() {
 	var tex []byte
 	var err error
 	flag.Parse()
-	if inputPtr != nil {
+	if inputPtr != nil && *inputPtr != "" {
 		reader, err = os.Open(*inputPtr)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "could not open %s for reading. Reason: %s\n", *inputPtr, err.Error())
@@ -27,7 +27,7 @@ func main() {
 	} else {
 		reader = os.Stdin
 	}
-	if outputPtr != nil {
+	if outputPtr != nil && *outputPtr != "" {
 		writer, err = os.Create(*outputPtr)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "could not open %s for writing. Reason: %s\n", *outputPtr, err.Error())

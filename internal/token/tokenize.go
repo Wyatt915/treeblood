@@ -538,7 +538,7 @@ func postProcessTokens(toks []Token) ([]Token, error) {
 		return out, err
 	}
 	// Indicies could have changed after processing environments!!
-	err = matchBracesCritical(toks, TOK_CURLY)
+	err = matchBracesCritical(out, TOK_CURLY)
 	if err != nil {
 		return out, err
 	}

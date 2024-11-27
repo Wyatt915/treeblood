@@ -56,6 +56,14 @@ func TestDerivatives(t *testing.T) {
 	writeHTML(f, "derivatives", readTestFile("derivatives.tex"), nil)
 }
 
+func TestBadInpit(t *testing.T) {
+	f, err := os.Create("badinput_test.html")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer f.Close()
+	writeHTML(f, "bad inputs", readTestFile("badinput.tex"), nil)
+}
 func readTestFile(name string) []string {
 	testcases, err := os.ReadFile(name)
 	if err != nil {
