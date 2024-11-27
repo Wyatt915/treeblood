@@ -428,7 +428,7 @@ func (node *MMLNode) postProcessScripts() {
 		if base == nil {
 			pos++ //there is no base so we have to replace the zeroth node
 			base = NewMMLNode("none")
-			//skip-- // there is one less node to nillify
+			skip-- // there is one less node to nillify
 		}
 		if hasBoth {
 			if base.Properties&prop_limitsunderover > 0 {
