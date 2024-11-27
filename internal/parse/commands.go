@@ -203,7 +203,12 @@ func processCommandArgs(n *MMLNode, context parseContext, name string, star bool
 	var expr []Token
 	var kind ExprKind
 	tok := tokens[idx]
-
+	if idx >= len(tokens) {
+		n.Tag = "merror"
+		n.Text = tok.Value
+		n.Attrib["title"] = tok.Value + " requires one or more arguments"
+		return idx
+	}
 	expr, idx, kind = GetNextExpr(tokens, idx+1)
 	if kind == EXPR_OPTIONS {
 		option = expr
@@ -243,7 +248,12 @@ func processCommandArgs(n *MMLNode, context parseContext, name string, star bool
 		den := ParseTex(arguments[1], context)
 		doFraction(tok, n, num, den)
 	case "not":
-		if len(arguments[0]) == 1 {
+		if len(arguments[0]) < 1 {
+			n.Tag = "merror"
+			n.Text = tok.Value
+			n.Attrib["title"] = tok.Value + " requires an argument"
+			return idx
+		} else if len(arguments[0]) == 1 {
 			t := arguments[0][0]
 			sym, ok := symbolTable[t.Value]
 			if ok {
@@ -264,7 +274,7 @@ func processCommandArgs(n *MMLNode, context parseContext, name string, star bool
 		} else {
 			n.Tag = "menclose"
 			n.Attrib["notation"] = "updiagonalstrike"
-			n.Children = ParseTex(arguments[0], context).Children
+			ParseTex(arguments[0], context, n)
 		}
 	case "sideset":
 		sideset(n, arguments[0], arguments[1], arguments[2], context)
