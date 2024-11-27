@@ -305,7 +305,8 @@ func doDerivative(n *MMLNode, name string, star bool, context parseContext, toke
 		arguments = append(arguments, expr)
 	default:
 		n.Tag = "merror"
-		n.Text = fmt.Sprintf("%s expects an argument", name)
+		n.Text = name
+		n.Attrib["title"] = fmt.Sprintf("%s expects an argument", name)
 		return idx
 	}
 	keepConsuming := true
@@ -318,7 +319,8 @@ func doDerivative(n *MMLNode, name string, star bool, context parseContext, toke
 		case EXPR_SINGLE_TOK:
 			if len(arguments) < 1 {
 				n.Tag = "merror"
-				n.Text = fmt.Sprintf("%s expects an argument", name)
+				n.Text = name
+				n.Attrib["title"] = fmt.Sprintf("%s expects an argument", name)
 				return idx
 			} else if len(arguments) > 1 {
 				keepConsuming = false
@@ -345,7 +347,8 @@ func doDerivative(n *MMLNode, name string, star bool, context parseContext, toke
 	}
 	if len(arguments) == 0 {
 		n.Tag = "merror"
-		n.Text = fmt.Sprintf("%s expects an argument", name)
+		n.Text = name
+		n.Attrib["title"] = fmt.Sprintf("%s expects an argument", name)
 		return idx
 	}
 	var inf string
