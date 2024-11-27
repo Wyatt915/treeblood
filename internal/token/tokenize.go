@@ -173,6 +173,10 @@ func GetToken(tex []rune, start int) (Token, int) {
 				kind = TOK_WHITESPACE
 				result = append(result, ' ')
 				continue
+			case r == '|':
+				state = lxEnd
+				kind = TOK_FENCE
+				result = append(result, r)
 			default:
 				state = lxEnd
 				kind = TOK_CHAR

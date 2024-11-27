@@ -33,6 +33,7 @@ const (
 	prop_row_sep
 	prop_limitswitch
 	prop_sym_upright
+	prop_stretchy
 )
 
 const (
@@ -108,6 +109,9 @@ func (n *MMLNode) setAttribsFromProperties() {
 	if n.Properties&prop_movablelimits > 0 {
 		n.setTrue("movablelimits")
 	}
+	if n.Properties&prop_stretchy > 0 {
+		n.setTrue("stretchy")
+	}
 }
 
 func (n *MMLNode) appendChild(child ...*MMLNode) {
@@ -176,7 +180,7 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			child.Text = tok.Value
 			child.Tag = "mo"
 			if tok.Kind&(TOK_OPEN|TOK_CLOSE|TOK_FENCE) > 0 {
-				child.Attrib["stretchy"] = "true"
+				child.setTrue("stretchy")
 			}
 		case tok.Kind&(TOK_OPEN|TOK_ENV) == TOK_OPEN|TOK_ENV:
 			nextExpr, i, _ = GetNextExpr(tokens, i)
@@ -205,8 +209,8 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 				i += offset
 			} else {
 				child.Tag = "mo"
-				child.Attrib["fence"] = "true"
-				child.Attrib["stretchy"] = "true"
+				child.setTrue("fence")
+				child.setTrue("stretchy")
 				if tok.Kind&TOK_COMMAND > 0 {
 					i = ProcessCommand(child, context, tok, tokens, i)
 				} else {
@@ -215,8 +219,8 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			}
 		case tok.Kind&TOK_FENCE > 0:
 			child.Tag = "mo"
-			child.Attrib["fence"] = "true"
-			child.Attrib["stretchy"] = "true"
+			child.setTrue("fence")
+			child.setTrue("stretchy")
 			if tok.Kind&TOK_COMMAND > 0 {
 				i = ProcessCommand(child, context, tok, tokens, i)
 			} else {
