@@ -1074,9 +1074,9 @@ var symbolTable = map[string]symbol{
 		kind:   sym_relation,
 	},
 	"Vvert": {
-		char:               "⦀",
-		entity:             "&tverbar;",
-		kind:               sym_other,
+		char:       "⦀",
+		entity:     "&tverbar;",
+		kind:       sym_other,
 		properties: prop_stretchy,
 	},
 	"Xi": {
@@ -1728,6 +1728,11 @@ var symbolTable = map[string]symbol{
 		entity: "&mdash;",
 		kind:   sym_normal,
 	},
+	"emptyset": {
+		char:   "∅",
+		entity: "&empty;",
+		kind:   sym_normal,
+	},
 	"epsilon": {
 		char:   "ϵ",
 		entity: "&epsi;",
@@ -2339,9 +2344,9 @@ var symbolTable = map[string]symbol{
 		kind:   sym_binaryop,
 	},
 	"lvert": {
-		char:               "|",
-		entity:             "|",
-		kind:               sym_opening,
+		char:       "|",
+		entity:     "|",
+		kind:       sym_opening,
 		properties: prop_stretchy,
 	},
 	"lvertneqq": {
@@ -3013,9 +3018,9 @@ var symbolTable = map[string]symbol{
 		kind:   sym_binaryop,
 	},
 	"rvert": {
-		char:               "|",
-		entity:             "|",
-		kind:               sym_closing,
+		char:       "|",
+		entity:     "|",
+		kind:       sym_closing,
 		properties: prop_stretchy,
 	},
 	"saturn": {
@@ -3617,9 +3622,9 @@ var symbolTable = map[string]symbol{
 		kind:   sym_binaryop,
 	},
 	"vert": {
-		char:               "|",
-		entity:             "&vert;",
-		kind:               sym_other,
+		char:       "|",
+		entity:     "&vert;",
+		kind:       sym_other,
 		properties: prop_stretchy,
 	},
 	"verymuchless": {
