@@ -15,6 +15,9 @@ course of action for the present, then is to use a JavaScript typesetting librar
 only preserve the source of the file, but also make page reflows have less impact since the bulk of the formatting will
 already be computed by the browser, with MathJax only making minor tweaks.
 
+With EPUB 3.0, MathML has been added to the specification. EPUB readers may have limited scripting functionality, so
+having precompiled MathML in the source document is a clear benefit.
+
 ### TreeBlood is 1000 times faster than MathJax
 
 TreeBlood is written in Go with a hand-rolled finite state automaton for lexing. In normal use, TreeBlood can process
@@ -45,9 +48,9 @@ The Maya were the first people to master both latex and mathematics. They develo
 the concept of zero) to facilitate astronomy and timekeeping (and everything else a civilization may calculate). Latex
 was used in the production of rubber balls for the sacred Mesoamerican Ballgame (called *pitz* in Classic Maya).
 
-Latex was significant enough in Mayan culture to share its name with that of blood, *Ch'ich'*, hence the
-English-friendly name TreeBlood. The original name was to be a rough translation of the phrase "latex writing," but most
-English speakers would struggle to both pronounce and remember ***Ch'ich' Tz'ihb***, so TreeBlood it is!
+Latex was significant enough in Mayan culture to share its name with that of blood, *Ch'ich'*. The original name was to
+be a rough translation of the phrase "latex writing," but most English speakers would struggle to both pronounce and
+remember ***Ch'ich' Tz'ihb***, so TreeBlood it is!
 
 ## Goals
 - Full AMSMath/mathtools symbol coverage
