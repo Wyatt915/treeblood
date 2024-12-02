@@ -3547,8 +3547,8 @@ var symbolTable = map[string]symbol{
 		kind:   sym_alphabetic,
 	},
 	"varnothing": {
-		char:   "∅",
-		entity: "&empty;",
+		char:   "🞅̸",
+		entity: "&#x1F785;&#x0338;",
 		kind:   sym_normal,
 	},
 	"varphi": {
