@@ -21,6 +21,7 @@ var (
 		"dfrac":         2,
 		"textfrac":      2,
 		"overset":       2,
+		"underset":      2,
 		"substack":      1,
 		"underbrace":    1,
 		"overbrace":     1,
@@ -235,6 +236,11 @@ func processCommandArgs(n *MMLNode, context parseContext, name string, star bool
 	case "overset":
 		overset := makeSuperscript(ParseTex(arguments[1], context), ParseTex(arguments[0], context))
 		overset.Tag = "mover"
+		n.Tag = "mrow"
+		n.appendChild(overset)
+	case "underset":
+		overset := makeSuperscript(ParseTex(arguments[1], context), ParseTex(arguments[0], context))
+		overset.Tag = "munder"
 		n.Tag = "mrow"
 		n.appendChild(overset)
 	case "text":
