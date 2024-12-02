@@ -215,7 +215,9 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			} else {
 				child.Tag = "mo"
 				child.setTrue("fence")
-				child.setTrue("stretchy")
+				if tok.Kind&TOK_FENCE > 0 {
+					child.setTrue("stretchy")
+				}
 				if tok.Kind&TOK_COMMAND > 0 {
 					i = ProcessCommand(child, context, tok, tokens, i)
 				} else {
@@ -253,6 +255,20 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 		}
 		if child == nil {
 			continue
+		}
+		switch k := tok.Kind & (TOK_BIGNESS1 | TOK_BIGNESS2 | TOK_BIGNESS3 | TOK_BIGNESS4); k {
+		case TOK_BIGNESS1:
+			child.Attrib["scriptlevel"] = "-1"
+			child.Attrib["stretchy"] = "false"
+		case TOK_BIGNESS2:
+			child.Attrib["scriptlevel"] = "-2"
+			child.Attrib["stretchy"] = "false"
+		case TOK_BIGNESS3:
+			child.Attrib["scriptlevel"] = "-3"
+			child.Attrib["stretchy"] = "false"
+		case TOK_BIGNESS4:
+			child.Attrib["scriptlevel"] = "-4"
+			child.Attrib["stretchy"] = "false"
 		}
 		// apply properties granted by previous sibling, if any
 		child.Properties |= promotedProperties

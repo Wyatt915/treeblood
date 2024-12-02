@@ -469,41 +469,44 @@ func fixFences(toks []Token) []Token {
 			break
 		}
 		temp = toks[i]
-		val := toks[i+1].Value
+		nextval := toks[i+1].Value
 
-		switch toks[i].Value {
+		switch val := toks[i].Value; val {
 		case "left":
 			i++
 			temp = toks[i]
-			if val == "." {
+			if nextval == "." {
 				temp.Value = ""
 				temp.Kind = TOK_NULL
 			} else {
-				temp.Value = val
+				temp.Value = nextval
 			}
 			temp.Kind |= TOK_FENCE | TOK_OPEN
 		case "right":
 			i++
 			temp = toks[i]
-			if val == "." {
+			if nextval == "." {
 				temp.Value = ""
 				temp.Kind = TOK_NULL
 			} else {
-				temp.Value = val
+				temp.Value = nextval
 			}
 			temp.Kind |= TOK_FENCE | TOK_CLOSE
 		case "big", "Big", "bigg", "Bigg":
 			i++
 			temp = toks[i]
 			temp.Kind |= bigLevel(val)
+			temp.Kind &= ^(TOK_OPEN | TOK_CLOSE | TOK_FENCE)
 		case "bigl", "Bigl", "biggl", "Biggl":
 			i++
 			temp = toks[i]
-			temp.Kind |= TOK_FENCE | TOK_OPEN | bigLevel(val[:len(val)-1])
+			temp.Kind |= TOK_OPEN | bigLevel(val[:len(val)-1])
+			temp.Kind &= ^TOK_FENCE
 		case "bigr", "Bigr", "biggr", "Biggr":
 			i++
 			temp = toks[i]
-			temp.Kind |= TOK_FENCE | TOK_OPEN | bigLevel(val[:len(val)-1])
+			temp.Kind |= TOK_OPEN | bigLevel(val[:len(val)-1])
+			temp.Kind &= ^TOK_FENCE
 		}
 		out = append(out, temp)
 		i++
