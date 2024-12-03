@@ -13,7 +13,7 @@ var (
 	// maps commands to number of expected arguments
 	command_args = map[string]int{
 		"multirow":      3,
-		"multicol":      3,
+		"multicolumn":   3,
 		"prescript":     3,
 		"sideset":       3,
 		"frac":          2,
@@ -241,18 +241,29 @@ func processCommandArgs(n *MMLNode, context parseContext, name string, star bool
 	case "multirow":
 		ParseTex(arguments[2], context, n)
 		n.Attrib["rowspan"] = StringifyTokens(arguments[0])
+	case "multicolumn":
+		ParseTex(arguments[2], context, n)
+		n.Attrib["columnspan"] = StringifyTokens(arguments[0])
 	case "underbrace", "overbrace":
 		doUnderOverBrace(tok, n, ParseTex(arguments[0], context))
 	case "overset":
-		overset := makeSuperscript(ParseTex(arguments[1], context), ParseTex(arguments[0], context))
+		base := ParseTex(arguments[1], context)
+		if base.Tag == "mo" {
+			base.setTrue("stretchy")
+		}
+		overset := makeSuperscript(base, ParseTex(arguments[0], context))
 		overset.Tag = "mover"
 		n.Tag = "mrow"
 		n.appendChild(overset)
 	case "underset":
-		overset := makeSuperscript(ParseTex(arguments[1], context), ParseTex(arguments[0], context))
-		overset.Tag = "munder"
+		base := ParseTex(arguments[1], context)
+		if base.Tag == "mo" {
+			base.setTrue("stretchy")
+		}
+		underset := makeSuperscript(base, ParseTex(arguments[0], context))
+		underset.Tag = "munder"
 		n.Tag = "mrow"
-		n.appendChild(overset)
+		n.appendChild(underset)
 	case "text":
 		context |= CTX_TEXT
 		n.Children = nil

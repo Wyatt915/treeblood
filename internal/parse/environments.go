@@ -74,10 +74,15 @@ func processTable(table *MMLNode) {
 	separateCells := func(n *MMLNode) bool { return n != nil && n.Properties&prop_cell_sep > 0 }
 	for _, row := range splitByFunc(table.Children, separateRows) {
 		rowNode := NewMMLNode("mtr")
+		var colspan int
 		for cidx, cell := range splitByFunc(row, separateCells) {
-			// If a cell in this column spans multiple rows, do not emit an <mtd> here.
+			// If a cell in this column spans over this row, do not emit an <mtd> here.
 			if rowspans[cidx] > 0 {
 				rowspans[cidx]--
+				continue
+			}
+			if colspan > 0 {
+				colspan--
 				continue
 			}
 			cellNode = NewMMLNode("mtd")
@@ -101,7 +106,21 @@ func processTable(table *MMLNode) {
 						minsize := float32((3*span)-1) / 2
 						cellNode.Children[0].Attrib["minsize"] = strconv.FormatFloat(float64(minsize), 'f', 1, 32) + "em"
 					}
-					break
+				}
+				if spanstr, ok := c.Attrib["columnspan"]; ok {
+					delete(cellNode.Children[i].Attrib, "columnspan")
+					cellNode.Attrib["columnspan"] = spanstr
+					span, err := strconv.ParseInt(spanstr, 10, 16)
+					if err == nil {
+						colspan = int(span) - 1
+					}
+					if len(cell) == 1 && c.Properties&prop_horz_arrow > 0 {
+						// TODO man idk.... count all the characters in each text field in the cell and pretend they're
+						// all 1 em? For now, each cell is 1em with a 1em gap. The default gap is 0.8 but this should be
+						// fine.
+						minsize := float32(2*span - 1)
+						cellNode.Children[0].Attrib["minsize"] = strconv.FormatFloat(float64(minsize), 'f', 1, 32) + "em"
+					}
 				}
 			}
 			rowNode.Children = append(rowNode.Children, cellNode)
