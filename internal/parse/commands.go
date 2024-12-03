@@ -170,10 +170,10 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 			if context&CTX_TABLE > 0 {
 				switch name {
 				case "longrightarrow", "longleftarrow":
-					n.Properties |= prop_table_horz_arrow
+					n.Properties |= prop_horz_arrow
 					n.setTrue("stretchy")
 				case "uparrow", "downarrow":
-					n.Properties |= prop_table_vert_arrow
+					n.Properties |= prop_vert_arrow
 					n.setTrue("stretchy")
 				}
 			}

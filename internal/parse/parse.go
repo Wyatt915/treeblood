@@ -34,8 +34,8 @@ const (
 	prop_limitswitch
 	prop_sym_upright
 	prop_stretchy
-	prop_table_horz_arrow
-	prop_table_vert_arrow
+	prop_horz_arrow
+	prop_vert_arrow
 )
 
 const (

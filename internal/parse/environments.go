@@ -93,7 +93,7 @@ func processTable(table *MMLNode) {
 					if err == nil {
 						rowspans[cidx] = int(span) - 1
 					}
-					if len(cell) == 1 && c.Properties&prop_table_vert_arrow > 0 {
+					if len(cell) == 1 && c.Properties&prop_vert_arrow > 0 {
 						// rows have a default height of 1em and space of 1ex=½em between them.
 						// There is one less interior space than the number of rows spanned.
 						// total height of this combined cell:
