@@ -34,6 +34,8 @@ const (
 	prop_limitswitch
 	prop_sym_upright
 	prop_stretchy
+	prop_table_horz_arrow
+	prop_table_vert_arrow
 )
 
 const (
@@ -158,6 +160,20 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 				continue
 			}
 		}
+		switch k := tok.Kind & (TOK_BIGNESS1 | TOK_BIGNESS2 | TOK_BIGNESS3 | TOK_BIGNESS4); k {
+		case TOK_BIGNESS1:
+			child.Attrib["scriptlevel"] = "-1"
+			child.Attrib["stretchy"] = "false"
+		case TOK_BIGNESS2:
+			child.Attrib["scriptlevel"] = "-2"
+			child.Attrib["stretchy"] = "false"
+		case TOK_BIGNESS3:
+			child.Attrib["scriptlevel"] = "-3"
+			child.Attrib["stretchy"] = "false"
+		case TOK_BIGNESS4:
+			child.Attrib["scriptlevel"] = "-4"
+			child.Attrib["stretchy"] = "false"
+		}
 		switch {
 		case tok.Kind&TOK_COMMENT > 0:
 			continue
@@ -256,20 +272,6 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 		if child == nil {
 			continue
 		}
-		switch k := tok.Kind & (TOK_BIGNESS1 | TOK_BIGNESS2 | TOK_BIGNESS3 | TOK_BIGNESS4); k {
-		case TOK_BIGNESS1:
-			child.Attrib["scriptlevel"] = "-1"
-			child.Attrib["stretchy"] = "false"
-		case TOK_BIGNESS2:
-			child.Attrib["scriptlevel"] = "-2"
-			child.Attrib["stretchy"] = "false"
-		case TOK_BIGNESS3:
-			child.Attrib["scriptlevel"] = "-3"
-			child.Attrib["stretchy"] = "false"
-		case TOK_BIGNESS4:
-			child.Attrib["scriptlevel"] = "-4"
-			child.Attrib["stretchy"] = "false"
-		}
 		// apply properties granted by previous sibling, if any
 		child.Properties |= promotedProperties
 		promotedProperties = 0
@@ -277,7 +279,11 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 	}
 	if len(parent) > 0 {
 		node = parent[0]
-		node.Children = append(node.Children, siblings...)
+		if len(siblings) > 1 {
+			node.Children = append(node.Children, siblings...)
+		} else if len(siblings) == 1 {
+			*node = *siblings[0]
+		}
 		node.Option = optionString
 	} else if len(siblings) > 1 {
 		node = NewMMLNode("mrow")

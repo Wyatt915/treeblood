@@ -93,6 +93,14 @@ func processTable(table *MMLNode) {
 					if err == nil {
 						rowspans[cidx] = int(span) - 1
 					}
+					if len(cell) == 1 && c.Properties&prop_table_vert_arrow > 0 {
+						// rows have a default height of 1em and space of 1ex=½em between them.
+						// There is one less interior space than the number of rows spanned.
+						// total height of this combined cell:
+						// span + (span-1)/2 = ((3*span)-1)/2
+						minsize := float32((3*span)-1) / 2
+						cellNode.Children[0].Attrib["minsize"] = strconv.FormatFloat(float64(minsize), 'f', 1, 32) + "em"
+					}
 					break
 				}
 			}
@@ -101,6 +109,7 @@ func processTable(table *MMLNode) {
 		rows = append(rows, rowNode)
 	}
 	table.Tag = "mtable"
+	table.Attrib["rowalign"] = "center"
 	table.Children = rows
 }
 

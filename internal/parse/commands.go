@@ -167,6 +167,16 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 			} else {
 				n.Text = t.entity
 			}
+			if context&CTX_TABLE > 0 {
+				switch name {
+				case "longrightarrow", "longleftarrow":
+					n.Properties |= prop_table_horz_arrow
+					n.setTrue("stretchy")
+				case "uparrow", "downarrow":
+					n.Properties |= prop_table_vert_arrow
+					n.setTrue("stretchy")
+				}
+			}
 			switch t.kind {
 			case sym_binaryop, sym_opening, sym_closing, sym_relation:
 				n.Tag = "mo"
