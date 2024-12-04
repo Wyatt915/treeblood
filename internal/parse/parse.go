@@ -31,7 +31,8 @@ const (
 	prop_limitsunderover
 	prop_cell_sep
 	prop_row_sep
-	prop_limitswitch
+	prop_limits
+	prop_nolimits
 	prop_sym_upright
 	prop_stretchy
 	prop_horz_arrow
@@ -314,8 +315,16 @@ func (node *MMLNode) postProcessLimitSwitch() {
 		if child == nil {
 			continue
 		}
-		if child.Properties&prop_limitswitch > 0 {
-			node.Children[i-1].Properties ^= prop_limitsunderover
+		if child.Properties&prop_limits > 0 {
+			node.Children[i-1].Properties |= prop_limitsunderover
+			node.Children[i-1].Properties &= ^prop_movablelimits
+			node.Children[i-1].Attrib["movablelimits"] = "false"
+			placeholder := NewMMLNode()
+			placeholder.Properties = prop_nonprint
+			node.Children[i-1], node.Children[i] = placeholder, node.Children[i-1]
+		} else if child.Properties&prop_nolimits > 0 {
+			node.Children[i-1].Properties &= ^prop_limitsunderover
+			node.Children[i-1].Properties &= ^prop_movablelimits
 			placeholder := NewMMLNode()
 			placeholder.Properties = prop_nonprint
 			node.Children[i-1], node.Children[i] = placeholder, node.Children[i-1]
