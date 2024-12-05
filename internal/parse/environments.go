@@ -123,7 +123,7 @@ func processTable(table *MMLNode) {
 					}
 				}
 			}
-			rowNode.Children = append(rowNode.Children, cellNode)
+			rowNode.appendChild(cellNode)
 		}
 		rows = append(rows, rowNode)
 	}

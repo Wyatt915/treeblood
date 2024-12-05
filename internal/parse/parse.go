@@ -134,12 +134,12 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			root := NewMMLNode("mrow")
 			root.appendChild(parsed)
 			root.doPostProcess()
-			semantics.Children = append(semantics.Children, root)
+			semantics.appendChild(root)
 		} else {
-			semantics.Children = append(semantics.Children, parsed)
+			semantics.appendChild(parsed)
 			semantics.doPostProcess()
 		}
-		node.Children = append(node.Children, semantics)
+		node.appendChild(semantics)
 		return node
 	}
 	var i, start int
@@ -245,7 +245,11 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 					child.setTrue("stretchy")
 				}
 				if tok.Kind&TOK_COMMAND > 0 {
-					i = ProcessCommand(child, context, tok, tokens, i)
+					if is_symbol(tok) {
+						make_symbol(tok, context, child)
+					} else {
+						i = ProcessCommand(child, context, tok, tokens, i)
+					}
 				} else {
 					child.Text = tok.Value
 				}
@@ -255,7 +259,11 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			child.setTrue("fence")
 			child.setTrue("stretchy")
 			if tok.Kind&TOK_COMMAND > 0 {
-				i = ProcessCommand(child, context, tok, tokens, i)
+				if is_symbol(tok) {
+					make_symbol(tok, context, child)
+				} else {
+					i = ProcessCommand(child, context, tok, tokens, i)
+				}
 			} else {
 				child.Text = tok.Value
 			}
