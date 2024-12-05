@@ -15,6 +15,7 @@ func init() {
 	symbolTable["implies"] = symbolTable["Longrightarrow"]
 	symbolTable["land"] = symbolTable["wedge"]
 	symbolTable["lor"] = symbolTable["vee"]
+	symbolTable["hbar"] = symbolTable["hslash"]
 }
 
 type NodeClass uint64
@@ -128,8 +129,16 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 	if context&CTX_ROOT > 0 {
 		node = NewMMLNode("math")
 		semantics := NewMMLNode("semantics")
-		semantics.Children = append(semantics.Children, ParseTex(tokens, context^CTX_ROOT))
-		semantics.doPostProcess()
+		parsed := ParseTex(tokens, context^CTX_ROOT)
+		if parsed.Tag != "mrow" {
+			root := NewMMLNode("mrow")
+			root.appendChild(parsed)
+			root.doPostProcess()
+			semantics.Children = append(semantics.Children, root)
+		} else {
+			semantics.Children = append(semantics.Children, parsed)
+			semantics.doPostProcess()
+		}
 		node.Children = append(node.Children, semantics)
 		return node
 	}
@@ -264,7 +273,11 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 		case tok.Kind&(TOK_CLOSE|TOK_CURLY) == TOK_CLOSE|TOK_CURLY, tok.Kind&(TOK_CLOSE|TOK_ENV) == TOK_CLOSE|TOK_ENV:
 			continue
 		case tok.Kind&TOK_COMMAND > 0:
-			i = ProcessCommand(child, context, tok, tokens, i)
+			if is_symbol(tok) {
+				make_symbol(tok, context, child)
+			} else {
+				i = ProcessCommand(child, context, tok, tokens, i)
+			}
 		default:
 			child.Tag = "mo"
 			child.Tok = tok
@@ -297,6 +310,63 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 	}
 	node.doPostProcess()
 	return node
+}
+
+func is_symbol(tok Token) bool {
+	_, inSymbTbl := symbolTable[tok.Value]
+	_, inCmdOps := command_operators[tok.Value]
+	return inSymbTbl || inCmdOps
+}
+
+func make_symbol(tok Token, ctx parseContext, n *MMLNode) {
+	name := tok.Value
+	if prop, ok := command_operators[name]; ok {
+		n.Tag = "mo"
+		n.Properties = prop
+		if t, ok := symbolTable[name]; ok {
+			if t.char != "" {
+				n.Text = t.char
+			} else {
+				n.Text = t.entity
+			}
+		} else {
+			n.Text = name
+		}
+	} else if t, ok := symbolTable[name]; ok {
+		n.Properties = t.properties
+		if t.char != "" {
+			n.Text = t.char
+		} else {
+			n.Text = t.entity
+		}
+		if ctx&CTX_TABLE > 0 && t.properties&(prop_horz_arrow|prop_vert_arrow) > 0 {
+			n.setTrue("stretchy")
+		}
+		switch t.kind {
+		case sym_binaryop, sym_opening, sym_closing, sym_relation:
+			n.Tag = "mo"
+		case sym_large:
+			n.Tag = "mo"
+			// we do an XOR rather than an OR here to remove this property
+			// from any of the integral symbols from symbolTable.
+			n.Properties ^= prop_limitsunderover
+			n.Properties |= prop_largeop | prop_movablelimits
+		case sym_alphabetic:
+			n.Tag = "mi"
+			if n.Properties&prop_sym_upright > 0 {
+				ctx |= CTX_VAR_NORMAL
+			}
+		default:
+			if tok.Kind&TOK_FENCE > 0 {
+				n.Tag = "mo"
+			} else {
+				n.Tag = "mi"
+			}
+		}
+	}
+	n.Tok = tok
+	n.set_variants_from_context(ctx)
+	n.setAttribsFromProperties()
 }
 
 func (node *MMLNode) doPostProcess() {

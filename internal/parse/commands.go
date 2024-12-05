@@ -150,60 +150,8 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		}
 		n.appendChild(base, acc)
 	} else {
-		if prop, ok := command_operators[name]; ok {
-			n.Tag = "mo"
-			n.Properties = prop
-			if t, ok := symbolTable[name]; ok {
-				if t.char != "" {
-					n.Text = t.char
-				} else {
-					n.Text = t.entity
-				}
-			} else {
-				n.Text = name
-			}
-		} else if t, ok := symbolTable[name]; ok {
-			n.Properties = t.properties
-			if t.char != "" {
-				n.Text = t.char
-			} else {
-				n.Text = t.entity
-			}
-			if context&CTX_TABLE > 0 {
-				switch name {
-				case "longrightarrow", "longleftarrow":
-					n.Properties |= prop_horz_arrow
-					n.setTrue("stretchy")
-				case "uparrow", "downarrow":
-					n.Properties |= prop_vert_arrow
-					n.setTrue("stretchy")
-				}
-			}
-			switch t.kind {
-			case sym_binaryop, sym_opening, sym_closing, sym_relation:
-				n.Tag = "mo"
-			case sym_large:
-				n.Tag = "mo"
-				// we do an XOR rather than an OR here to remove this property
-				// from any of the integral symbols from symbolTable.
-				n.Properties ^= prop_limitsunderover
-				n.Properties |= prop_largeop | prop_movablelimits
-			case sym_alphabetic:
-				n.Tag = "mi"
-				if n.Properties&prop_sym_upright > 0 {
-					context |= CTX_VAR_NORMAL
-				}
-			default:
-				if tok.Kind&TOK_FENCE > 0 {
-					n.Tag = "mo"
-				} else {
-					n.Tag = "mi"
-				}
-			}
-		} else {
-			logger.Printf("NOTE: unknown command '%s'. Treating as operator or function name.\n", name)
-			n.Tag = "mo"
-		}
+		logger.Printf("NOTE: unknown command '%s'. Treating as operator or function name.\n", name)
+		n.Tag = "mo"
 	}
 	n.Tok = tok
 	n.set_variants_from_context(context)
@@ -387,16 +335,13 @@ func doDerivative(n *MMLNode, name string, star bool, context parseContext, toke
 		return idx
 	}
 	var inf string
-	upright := false
 	jacobian := false
 	switch name[0] {
 	case 'd':
 		inf = "d"
-		upright = true
 		slashfrac = slashfrac || star
 	case 'o':
 		inf = "d"
-		upright = true
 	case 'p':
 		inf = "𝜕" // U+1D715 MATHEMATICAL ITALIC PARTIAL DIFFERENTIAL
 	case 'j':
@@ -404,10 +349,8 @@ func doDerivative(n *MMLNode, name string, star bool, context parseContext, toke
 		jacobian = true
 	case 'm':
 		inf = "D"
-		upright = true
 	case 'a':
 		inf = "Δ"
-		upright = true
 	case 'f':
 		inf = "δ"
 	}
@@ -425,12 +368,9 @@ func doDerivative(n *MMLNode, name string, star bool, context parseContext, toke
 	options := splitByFunc(opts, isComma)
 	makeOperator := func() *MMLNode {
 		op := NewMMLNode("mo", inf)
-		if !upright {
-			op.Attrib["mathvariant"] = "italic"
-		}
 		op.Attrib["form"] = "prefix"
-		op.Attrib["rspace"] = "veryverythinmathspace"
-		op.Attrib["lspace"] = "thinmathspace"
+		op.Attrib["rspace"] = "0.05556em"
+		op.Attrib["lspace"] = "0.11111em"
 		return op
 	}
 	order := make([]Token, 0, 2*len(options))
