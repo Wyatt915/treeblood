@@ -2,6 +2,7 @@ package parse
 
 import (
 	"fmt"
+	"math/bits"
 	"strconv"
 	"strings"
 	"unicode"
@@ -79,11 +80,64 @@ var (
 		"mathsfsl":   CTX_VAR_SANS | CTX_VAR_ITALIC,
 		"mathtt":     CTX_VAR_MONO,
 	}
+	ctx_size_offset int = bits.TrailingZeros64(uint64(CTX_SIZE_1))
+	switches            = map[string]parseContext{
+		"bf":                CTX_VAR_BOLD,
+		"em":                CTX_VAR_ITALIC,
+		"rm":                CTX_VAR_NORMAL,
+		"displaystyle":      CTX_DISPLAY,
+		"textstyle":         CTX_INLINE,
+		"scriptstyle":       CTX_SCRIPT,
+		"scriptscriptstyle": CTX_SCRIPTSCRIPT,
+		"tiny":              1 << ctx_size_offset,
+		"scriptsize":        2 << ctx_size_offset,
+		"footnotesize":      3 << ctx_size_offset,
+		"small":             4 << ctx_size_offset,
+		"normalsize":        5 << ctx_size_offset,
+		"large":             6 << ctx_size_offset,
+		"Large":             7 << ctx_size_offset,
+		"LARGE":             8 << ctx_size_offset,
+		"huge":              9 << ctx_size_offset,
+		"Huge":              10 << ctx_size_offset,
+	}
 )
 
 func isolateMathVariant(ctx parseContext) parseContext {
 	return ctx & ^(CTX_VAR_NORMAL - 1)
 }
+
+// fontSizeFromContext isolates the size component of ctx and returns a string with size and units (rem)
+// Based on the Absolute Point Sizes table [10pt] from https://en.wikibooks.org/wiki/LaTeX/Fonts#Sizing_text
+func fontSizeFromContext(ctx parseContext) string {
+	sz := (ctx >> ctx_size_offset) & 0xFF
+	var em float64
+	switch sz {
+	case 1: //tiny
+		em = 5.0 / 10.0
+	case 2: // scriptsize
+		em = 7.0 / 10.0
+	case 3: // footnotesize
+		em = 8.0 / 10.0
+	case 4: // small
+		em = 9.0 / 10.0
+	case 5: // normalsize
+		em = 1
+	case 6: // large
+		em = 12.0 / 10.0
+	case 7: // Large
+		em = 14.4 / 10.0
+	case 8: // LARGE
+		em = 17.28 / 10.0
+	case 9: // huge
+		em = 20.74 / 10.0
+	case 10: // Huge
+		em = 24.88 / 10.0
+	default:
+		em = 1
+	}
+	return fmt.Sprintf("%.5frem", em)
+}
+
 func restringify(n *MMLNode, sb *strings.Builder) {
 	for i, c := range n.Children {
 		if c.Tok.Value == "" {

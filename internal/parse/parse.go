@@ -43,7 +43,15 @@ const (
 const (
 	CTX_ROOT parseContext = 1 << iota
 	CTX_DISPLAY
+	CTX_INLINE
+	CTX_SCRIPT
+	CTX_SCRIPTSCRIPT
 	CTX_TEXT
+	// SIZES (interpreted as a 4-bit unsigned int)
+	CTX_SIZE_1
+	CTX_SIZE_2
+	CTX_SIZE_3
+	CTX_SIZE_4
 	// ENVIRONMENTS
 	CTX_TABLE
 	CTX_ENV_HAS_ARG
