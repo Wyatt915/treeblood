@@ -12,7 +12,7 @@ import (
 func init() {
 	logger = log.New(os.Stderr, "TreeBlood: ", log.LstdFlags)
 	//Symbol Aliases
-	symbolTable["implies"] = symbolTable["Longleftrightarrow"]
+	symbolTable["implies"] = symbolTable["Longrightarrow"]
 	symbolTable["land"] = symbolTable["wedge"]
 	symbolTable["lor"] = symbolTable["vee"]
 }

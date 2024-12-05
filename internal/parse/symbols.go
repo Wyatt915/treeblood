@@ -1274,6 +1274,11 @@ var symbolTable = map[string]symbol{
 		entity: "&xsqcup;",
 		kind:   sym_large,
 	},
+	"bigstar": {
+		char:   "★",
+		entity: "",
+		kind:   sym_other,
+	},
 	"bigtimes": {
 		char:   "⨉",
 		entity: "&xtimes;",

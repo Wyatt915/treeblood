@@ -66,6 +66,7 @@ var (
 	math_variants = map[string]parseContext{
 		"mathbb":     CTX_VAR_BB,
 		"mathbf":     CTX_VAR_BOLD,
+		"boldsymbol": CTX_VAR_BOLD,
 		"mathbfit":   CTX_VAR_BOLD | CTX_VAR_ITALIC,
 		"mathcal":    CTX_VAR_SCRIPT_CHANCERY,
 		"mathfrak":   CTX_VAR_FRAK,
