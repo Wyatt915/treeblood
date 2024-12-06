@@ -16,7 +16,12 @@ func isolateEnvironmentContext(ctx parseContext) parseContext {
 
 func setEnvironmentContext(envBegin Token, context parseContext) parseContext {
 	context = context ^ isolateEnvironmentContext(context) // clear other environments
+	name := envBegin.Value
+	star := strings.HasSuffix(name, "*")
 	if reMatchMatrix.MatchString(envBegin.Value) {
+		if star {
+			context |= CTX_ENV_HAS_ARG
+		}
 		return context | CTX_TABLE
 	}
 	switch envBegin.Value {
@@ -47,6 +52,24 @@ func splitByFunc[T any](s []T, f func(T) bool) [][]T {
 		}
 	}
 	return out
+}
+
+// remove duplicates from the end of a list
+func trim(lst []string) []string {
+	stop := len(lst)
+	if len(lst) > 1 {
+		val := lst[len(lst)-1]
+		for stop = len(lst); stop > 0; stop-- {
+			if lst[stop-1] != val {
+				stop++
+				break
+			}
+		}
+		if stop <= 0 {
+			stop = len(lst)
+		}
+	}
+	return lst[:stop]
 }
 
 // take a string like "l|c|r" and produce the strings "left center right" and "solid solid",
@@ -87,22 +110,7 @@ func parseAlignmentString(str string) (string, string) {
 	if wasline && len(lines) > 0 {
 		lines = lines[:len(lines)-1]
 	}
-	trim := func(lst []string) []string {
-		stop := len(lst)
-		if len(lst) > 1 {
-			val := lst[len(lst)-1]
-			for stop = len(lst); stop > 0; stop-- {
-				if lst[stop-1] != val {
-					stop++
-					break
-				}
-			}
-			if stop <= 0 {
-				stop = len(lst)
-			}
-		}
-		return lst[:stop]
-	}
+
 	return strings.Join(trim(align), " "), strings.Join(trim(lines), " ")
 }
 
@@ -110,6 +118,7 @@ func processTable(table *MMLNode) {
 	if table == nil {
 		return
 	}
+	table.Attrib["columnalign"] = "center" //default
 	if table.Option != "" {
 		align, lines := parseAlignmentString(table.Option)
 		if align != "" {
@@ -122,11 +131,14 @@ func processTable(table *MMLNode) {
 	rows := make([]*MMLNode, 0)
 	var cellNode *MMLNode
 	rowspans := make(map[int]int)
+	rowspacing := make([]string, 0)
+	nonDefaultSpacing := false
 	separateRows := func(n *MMLNode) bool { return n != nil && n.Properties&prop_row_sep > 0 }
 	separateCells := func(n *MMLNode) bool { return n != nil && n.Properties&prop_cell_sep > 0 }
 	for _, row := range splitByFunc(table.Children, separateRows) {
 		rowNode := NewMMLNode("mtr")
 		var colspan int
+		space := "1.0ex"
 		for cidx, cell := range splitByFunc(row, separateCells) {
 			// If a cell in this column spans over this row, do not emit an <mtd> here.
 			if rowspans[cidx] > 0 {
@@ -142,6 +154,10 @@ func processTable(table *MMLNode) {
 			for i, c := range cell {
 				if c == nil {
 					continue
+				}
+				if s, ok := c.Attrib["rowspacing"]; ok {
+					space = s
+					nonDefaultSpacing = true
 				}
 				if spanstr, ok := c.Attrib["rowspan"]; ok {
 					delete(cellNode.Children[i].Attrib, "rowspan")
@@ -167,9 +183,10 @@ func processTable(table *MMLNode) {
 						colspan = int(span) - 1
 					}
 					if len(cell) == 1 && c.Properties&prop_horz_arrow > 0 {
-						// TODO man idk.... count all the characters in each text field in the cell and pretend they're
-						// all 1 em? For now, each cell is 1em with a 1em gap. The default gap is 0.8 but this should be
-						// fine.
+						// TODO man idk.... count all the characters in each
+						// text field in the cell and pretend they're all 1 em?
+						// For now, each cell is 1em with a 1em gap. The default
+						// gap is 0.8 but this should be fine.
 						minsize := float32(2*span - 1)
 						cellNode.Children[0].Attrib["minsize"] = strconv.FormatFloat(float64(minsize), 'f', 1, 32) + "em"
 					}
@@ -177,7 +194,15 @@ func processTable(table *MMLNode) {
 			}
 			rowNode.appendChild(cellNode)
 		}
+		if nonDefaultSpacing {
+			rowspacing = append(rowspacing, space)
+		} else {
+			rowspacing = append(rowspacing, "1.0ex")
+		}
 		rows = append(rows, rowNode)
+	}
+	if nonDefaultSpacing {
+		table.Attrib["rowspacing"] = strings.Join(trim(rowspacing), " ")
 	}
 	table.Tag = "mtable"
 	table.Attrib["rowalign"] = "center"

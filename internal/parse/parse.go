@@ -153,10 +153,16 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 	var i, start int
 	var nextExpr []Token
 	if context&CTX_ENV_HAS_ARG > 0 {
-		nextExpr, start, _ = GetNextExpr(tokens, i)
-		optionString = StringifyTokens(nextExpr)
+		var kind ExprKind
+		nextExpr, start, kind = GetNextExpr(tokens, i)
+		if kind == EXPR_GROUP || kind == EXPR_OPTIONS {
+			optionString = StringifyTokens(nextExpr)
+			start++
+		} else {
+			logger.Println("WARN: environment expects an argument")
+			start = 0
+		}
 		context ^= CTX_ENV_HAS_ARG
-		start++
 	}
 	// properties granted by a previous node
 	var promotedProperties NodeProperties
@@ -174,6 +180,14 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 				}
 			case "\\", "cr":
 				child.Properties = prop_row_sep
+				opt, idx, kind := GetNextExpr(tokens, i+1)
+				if kind == EXPR_OPTIONS {
+					dummy := NewMMLNode("rowspacing")
+					dummy.Properties = prop_nonprint
+					dummy.Attrib["rowspacing"] = StringifyTokens(opt)
+					siblings = append(siblings, dummy)
+					i = idx
+				}
 				siblings = append(siblings, child)
 				continue
 			}

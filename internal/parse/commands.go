@@ -109,7 +109,7 @@ func isolateMathVariant(ctx parseContext) parseContext {
 // fontSizeFromContext isolates the size component of ctx and returns a string with size and units (rem)
 // Based on the Absolute Point Sizes table [10pt] from https://en.wikibooks.org/wiki/LaTeX/Fonts#Sizing_text
 func fontSizeFromContext(ctx parseContext) string {
-	sz := (ctx >> ctx_size_offset) & 0xFF
+	sz := (ctx >> ctx_size_offset) & 0xF
 	switch sz {
 	case 1:
 		return "0.500rem"
