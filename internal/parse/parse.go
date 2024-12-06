@@ -138,7 +138,7 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 		node = NewMMLNode("math")
 		semantics := NewMMLNode("semantics")
 		parsed := ParseTex(tokens, context^CTX_ROOT)
-		if parsed.Tag != "mrow" {
+		if parsed != nil && parsed.Tag != "mrow" {
 			root := NewMMLNode("mrow")
 			root.appendChild(parsed)
 			root.doPostProcess()
