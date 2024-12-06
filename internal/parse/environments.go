@@ -106,11 +106,6 @@ func parseAlignmentString(str string) (string, string) {
 			wasline = false
 		}
 	}
-	//remove the last columnline if it exists
-	if wasline && len(lines) > 0 {
-		lines = lines[:len(lines)-1]
-	}
-
 	return strings.Join(trim(align), " "), strings.Join(trim(lines), " ")
 }
 
@@ -261,7 +256,9 @@ func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 		return node
 	}
 	if node != nil {
-		node.Attrib = attrib
+		for k, v := range attrib {
+			node.Attrib[k] = v
+		}
 	}
 	row.Children = append(row.Children, left, node, right)
 	return row

@@ -61,10 +61,6 @@ remember ***Ch'ich' Tz'ihb***, so TreeBlood it is!
 
 While the aim is to be as close as possible to LaTeX, there are a few deviations made for the sake of easier parsing
 
-### Switches are not supported
-LaTeX distinguishes between commands that take arguments and switches that apply to the remainder of their scope. If a
-switch is needed, one should instead use its equivalent command.
-
 ### Command arguments
 Latex commands are typically given parameters in {curly braces}, but this is not a requirement. If no curly braces are
 present, the next non-reserved character will be used. For example, `\\frac12` renders the same as `\frac{1}{2}`. I hate

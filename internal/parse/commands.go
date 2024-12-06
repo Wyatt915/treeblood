@@ -158,6 +158,30 @@ func getOption(tokens []Token, idx int) ([]Token, int) {
 	return nil, idx
 }
 
+func endOfSwitchContext(switchname string, toks []Token, idx int, ctx parseContext) int {
+	for i := idx; i < len(toks); i++ {
+		if ctx&CTX_TABLE > 0 {
+			if toks[i].Kind&TOK_RESERVED > 0 && toks[i].Value == "&" {
+				return i
+			}
+			if toks[i].Value == "\\" || toks[i].Value == "cr" {
+				return i
+			}
+		}
+		//switch switchname {
+		//case "displaystyle":
+		//	if toks[i].Value == "textstyle" {
+		//		return i
+		//	}
+		//case "textstyle":
+		//	if toks[i].Value == "displaystyle" {
+		//		return i
+		//	}
+		//}
+	}
+	return len(toks)
+}
+
 // ProcessCommand sets the value of n and returns the next index of tokens to be processed.
 func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int) int {
 	var nextExpr []Token
@@ -185,6 +209,20 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 			n.Attrib["linebreak"] = "newline"
 		}
 		return idx
+	}
+	if sw, ok := switches[name]; ok {
+		end := endOfSwitchContext(name, tokens, idx, context)
+		n.Tag = "mstyle"
+		ParseTex(tokens[idx+1:end], context|sw, n)
+		switch name {
+		case "displaystyle":
+			n.setTrue("displaystyle")
+		case "textstyle":
+			n.Attrib["displaystyle"] = "false"
+		case "rm":
+			n.Attrib["mathvariant"] = "normal"
+		}
+		return end - 1
 	}
 	numArgs, ok := command_args[name]
 	if ok {
