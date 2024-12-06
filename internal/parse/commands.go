@@ -23,6 +23,8 @@ var (
 		"textfrac":      2,
 		"overset":       2,
 		"underset":      2,
+		"bmod":          1,
+		"pmod":          1,
 		"substack":      1,
 		"underbrace":    1,
 		"overbrace":     1,
@@ -272,6 +274,27 @@ func processCommandArgs(n *MMLNode, context parseContext, name string, star bool
 		arguments = append(arguments, expr)
 	}
 	switch name {
+	case "pmod":
+		n.Tag = "mrow"
+		space := NewMMLNode("mspace")
+		space.Attrib["width"] = "0.7em"
+		mod := NewMMLNode("mo", "mod")
+		mod.Attrib["lspace"] = "0"
+		n.appendChild(space,
+			NewMMLNode("mo", "("),
+			mod,
+			ParseTex(arguments[0], context),
+			NewMMLNode("mo", ")"),
+		)
+	case "bmod":
+		n.Tag = "mrow"
+		space := NewMMLNode("mspace")
+		space.Attrib["width"] = "0.5em"
+		mod := NewMMLNode("mo", "mod")
+		n.appendChild(space,
+			mod,
+			ParseTex(arguments[0], context),
+		)
 	case "substack":
 		ParseTex(arguments[0], context|CTX_TABLE, n)
 		processTable(n)

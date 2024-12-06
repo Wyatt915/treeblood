@@ -115,7 +115,7 @@ func writeHTML(w io.Writer, testname string, test []string, macros map[string]st
 	<table><tbody><tr><th colspan="3">TreeBlood %s Test</th></tr>`, testname, testname, testname)
 	//prepared := treeblood.PrepareMacros(macros)
 	for _, tex := range test {
-		fmt.Println(tex)
+		//fmt.Println(tex)
 		begin := time.Now()
 		rendered, err := treeblood.TexToMML(tex, nil, true, false)
 		elapsed := time.Since(begin)
