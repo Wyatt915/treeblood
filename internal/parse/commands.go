@@ -110,32 +110,29 @@ func isolateMathVariant(ctx parseContext) parseContext {
 // Based on the Absolute Point Sizes table [10pt] from https://en.wikibooks.org/wiki/LaTeX/Fonts#Sizing_text
 func fontSizeFromContext(ctx parseContext) string {
 	sz := (ctx >> ctx_size_offset) & 0xFF
-	var em float64
 	switch sz {
-	case 1: //tiny
-		em = 5.0 / 10.0
-	case 2: // scriptsize
-		em = 7.0 / 10.0
-	case 3: // footnotesize
-		em = 8.0 / 10.0
-	case 4: // small
-		em = 9.0 / 10.0
-	case 5: // normalsize
-		em = 1
-	case 6: // large
-		em = 12.0 / 10.0
-	case 7: // Large
-		em = 14.4 / 10.0
-	case 8: // LARGE
-		em = 17.28 / 10.0
-	case 9: // huge
-		em = 20.74 / 10.0
-	case 10: // Huge
-		em = 24.88 / 10.0
-	default:
-		em = 1
+	case 1:
+		return "0.500rem"
+	case 2:
+		return "0.700rem"
+	case 3:
+		return "0.800rem"
+	case 4:
+		return "0.900rem"
+	case 5:
+		return "1.000rem"
+	case 6:
+		return "1.200rem"
+	case 7:
+		return "1.440rem"
+	case 8:
+		return "1.728rem"
+	case 9:
+		return "2.074rem"
+	case 10:
+		return "2.488rem"
 	}
-	return fmt.Sprintf("%.5frem", em)
+	return "1.000rem"
 }
 
 func restringify(n *MMLNode, sb *strings.Builder) {

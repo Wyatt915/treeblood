@@ -29,6 +29,7 @@ func TexToMML(tex string, macros map[string]string, block, displaystyle bool) (r
 			if displaystyle {
 				ast.Attrib["displaystyle"] = "true"
 			}
+			fmt.Println(r)
 			ast.Write(&builder, 0)
 			result = builder.String()
 			err = fmt.Errorf("TreeBlood encountered an unexpected error")

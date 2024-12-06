@@ -3,6 +3,7 @@ package parse
 import (
 	"regexp"
 	"strconv"
+	"strings"
 
 	. "github.com/wyatt915/treeblood/internal/token"
 )
@@ -48,24 +49,75 @@ func splitByFunc[T any](s []T, f func(T) bool) [][]T {
 	return out
 }
 
-type align int
-
-const (
-	alignLeft align = iota
-	alignRight
-	alignCenter
-)
-
-type alignInfo struct {
-	colNum    int
-	isFirst   bool
-	isLast    bool
-	alignment align
+// take a string like "l|c|r" and produce the strings "left center right" and "solid solid",
+// these being the values of the columnalign and colunlines properties respectively
+// Note that mathml does not directly support drawing a line before the first or after the last column.
+func parseAlignmentString(str string) (string, string) {
+	align := make([]string, 0, len(str))
+	lines := make([]string, 0, len(str))
+	wasline := true
+	for i, c := range str {
+		switch c {
+		case 'l':
+			align = append(align, "left")
+		case 'c':
+			align = append(align, "center")
+		case 'r':
+			align = append(align, "right")
+		case '|':
+			if i > 0 {
+				lines = append(lines, "solid")
+				wasline = true
+			}
+		case ':':
+			if i > 0 {
+				lines = append(lines, "dashed")
+				wasline = true
+			}
+		}
+		switch c {
+		case 'l', 'c', 'r':
+			if !wasline {
+				lines = append(lines, "none")
+			}
+			wasline = false
+		}
+	}
+	//remove the last columnline if it exists
+	if wasline && len(lines) > 0 {
+		lines = lines[:len(lines)-1]
+	}
+	trim := func(lst []string) []string {
+		stop := len(lst)
+		if len(lst) > 1 {
+			val := lst[len(lst)-1]
+			for stop = len(lst); stop > 0; stop-- {
+				if lst[stop-1] != val {
+					stop++
+					break
+				}
+			}
+			if stop <= 0 {
+				stop = len(lst)
+			}
+		}
+		return lst[:stop]
+	}
+	return strings.Join(trim(align), " "), strings.Join(trim(lines), " ")
 }
 
 func processTable(table *MMLNode) {
 	if table == nil {
 		return
+	}
+	if table.Option != "" {
+		align, lines := parseAlignmentString(table.Option)
+		if align != "" {
+			table.Attrib["columnalign"] = align
+		}
+		if lines != "" {
+			table.Attrib["columnlines"] = lines
+		}
 	}
 	rows := make([]*MMLNode, 0)
 	var cellNode *MMLNode
