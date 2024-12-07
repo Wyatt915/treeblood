@@ -19,6 +19,7 @@ var (
 		"sideset":       3,
 		"frac":          2,
 		"binom":         2,
+		"tbinom":        2,
 		"dfrac":         2,
 		"textfrac":      2,
 		"overset":       2,
@@ -48,6 +49,7 @@ var (
 		"cot":      0,
 		"csc":      0,
 		"det":      0,
+		"hom":      0,
 		"inf":      0,
 		"lim":      prop_movablelimits | prop_limitsunderover,
 		"limits":   prop_limits | prop_nonprint,
@@ -338,7 +340,7 @@ func processCommandArgs(n *MMLNode, context parseContext, name string, star bool
 			n.Tag = "mroot"
 			n.appendChild(ParseTex(option, context))
 		}
-	case "frac", "cfrac", "dfrac", "tfrac", "binom":
+	case "frac", "cfrac", "dfrac", "tfrac", "binom", "tbinom":
 		num := ParseTex(arguments[0], context)
 		den := ParseTex(arguments[1], context)
 		doFraction(tok, n, num, den)
@@ -666,10 +668,11 @@ func doFraction(tok Token, parent, numerator, denominator *MMLNode) {
 	var frac *MMLNode
 	// for a binomial coefficient, we need to wrap it in parentheses, so the "fraction" must
 	// be a child of parent, and parent must be an mrow.
-	if tok.Value == "binom" {
+	switch tok.Value {
+	case "binom", "tbinom":
 		frac = NewMMLNode()
 		parent.Tag = "mrow"
-	} else {
+	default:
 		frac = parent
 	}
 	frac.Tag = "mfrac"
@@ -680,6 +683,10 @@ func doFraction(tok Token, parent, numerator, denominator *MMLNode) {
 	case "tfrac":
 		frac.Attrib["displaystyle"] = "false"
 	case "binom":
+		frac.Attrib["linethickness"] = "0"
+		parent.appendChild(strechyOP("("), frac, strechyOP(")"))
+	case "tbinom":
+		parent.Attrib["displaystyle"] = "false"
 		frac.Attrib["linethickness"] = "0"
 		parent.appendChild(strechyOP("("), frac, strechyOP(")"))
 	}
