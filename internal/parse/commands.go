@@ -221,8 +221,16 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		switch name {
 		case "displaystyle":
 			n.setTrue("displaystyle")
+			n.Attrib["scriptlevel"] = "0"
 		case "textstyle":
 			n.Attrib["displaystyle"] = "false"
+			n.Attrib["scriptlevel"] = "0"
+		case "scriptstyle":
+			n.Attrib["displaystyle"] = "false"
+			n.Attrib["scriptlevel"] = "1"
+		case "scriptscriptstyle":
+			n.Attrib["displaystyle"] = "false"
+			n.Attrib["scriptlevel"] = "2"
 		case "rm":
 			n.Attrib["mathvariant"] = "normal"
 		}
