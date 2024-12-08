@@ -347,6 +347,12 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 }
 
 func is_symbol(tok Token) bool {
+	if _, inAccents := accents[tok.Value]; inAccents {
+		return false
+	}
+	if _, inAccents := accents_below[tok.Value]; inAccents {
+		return false
+	}
 	_, inSymbTbl := symbolTable[tok.Value]
 	_, inCmdOps := command_operators[tok.Value]
 	return inSymbTbl || inCmdOps

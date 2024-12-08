@@ -85,7 +85,8 @@ var (
 		"mathtt":     CTX_VAR_MONO,
 	}
 	ctx_size_offset int = bits.TrailingZeros64(uint64(CTX_SIZE_1))
-	switches            = map[string]parseContext{
+	// TODO: Not really using context for switch commands
+	switches = map[string]parseContext{
 		"bf":                CTX_VAR_BOLD,
 		"em":                CTX_VAR_ITALIC,
 		"rm":                CTX_VAR_NORMAL,
@@ -104,6 +105,30 @@ var (
 		"huge":              9 << ctx_size_offset,
 		"Huge":              10 << ctx_size_offset,
 	}
+	accents = map[string]rune{
+		"acute":          0x00b4,
+		"bar":            0x0305,
+		"breve":          0x0306,
+		"check":          0x030c,
+		"dot":            0x02d9,
+		"ddot":           0x0308,
+		"dddot":          0x20db,
+		"ddddot":         0x20dc,
+		"frown":          0x0311,
+		"grave":          0x0060,
+		"hat":            0x0302,
+		"mathring":       0x030a,
+		"overleftarrow":  0x2190,
+		"overline":       0x0332,
+		"overrightarrow": 0x2192,
+		"tilde":          0x0303,
+		"vec":            0x20d7,
+		"widehat":        0x0302,
+		"widetilde":      0x0360,
+	}
+	accents_below = map[string]rune{
+		"underline": 0x0332,
+	}
 )
 
 func isolateMathVariant(ctx parseContext) parseContext {
@@ -112,32 +137,32 @@ func isolateMathVariant(ctx parseContext) parseContext {
 
 // fontSizeFromContext isolates the size component of ctx and returns a string with size and units (rem)
 // Based on the Absolute Point Sizes table [10pt] from https://en.wikibooks.org/wiki/LaTeX/Fonts#Sizing_text
-func fontSizeFromContext(ctx parseContext) string {
-	sz := (ctx >> ctx_size_offset) & 0xF
-	switch sz {
-	case 1:
-		return "0.500rem"
-	case 2:
-		return "0.700rem"
-	case 3:
-		return "0.800rem"
-	case 4:
-		return "0.900rem"
-	case 5:
-		return "1.000rem"
-	case 6:
-		return "1.200rem"
-	case 7:
-		return "1.440rem"
-	case 8:
-		return "1.728rem"
-	case 9:
-		return "2.074rem"
-	case 10:
-		return "2.488rem"
-	}
-	return "1.000rem"
-}
+//func fontSizeFromContext(ctx parseContext) string {
+//	sz := (ctx >> ctx_size_offset) & 0xF
+//	switch sz {
+//	case 1:
+//		return "0.500rem"
+//	case 2:
+//		return "0.700rem"
+//	case 3:
+//		return "0.800rem"
+//	case 4:
+//		return "0.900rem"
+//	case 5:
+//		return "1.000rem"
+//	case 6:
+//		return "1.200rem"
+//	case 7:
+//		return "1.440rem"
+//	case 8:
+//		return "1.728rem"
+//	case 9:
+//		return "2.074rem"
+//	case 10:
+//		return "2.488rem"
+//	}
+//	return "1.000rem"
+//}
 
 func restringify(n *MMLNode, sb *strings.Builder) {
 	for i, c := range n.Children {
@@ -266,9 +291,9 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		acc := NewMMLNode("mo", string(ch))
 		acc.setTrue("stretchy") // once more for chrome...
 		base := ParseTex(nextExpr, context)
-		if base.Tag == "mrow" && len(base.Children) == 1 {
-			base = base.Children[0]
-		}
+		//if base.Tag == "mrow" && len(base.Children) == 1 {
+		//	base = base.Children[0]
+		//}
 		n.appendChild(base, acc)
 	} else {
 		logger.Printf("NOTE: unknown command '%s'. Treating as operator or function name.\n", name)

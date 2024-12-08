@@ -15,30 +15,6 @@ const (
 )
 
 var (
-	accents = map[string]rune{
-		"acute":          0x00b4,
-		"bar":            0x0305,
-		"breve":          0x0306,
-		"check":          0x030c,
-		"dot":            0x02d9,
-		"ddot":           0x0308,
-		"dddot":          0x20db,
-		"ddddot":         0x20dc,
-		"frown":          0x0311,
-		"grave":          0x0060,
-		"hat":            0x0302,
-		"mathring":       0x030a,
-		"overleftarrow":  0x2190,
-		"overline":       0x0332,
-		"overrightarrow": 0x2192,
-		"tilde":          0x0303,
-		"vec":            0x20d7,
-		"widehat":        0x0302,
-		"widetilde":      0x0360,
-	}
-	accents_below = map[string]rune{
-		"underline": 0x0332,
-	}
 
 	// Measured in 18ths of an em
 	space_widths = map[string]int{
