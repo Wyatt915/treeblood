@@ -2462,9 +2462,10 @@ var symbolTable = map[string]symbol{
 		kind:   sym_relation,
 	},
 	"nabla": {
-		char:   "∇",
-		entity: "&Del;",
-		kind:   sym_normal,
+		char:       "∇",
+		entity:     "&Del;",
+		kind:       sym_normal,
+		properties: prop_sym_upright,
 	},
 	"napprox": {
 		char:   "≉",

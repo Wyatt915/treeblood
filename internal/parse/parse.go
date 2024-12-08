@@ -382,6 +382,9 @@ func make_symbol(tok Token, ctx parseContext, n *MMLNode) {
 		if ctx&CTX_TABLE > 0 && t.properties&(prop_horz_arrow|prop_vert_arrow) > 0 {
 			n.setTrue("stretchy")
 		}
+		if n.Properties&prop_sym_upright > 0 {
+			ctx |= CTX_VAR_NORMAL
+		}
 		switch t.kind {
 		case sym_binaryop, sym_opening, sym_closing, sym_relation:
 			n.Tag = "mo"
@@ -393,9 +396,6 @@ func make_symbol(tok Token, ctx parseContext, n *MMLNode) {
 			n.Properties |= prop_largeop | prop_movablelimits
 		case sym_alphabetic:
 			n.Tag = "mi"
-			if n.Properties&prop_sym_upright > 0 {
-				ctx |= CTX_VAR_NORMAL
-			}
 		default:
 			if tok.Kind&TOK_FENCE > 0 {
 				n.Tag = "mo"
