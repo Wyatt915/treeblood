@@ -233,6 +233,26 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 			n.Attrib["scriptlevel"] = "2"
 		case "rm":
 			n.Attrib["mathvariant"] = "normal"
+		case "tiny":
+			n.Attrib["mathsize"] = "050.0%"
+		case "scriptsize":
+			n.Attrib["mathsize"] = "070.0%"
+		case "footnotesize":
+			n.Attrib["mathsize"] = "080.0%"
+		case "small":
+			n.Attrib["mathsize"] = "090.0%"
+		case "normalsize":
+			n.Attrib["mathsize"] = "100.0%"
+		case "large":
+			n.Attrib["mathsize"] = "120.0%"
+		case "Large":
+			n.Attrib["mathsize"] = "144.0%"
+		case "LARGE":
+			n.Attrib["mathsize"] = "172.8%"
+		case "huge":
+			n.Attrib["mathsize"] = "207.4%"
+		case "Huge":
+			n.Attrib["mathsize"] = "248.8%"
 		}
 		return end - 1
 	}
