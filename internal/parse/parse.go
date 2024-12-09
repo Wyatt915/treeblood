@@ -212,6 +212,8 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			child.Attrib["stretchy"] = "false"
 		}
 		switch {
+		case tok.Kind&(TOK_CLOSE|TOK_CURLY) == TOK_CLOSE|TOK_CURLY, tok.Kind&(TOK_CLOSE|TOK_ENV) == TOK_CLOSE|TOK_ENV:
+			continue
 		case tok.Kind&TOK_COMMENT > 0:
 			continue
 		case tok.Kind&TOK_SUBSUP > 0:
@@ -256,31 +258,59 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			child.Tag = "mn"
 			child.Text = tok.Value
 			child.Tok = tok
-		case tok.Kind&(TOK_OPEN|TOK_CLOSE) > 0:
+		case tok.Kind&TOK_OPEN > 0:
+			var end, advance int
 			// process the (bracketed expression) as a standalone mrow
-			// TODO: need to have (, <mrow>...</mrow>, ) as apposed to wrapping (...) in an mrow.
-			if tok.Kind&TOK_OPEN > 0 && tok.MatchOffset > 0 {
-				offset := tok.MatchOffset
-				tokens[i].MatchOffset = 0
-				tokens[i+offset].MatchOffset = 0
-				child.Tag = "mrow"
-				ParseTex(tokens[i:i+offset+1], context, child)
-				i += offset
-			} else {
-				child.Tag = "mo"
+			if tok.Kind&(TOK_OPEN|TOK_FENCE) == (TOK_OPEN|TOK_FENCE) && tok.MatchOffset > 0 {
+				end = i + tok.MatchOffset
+			}
+			child.Tag = "mo"
+			if tok.Kind&TOK_FENCE > 0 {
 				child.setTrue("fence")
-				if tok.Kind&TOK_FENCE > 0 {
-					child.setTrue("stretchy")
-				}
-				if tok.Kind&TOK_COMMAND > 0 {
-					if is_symbol(tok) {
-						make_symbol(tok, context, child)
-					} else {
-						i = ProcessCommand(child, context, tok, tokens, i)
-					}
+				child.setTrue("stretchy")
+			} else {
+				child.Attrib["stretchy"] = "false"
+			}
+			if tok.Kind&TOK_COMMAND > 0 {
+				if is_symbol(tok) {
+					make_symbol(tok, context, child)
+					advance = 1
 				} else {
-					child.Text = tok.Value
+					i = ProcessCommand(child, context, tok, tokens, i)
 				}
+			} else {
+				child.Text = tok.Value
+				advance = 1
+			}
+			if end > 0 {
+				i += advance
+				//don't need to worry about promotedProperties here.
+				container := NewMMLNode("mrow")
+				container.appendChild(
+					child,
+					ParseTex(tokens[i:end], context),
+					ParseTex(tokens[end:end+1], context), //closing fence
+				)
+				siblings = append(siblings, container)
+				i = end
+				continue
+			}
+		case tok.Kind&TOK_CLOSE > 0:
+			child.Tag = "mo"
+			if tok.Kind&TOK_FENCE > 0 {
+				child.setTrue("fence")
+				child.setTrue("stretchy")
+			} else {
+				child.Attrib["stretchy"] = "false"
+			}
+			if tok.Kind&TOK_COMMAND > 0 {
+				if is_symbol(tok) {
+					make_symbol(tok, context, child)
+				} else {
+					i = ProcessCommand(child, context, tok, tokens, i)
+				}
+			} else {
+				child.Text = tok.Value
 			}
 		case tok.Kind&TOK_FENCE > 0:
 			child.Tag = "mo"
@@ -306,8 +336,6 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			} else {
 				continue
 			}
-		case tok.Kind&(TOK_CLOSE|TOK_CURLY) == TOK_CLOSE|TOK_CURLY, tok.Kind&(TOK_CLOSE|TOK_ENV) == TOK_CLOSE|TOK_ENV:
-			continue
 		case tok.Kind&TOK_COMMAND > 0:
 			if is_symbol(tok) {
 				make_symbol(tok, context, child)
