@@ -141,6 +141,7 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 	var optionString string
 	if context&CTX_ROOT > 0 {
 		node = NewMMLNode("math")
+		node.Attrib["style"] = "font-feature-settings: 'dtls' off;"
 		semantics := NewMMLNode("semantics")
 		parsed := ParseTex(tokens, context^CTX_ROOT)
 		if parsed != nil && parsed.Tag != "mrow" {

@@ -297,9 +297,20 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		acc := NewMMLNode("mo", string(ch))
 		acc.setTrue("stretchy") // once more for chrome...
 		base := ParseTex(nextExpr, context)
-		//if base.Tag == "mrow" && len(base.Children) == 1 {
-		//	base = base.Children[0]
-		//}
+		if base.Tag == "mi" {
+			base.Attrib["style"] = "font-feature-settings: 'dtls' on;"
+		}
+		n.appendChild(base, acc)
+	} else if ch, ok := accents_below[name]; ok {
+		n.Tag = "munder"
+		n.setTrue("accent")
+		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
+		acc := NewMMLNode("mo", string(ch))
+		acc.setTrue("stretchy") // once more for chrome...
+		base := ParseTex(nextExpr, context)
+		if base.Tag == "mi" {
+			base.Attrib["style"] = "font-feature-settings: 'dtls' on;"
+		}
 		n.appendChild(base, acc)
 	} else {
 		logger.Printf("NOTE: unknown command '%s'. Treating as operator or function name.\n", name)
