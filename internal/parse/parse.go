@@ -285,18 +285,24 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			}
 			if end > 0 {
 				i += advance
-				//don't need to worry about promotedProperties here.
 				container := NewMMLNode("mrow")
+				if tok.Kind&TOK_NULL == 0 {
+					container.appendChild(child)
+				}
 				container.appendChild(
-					child,
 					ParseTex(tokens[i:end], context),
 					ParseTex(tokens[end:end+1], context), //closing fence
 				)
 				siblings = append(siblings, container)
 				i = end
+				//don't need to worry about promotedProperties here.
 				continue
 			}
 		case tok.Kind&TOK_CLOSE > 0:
+			if tok.Kind&TOK_NULL > 0 {
+				child = nil
+				break
+			}
 			child.Tag = "mo"
 			if tok.Kind&TOK_FENCE > 0 {
 				child.setTrue("fence")

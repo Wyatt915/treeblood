@@ -25,7 +25,8 @@ const (
 	lxMacroArg
 )
 const (
-	TOK_WHITESPACE TokenKind = 1 << iota
+	TOK_NULL TokenKind = 1 << iota
+	TOK_WHITESPACE
 	TOK_COMMENT
 	TOK_COMMAND
 	TOK_ESCAPED
@@ -45,7 +46,6 @@ const (
 	TOK_BIGNESS2
 	TOK_BIGNESS3
 	TOK_BIGNESS4
-	TOK_NULL = 0
 )
 
 var (
