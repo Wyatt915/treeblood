@@ -402,6 +402,7 @@ func make_symbol(tok Token, ctx parseContext, n *MMLNode) {
 			}
 		} else {
 			n.Text = name
+			n.Attrib["lspace"] = "0.11111em"
 		}
 	} else if t, ok := symbolTable[name]; ok {
 		n.Properties = t.properties
