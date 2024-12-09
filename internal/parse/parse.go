@@ -51,6 +51,7 @@ const (
 	CTX_SCRIPT
 	CTX_SCRIPTSCRIPT
 	CTX_TEXT
+	CTX_BRACKETED
 	// SIZES (interpreted as a 4-bit unsigned int)
 	CTX_SIZE_1
 	CTX_SIZE_2
@@ -257,6 +258,7 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			child.Tok = tok
 		case tok.Kind&(TOK_OPEN|TOK_CLOSE) > 0:
 			// process the (bracketed expression) as a standalone mrow
+			// TODO: need to have (, <mrow>...</mrow>, ) as apposed to wrapping (...) in an mrow.
 			if tok.Kind&TOK_OPEN > 0 && tok.MatchOffset > 0 {
 				offset := tok.MatchOffset
 				tokens[i].MatchOffset = 0

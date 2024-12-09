@@ -190,6 +190,11 @@ func getOption(tokens []Token, idx int) ([]Token, int) {
 func endOfSwitchContext(switchname string, toks []Token, idx int, ctx parseContext) int {
 	for i := idx; i < len(toks); i++ {
 		if ctx&CTX_TABLE > 0 {
+			// this will skip over any cell/row breaks in a subexpression or subenvironment
+			if toks[i].MatchOffset > 0 {
+				i += toks[i].MatchOffset
+				continue
+			}
 			if toks[i].Kind&TOK_RESERVED > 0 && toks[i].Value == "&" {
 				return i
 			}
@@ -241,6 +246,7 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 	}
 	if sw, ok := switches[name]; ok {
 		end := endOfSwitchContext(name, tokens, idx, context)
+		end = min(end, len(tokens))
 		n.Tag = "mstyle"
 		ParseTex(tokens[idx+1:end], context|sw, n)
 		switch name {
