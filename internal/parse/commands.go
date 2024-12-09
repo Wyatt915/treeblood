@@ -24,6 +24,7 @@ var (
 		"textfrac":      2,
 		"overset":       2,
 		"underset":      2,
+		"mathop":        1,
 		"bmod":          1,
 		"pmod":          1,
 		"substack":      1,
@@ -346,6 +347,11 @@ func processCommandArgs(n *MMLNode, context parseContext, name string, star bool
 		arguments = append(arguments, expr)
 	}
 	switch name {
+	case "mathop":
+		ParseTex(arguments[0], context, n)
+		n.Properties |= prop_limitsunderover | prop_movablelimits
+		n.Tag = "mo"
+		n.Attrib["rspace"] = "0"
 	case "pmod":
 		n.Tag = "mrow"
 		space := NewMMLNode("mspace")

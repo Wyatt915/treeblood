@@ -351,6 +351,9 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 		if child == nil {
 			continue
 		}
+		if child.Tag == "mo" && child.Text == "|" && tok.Kind&TOK_FENCE > 0 {
+			child.setTrue("symmetric")
+		}
 		// apply properties granted by previous sibling, if any
 		child.Properties |= promotedProperties
 		promotedProperties = 0

@@ -482,6 +482,17 @@ func fixFences(toks []Token) []Token {
 				temp.Value = nextval
 			}
 			temp.Kind |= TOK_FENCE | TOK_OPEN
+		case "middle":
+			i++
+			temp = toks[i]
+			if nextval == "." {
+				temp.Value = ""
+				temp.Kind = TOK_NULL
+			} else {
+				temp.Value = nextval
+			}
+			temp.Kind |= TOK_FENCE
+			temp.Kind &= ^(TOK_OPEN | TOK_CLOSE)
 		case "right":
 			i++
 			temp = toks[i]
