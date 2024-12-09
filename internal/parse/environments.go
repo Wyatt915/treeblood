@@ -182,8 +182,14 @@ func processTable(table *MMLNode) {
 						// text field in the cell and pretend they're all 1 em?
 						// For now, each cell is 1em with a 1em gap. The default
 						// gap is 0.8 but this should be fine.
-						minsize := float32(2*span - 1)
-						cellNode.Children[0].Attrib["minsize"] = strconv.FormatFloat(float64(minsize), 'f', 1, 32) + "em"
+						arrowWidth := strconv.FormatFloat(float64(2*span-1), 'f', 1, 32) + "em"
+						// THIS IS A GNARLY HACK. Arrows do not like to stretch.
+						// Hope browsers get this fixed soon.
+						mover := NewMMLNode("mover")
+						mspace := NewMMLNode("mspace")
+						mspace.Attrib["width"] = arrowWidth
+						mover.appendChild(c, mspace)
+						cellNode.Children[0] = mover
 					}
 				}
 			}
