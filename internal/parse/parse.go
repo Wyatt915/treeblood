@@ -84,6 +84,30 @@ var (
 	}
 )
 
+// Pitziil comes from maya *pitz*, the name of the sacred ballgame, and the toponymic suffix *-iil* meaning "place".
+// Thus, Pitziil roughly translates to "ballcourt". In the context of TreeBlood, a Pitziil is a container for persistent
+// data to be used across parsing calls.
+// As a rule of thumb, create one new Pitziil for each unique document
+type Pitziil struct {
+	Macros             map[string]Macro // Global macros for the document
+	EQCount            int              // used for numbering display equations
+	currentExpr        []Token          // the expression currently being evaluated
+	cursor             int              // the index of the token currently being evaluated
+	needMacroExpansion map[string]bool  // used if any \newcommand definitions are encountered.
+	depth              int              // recursive parse depth
+}
+
+func NewPitziil(macros ...map[string]string) *Pitziil {
+	var out Pitziil
+	out.needMacroExpansion = make(map[string]bool)
+	if len(macros) > 0 {
+		out.Macros = PrepareMacros(macros[0])
+	} else {
+		out.Macros = make(map[string]Macro)
+	}
+	return &out
+}
+
 // An MMLNode is the representation of a MathML tag or tree.
 type MMLNode struct {
 	Tok        Token             // the token from which this node was created
@@ -136,7 +160,7 @@ func (n *MMLNode) appendChild(child ...*MMLNode) {
 	n.Children = append(n.Children, child...)
 }
 
-func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode {
+func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode {
 	var node *MMLNode
 	siblings := make([]*MMLNode, 0)
 	var optionString string
@@ -144,7 +168,7 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 		node = NewMMLNode("math")
 		node.Attrib["style"] = "font-feature-settings: 'dtls' off;"
 		semantics := NewMMLNode("semantics")
-		parsed := ParseTex(tokens, context^CTX_ROOT)
+		parsed := pitz.ParseTex(tokens, context^CTX_ROOT)
 		if parsed != nil && parsed.Tag != "mrow" {
 			root := NewMMLNode("mrow")
 			root.appendChild(parsed)
@@ -247,10 +271,10 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 		case tok.Kind&(TOK_OPEN|TOK_ENV) == TOK_OPEN|TOK_ENV:
 			nextExpr, i, _ = GetNextExpr(tokens, i)
 			ctx := setEnvironmentContext(tok, context)
-			child = processEnv(ParseTex(nextExpr, ctx), tok.Value, ctx)
+			child = processEnv(pitz.ParseTex(nextExpr, ctx), tok.Value, ctx)
 		case tok.Kind&(TOK_OPEN|TOK_CURLY) == TOK_OPEN|TOK_CURLY:
 			nextExpr, i, _ = GetNextExpr(tokens, i)
-			child = ParseTex(nextExpr, context)
+			child = pitz.ParseTex(nextExpr, context)
 		case tok.Kind&TOK_LETTER > 0:
 			child.Tok = tok
 			child.Text = tok.Value
@@ -278,7 +302,7 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 					make_symbol(tok, context, child)
 					advance = 1
 				} else {
-					i = ProcessCommand(child, context, tok, tokens, i)
+					i = pitz.ProcessCommand(child, context, tok, tokens, i)
 				}
 			} else {
 				child.Text = tok.Value
@@ -291,8 +315,8 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 					container.appendChild(child)
 				}
 				container.appendChild(
-					ParseTex(tokens[i:end], context),
-					ParseTex(tokens[end:end+1], context), //closing fence
+					pitz.ParseTex(tokens[i:end], context),
+					pitz.ParseTex(tokens[end:end+1], context), //closing fence
 				)
 				siblings = append(siblings, container)
 				i = end
@@ -315,7 +339,7 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 				if is_symbol(tok) {
 					make_symbol(tok, context, child)
 				} else {
-					i = ProcessCommand(child, context, tok, tokens, i)
+					i = pitz.ProcessCommand(child, context, tok, tokens, i)
 				}
 			} else {
 				child.Text = tok.Value
@@ -328,7 +352,7 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 				if is_symbol(tok) {
 					make_symbol(tok, context, child)
 				} else {
-					i = ProcessCommand(child, context, tok, tokens, i)
+					i = pitz.ProcessCommand(child, context, tok, tokens, i)
 				}
 			} else {
 				child.Text = tok.Value
@@ -348,7 +372,7 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 			if is_symbol(tok) {
 				make_symbol(tok, context, child)
 			} else {
-				i = ProcessCommand(child, context, tok, tokens, i)
+				i = pitz.ProcessCommand(child, context, tok, tokens, i)
 			}
 		default:
 			child.Tag = "mo"
@@ -368,11 +392,11 @@ func ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode
 	}
 	if len(parent) > 0 {
 		node = parent[0]
-		if len(siblings) > 1 {
-			node.Children = append(node.Children, siblings...)
-		} else if len(siblings) == 1 {
-			*node = *siblings[0]
-		}
+		//if len(siblings) > 1 {
+		node.Children = append(node.Children, siblings...)
+		//} else if len(siblings) == 1 {
+		//	*node = *siblings[0]
+		//}
 		node.Option = optionString
 	} else if len(siblings) > 1 {
 		node = NewMMLNode("mrow")

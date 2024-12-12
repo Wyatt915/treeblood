@@ -308,7 +308,7 @@ func Tokenize(str string) ([]Token, error) {
 		tok, idx = GetToken(tex, idx)
 		tokens = append(tokens, tok)
 	}
-	return postProcessTokens(tokens)
+	return PostProcessTokens(tokens)
 }
 
 func StringifyTokens(toks []Token) string {
@@ -525,7 +525,7 @@ func fixFences(toks []Token) []Token {
 	return out
 }
 
-func postProcessTokens(toks []Token) ([]Token, error) {
+func PostProcessTokens(toks []Token) ([]Token, error) {
 	toks = fixFences(toks)
 	err := matchBracesCritical(toks, TOK_CURLY)
 	if err != nil {

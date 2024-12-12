@@ -44,9 +44,10 @@ func topological_sort(graph [][]bool, sources *stack[int]) ([]int, error) {
 	return result, nil
 }
 
-type MacroInfo struct {
-	toks     []Token
-	argcount int
+type Macro struct {
+	Definition    []Token
+	OptionDefault []Token
+	Argcount      int
 }
 
 // get the order in which to expand the macros for flattening
@@ -95,7 +96,8 @@ func resolve_dependency_graph(macros map[string][]Token) []string {
 	return result
 }
 
-func expandSingleMacro(def []Token, args [][]Token) ([]Token, error) {
+func ExpandSingleMacro(m Macro, args [][]Token) ([]Token, error) {
+	def := m.Definition
 	result := make([]Token, 0, len(def)*2) // twice the original capacity is probably fine?
 	for i, t := range def {
 		if t.Kind&TOK_MACROARG > 0 {
@@ -113,9 +115,9 @@ func expandSingleMacro(def []Token, args [][]Token) ([]Token, error) {
 	return result, nil
 }
 
-func PrepareMacros(macros map[string]string) map[string]MacroInfo {
+func PrepareMacros(macros map[string]string) map[string]Macro {
 	tokenized_macros := make(map[string][]Token)
-	info := make(map[string]MacroInfo)
+	info := make(map[string]Macro)
 	argcounts := make(map[string]int)
 	for macro, def := range macros {
 		toks, err := Tokenize(def)
@@ -130,38 +132,38 @@ func PrepareMacros(macros map[string]string) map[string]MacroInfo {
 			}
 		}
 		tokenized_macros[macro] = toks
-		info[macro] = MacroInfo{toks, argcounts[macro]}
+		info[macro] = Macro{Definition: toks, Argcount: argcounts[macro]}
 	}
 	order := resolve_dependency_graph(tokenized_macros)
-	flattened := make(map[string]MacroInfo)
+	flattened := make(map[string]Macro)
 	for _, macro := range order {
 		toks := tokenized_macros[macro]
 		result, err := ExpandMacros(toks, info)
 		if err != nil {
 			logger.Printf("could not flatten macro '%s': %s\n", macro, err.Error())
 		} else {
-			flattened[macro] = MacroInfo{result, argcounts[macro]}
+			flattened[macro] = Macro{Definition: result, Argcount: argcounts[macro]}
 			tokenized_macros[macro] = result
 		}
 	}
 	for _, macro := range order {
 		def := tokenized_macros[macro]
 		if _, ok := flattened[macro]; !ok {
-			flattened[macro] = MacroInfo{def, argcounts[macro]}
+			flattened[macro] = Macro{Definition: def, Argcount: argcounts[macro]}
 		}
 	}
 	for macro := range tokenized_macros {
 		if _, ok := flattened[macro]; !ok {
-			flattened[macro] = MacroInfo{
-				toks:     []Token{{Value: macro, Kind: TOK_BADMACRO}},
-				argcount: 0,
+			flattened[macro] = Macro{
+				Definition: []Token{{Value: macro, Kind: TOK_BADMACRO}},
+				Argcount:   0,
 			}
 		}
 	}
 	return flattened
 }
 
-func ExpandMacros(toks []Token, macros map[string]MacroInfo) ([]Token, error) {
+func ExpandMacros(toks []Token, macros map[string]Macro) ([]Token, error) {
 	has_unexpanded_macros := true
 	var result []Token
 	var err error
@@ -173,11 +175,11 @@ func ExpandMacros(toks []Token, macros map[string]MacroInfo) ([]Token, error) {
 			t := toks[i]
 			if def, ok := macros[t.Value]; ok && t.Kind&TOK_COMMAND > 0 {
 				has_unexpanded_macros = true
-				args := make([][]Token, macros[t.Value].argcount)
-				for n := range macros[t.Value].argcount {
+				args := make([][]Token, macros[t.Value].Argcount)
+				for n := range macros[t.Value].Argcount {
 					args[n], i, _ = GetNextExpr(toks, i+1)
 				}
-				temp, err := expandSingleMacro(def.toks, args)
+				temp, err := ExpandSingleMacro(def, args)
 				if err != nil {
 					return nil, err
 				}
@@ -188,7 +190,7 @@ func ExpandMacros(toks []Token, macros map[string]MacroInfo) ([]Token, error) {
 			}
 			i++
 		}
-		toks, err = postProcessTokens(result)
+		toks, err = PostProcessTokens(result)
 	}
 	return toks, err
 }
