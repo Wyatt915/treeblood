@@ -25,6 +25,7 @@ var (
 		"textfrac":      2,
 		"overset":       2,
 		"underset":      2,
+		"class":         2,
 		"mathop":        1,
 		"bmod":          1,
 		"pmod":          1,
@@ -42,6 +43,7 @@ var (
 		"u":             1,
 	}
 
+	// Special properties of any operators accessed via a \command
 	command_operators = map[string]NodeProperties{
 		"arccos":   0,
 		"arcsin":   0,
@@ -366,6 +368,9 @@ func processCommandArgs(n *MMLNode, context parseContext, name string, star bool
 		arguments = append(arguments, expr)
 	}
 	switch name {
+	case "class":
+		ParseTex(arguments[1], context, n)
+		n.Attrib["class"] = StringifyTokens(arguments[0])
 	case "textcolor":
 		ParseTex(arguments[1], context, n)
 		n.Attrib["mathcolor"] = StringifyTokens(arguments[0])
