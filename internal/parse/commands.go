@@ -17,6 +17,7 @@ var (
 		"multicolumn":   3,
 		"prescript":     3,
 		"sideset":       3,
+		"textcolor":     2,
 		"frac":          2,
 		"binom":         2,
 		"tbinom":        2,
@@ -88,6 +89,7 @@ var (
 	ctx_size_offset int = bits.TrailingZeros64(uint64(CTX_SIZE_1))
 	// TODO: Not really using context for switch commands
 	switches = map[string]parseContext{
+		"color":             0,
 		"bf":                CTX_VAR_BOLD,
 		"em":                CTX_VAR_ITALIC,
 		"rm":                CTX_VAR_NORMAL,
@@ -249,6 +251,23 @@ func ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token,
 		end := endOfSwitchContext(name, tokens, idx, context)
 		end = min(end, len(tokens))
 		n.Tag = "mstyle"
+		switch name {
+		case "color":
+			var expr []Token
+			var kind ExprKind
+			expr, idx, kind = GetNextExpr(tokens, idx+1)
+			switch kind {
+			case EXPR_GROUP:
+				n.Attrib["mathcolor"] = StringifyTokens(expr)
+				ParseTex(tokens[idx+1:end], context|sw, n)
+				return end - 1
+			default:
+				n.Tag = "merror"
+				n.Text = name
+				n.Attrib["title"] = fmt.Sprintf("%s expects an argument", name)
+				return idx
+			}
+		}
 		ParseTex(tokens[idx+1:end], context|sw, n)
 		switch name {
 		case "displaystyle":
@@ -347,11 +366,14 @@ func processCommandArgs(n *MMLNode, context parseContext, name string, star bool
 		arguments = append(arguments, expr)
 	}
 	switch name {
+	case "textcolor":
+		ParseTex(arguments[1], context, n)
+		n.Attrib["mathcolor"] = StringifyTokens(arguments[0])
 	case "mathop":
-		ParseTex(arguments[0], context, n)
 		n.Properties |= prop_limitsunderover | prop_movablelimits
 		n.Tag = "mo"
 		n.Attrib["rspace"] = "0"
+		n.appendChild(ParseTex(arguments[0], context))
 	case "pmod":
 		n.Tag = "mrow"
 		space := NewMMLNode("mspace")
@@ -718,25 +740,19 @@ func sideset(multi *MMLNode, left, right, base []Token, context parseContext) {
 }
 
 func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
+	brace := NewMMLNode("mo")
+	brace.setTrue("stretchy")
 	switch tok.Value {
 	case "overbrace":
 		parent.Properties |= prop_limitsunderover
 		parent.Tag = "mover"
-		parent.appendChild(annotation,
-			&MMLNode{
-				Text:   "&OverBrace;",
-				Tag:    "mo",
-				Attrib: map[string]string{"stretchy": "true"},
-			})
+		brace.Text = "&OverBrace;"
+		parent.appendChild(annotation, brace)
 	case "underbrace":
 		parent.Properties |= prop_limitsunderover
 		parent.Tag = "munder"
-		parent.appendChild(annotation,
-			&MMLNode{
-				Text:   "&UnderBrace;",
-				Tag:    "mo",
-				Attrib: map[string]string{"stretchy": "true"},
-			})
+		brace.Text = "&UnderBrace;"
+		parent.appendChild(annotation, brace)
 	}
 }
 

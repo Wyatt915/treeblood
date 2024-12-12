@@ -20,6 +20,7 @@ func init() {
 	symbolTable["gt"] = symbolTable["greater"]
 	symbolTable["unlhd"] = symbolTable["trianglelefteq"]
 	symbolTable["unrhd"] = symbolTable["trianglerighteq"]
+	symbolTable["unicodecdots"] = symbolTable["cdots"]
 }
 
 type NodeClass uint64

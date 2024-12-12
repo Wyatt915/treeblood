@@ -25,13 +25,14 @@ f'(x) = \begin{cases}
 \end{array}
 
 \begin{array}{}
-    \multicolumn{3}{}{\rightarrow}      &                                       &       & \multirow{3}{}{\downarrow} \\ 
-    \multirow{3}{}{\uparrow}            &            xxxx                       & yyyy  & \\
-                                        &            xxxx                       & yyyy  & \\
-                                        &   \multicolumn{3}{}{\leftarrow}       &       &
+    \multicolumn{3}{}{\rightarrow} & & & \multirow{3}{}{\downarrow} \\ 
+    \multirow{3}{}{\uparrow}&\multirow{2}{}{\multicolumn{2}{l}{\huge\circlearrowright}}&& \\
+    &&& \\
+    & \multicolumn{3}{}{\leftarrow}&&
 \end{array}
 
 \begin{array}{c}
 {\large \text{Generalized Product Rule:}} \\
 \displaystyle \dv{x} \left[\prod_{i=1}^k f_i(x)\right] = \sum_{j=1}^k\left(f^\prime_j(x)\prod_\substack{i=1\\i\not=j}^kf_i(x)\right)
 \end{array}
+
