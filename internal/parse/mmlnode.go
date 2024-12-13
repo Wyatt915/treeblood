@@ -88,7 +88,10 @@ func (n *MMLNode) printAST(depth int) {
 		fmt.Println(strings.Repeat("  ", depth), "NIL")
 		return
 	}
-	fmt.Println(strings.Repeat("  ", depth), n.Tok, n.Text, n)
+	fmt.Println(strings.Repeat("  ", depth), n.Tok.Value, n.Tag, n.Text, n)
+	for k, v := range n.Attrib {
+		fmt.Println(strings.Repeat("  ", depth), k, v)
+	}
 	for _, child := range n.Children {
 		child.printAST(depth + 1)
 	}
@@ -105,7 +108,6 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 	if len(n.Tag) > 0 {
 		tag = n.Tag
 	} else {
-		fmt.Println("THIS SHOULD NOT HAPPEN")
 		switch n.Tok.Kind {
 		case TOK_NUMBER:
 			tag = "mn"
@@ -117,6 +119,7 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 				tag = "mrow"
 			}
 		}
+		logger.Println("WARN: Unknown tag; treating as ", tag)
 	}
 	w.WriteString(strings.Repeat(" ", 2*indent))
 	w.WriteRune('<')

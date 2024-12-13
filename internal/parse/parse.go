@@ -118,11 +118,11 @@ func (pitz *Pitziil) render(tex string, displaystyle bool) (result string, err e
 			ast = makeMMLError()
 			if displaystyle {
 				ast.Attrib["display"] = "block"
+				ast.Attrib["class"] = "math-displaystyle"
+				ast.Attrib["displaystyle"] = "true"
 			} else {
 				ast.Attrib["display"] = "inline"
-			}
-			if displaystyle {
-				ast.Attrib["displaystyle"] = "true"
+				ast.Attrib["class"] = "math-textstyle"
 			}
 			fmt.Println(r)
 			ast.Write(&builder, 0)
@@ -147,11 +147,11 @@ func (pitz *Pitziil) render(tex string, displaystyle bool) (result string, err e
 	ast.Attrib["xmlns"] = "http://www.w3.org/1998/Math/MathML"
 	if displaystyle {
 		ast.Attrib["display"] = "block"
+		ast.Attrib["class"] = "math-displaystyle"
+		ast.Attrib["displaystyle"] = "true"
 	} else {
 		ast.Attrib["display"] = "inline"
-	}
-	if displaystyle {
-		ast.Attrib["displaystyle"] = "true"
+		ast.Attrib["class"] = "math-textstyle"
 	}
 	ast.Children[0].Children = append(ast.Children[0].Children, annotation)
 	builder.WriteRune('\n')
@@ -225,17 +225,19 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 	var promotedProperties NodeProperties
 	for i = start; i < len(tokens); i++ {
 		tok := tokens[i]
-		child := NewMMLNode()
+		var child *MMLNode
 		if context&CTX_TABLE > 0 {
 			switch tok.Value {
 			case "&":
 				// dont count an escaped \& command!
 				if tok.Kind&TOK_RESERVED > 0 {
+					child = NewMMLNode()
 					child.Properties = prop_cell_sep
 					siblings = append(siblings, child)
 					continue
 				}
 			case "\\", "cr":
+				child = NewMMLNode()
 				child.Properties = prop_row_sep
 				opt, idx, kind := GetNextExpr(tokens, i+1)
 				if kind == EXPR_OPTIONS {
@@ -248,20 +250,6 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 				siblings = append(siblings, child)
 				continue
 			}
-		}
-		switch k := tok.Kind & (TOK_BIGNESS1 | TOK_BIGNESS2 | TOK_BIGNESS3 | TOK_BIGNESS4); k {
-		case TOK_BIGNESS1:
-			child.Attrib["scriptlevel"] = "-1"
-			child.Attrib["stretchy"] = "false"
-		case TOK_BIGNESS2:
-			child.Attrib["scriptlevel"] = "-2"
-			child.Attrib["stretchy"] = "false"
-		case TOK_BIGNESS3:
-			child.Attrib["scriptlevel"] = "-3"
-			child.Attrib["stretchy"] = "false"
-		case TOK_BIGNESS4:
-			child.Attrib["scriptlevel"] = "-4"
-			child.Attrib["stretchy"] = "false"
 		}
 		switch {
 		case tok.Kind&(TOK_CLOSE|TOK_CURLY) == TOK_CLOSE|TOK_CURLY, tok.Kind&(TOK_CLOSE|TOK_ENV) == TOK_CLOSE|TOK_ENV:
@@ -278,19 +266,16 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			// tell the next sibling to be a super- or subscript
 			continue
 		case tok.Kind&TOK_BADMACRO > 0:
+			child = NewMMLNode("merror", tok.Value)
 			child.Tok = tok
-			child.Text = tok.Value
-			child.Tag = "merror"
 			child.Attrib["title"] = "cyclic dependency in macro definition"
 		case tok.Kind&TOK_MACROARG > 0:
+			child = NewMMLNode("merror", "?"+tok.Value)
 			child.Tok = tok
-			child.Text = "?" + tok.Value
-			child.Tag = "merror"
 			child.Attrib["title"] = "Unexpanded macro argument"
 		case tok.Kind&TOK_ESCAPED > 0:
+			child = NewMMLNode("mo", tok.Value)
 			child.Tok = tok
-			child.Text = tok.Value
-			child.Tag = "mo"
 			if tok.Kind&(TOK_OPEN|TOK_CLOSE|TOK_FENCE) > 0 {
 				child.SetTrue("stretchy")
 			}
@@ -302,21 +287,19 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			nextExpr, i, _ = GetNextExpr(tokens, i)
 			child = pitz.ParseTex(nextExpr, context)
 		case tok.Kind&TOK_LETTER > 0:
+			child = NewMMLNode("mi", tok.Value)
 			child.Tok = tok
-			child.Text = tok.Value
-			child.Tag = "mi"
 			child.set_variants_from_context(context)
 		case tok.Kind&TOK_NUMBER > 0:
-			child.Tag = "mn"
-			child.Text = tok.Value
+			child = NewMMLNode("mn", tok.Value)
 			child.Tok = tok
 		case tok.Kind&TOK_OPEN > 0:
+			child = NewMMLNode("mo")
 			var end, advance int
 			// process the (bracketed expression) as a standalone mrow
 			if tok.Kind&(TOK_OPEN|TOK_FENCE) == (TOK_OPEN|TOK_FENCE) && tok.MatchOffset > 0 {
 				end = i + tok.MatchOffset
 			}
-			child.Tag = "mo"
 			if tok.Kind&TOK_FENCE > 0 {
 				child.SetTrue("fence")
 				child.SetTrue("stretchy")
@@ -350,11 +333,11 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 				continue
 			}
 		case tok.Kind&TOK_CLOSE > 0:
+			child = NewMMLNode("mo")
 			if tok.Kind&TOK_NULL > 0 {
 				child = nil
 				break
 			}
-			child.Tag = "mo"
 			if tok.Kind&TOK_FENCE > 0 {
 				child.SetTrue("fence")
 				child.SetTrue("stretchy")
@@ -371,7 +354,7 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 				child.Text = tok.Value
 			}
 		case tok.Kind&TOK_FENCE > 0:
-			child.Tag = "mo"
+			child = NewMMLNode("mo")
 			child.SetTrue("fence")
 			child.SetTrue("stretchy")
 			if tok.Kind&TOK_COMMAND > 0 {
@@ -385,8 +368,7 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			}
 		case tok.Kind&TOK_WHITESPACE > 0:
 			if context&CTX_TEXT > 0 {
-				child.Tag = "mspace"
-				child.Text = " "
+				child = NewMMLNode("mspace", " ")
 				child.Tok.Value = " "
 				child.Attrib["width"] = "1em"
 				siblings = append(siblings, child)
@@ -395,18 +377,32 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 				continue
 			}
 		case tok.Kind&TOK_COMMAND > 0:
+			child = NewMMLNode()
 			if is_symbol(tok) {
 				make_symbol(tok, context, child)
 			} else {
 				i = pitz.ProcessCommand(child, context, tok, tokens, i)
 			}
 		default:
-			child.Tag = "mo"
+			child = NewMMLNode("mo", tok.Value)
 			child.Tok = tok
-			child.Text = tok.Value
 		}
 		if child == nil {
 			continue
+		}
+		switch k := tok.Kind & (TOK_BIGNESS1 | TOK_BIGNESS2 | TOK_BIGNESS3 | TOK_BIGNESS4); k {
+		case TOK_BIGNESS1:
+			child.Attrib["scriptlevel"] = "-1"
+			child.Attrib["stretchy"] = "false"
+		case TOK_BIGNESS2:
+			child.Attrib["scriptlevel"] = "-2"
+			child.Attrib["stretchy"] = "false"
+		case TOK_BIGNESS3:
+			child.Attrib["scriptlevel"] = "-3"
+			child.Attrib["stretchy"] = "false"
+		case TOK_BIGNESS4:
+			child.Attrib["scriptlevel"] = "-4"
+			child.Attrib["stretchy"] = "false"
 		}
 		if child.Tag == "mo" && child.Text == "|" && tok.Kind&TOK_FENCE > 0 {
 			child.SetTrue("symmetric")
@@ -424,6 +420,9 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 		//	*node = *siblings[0]
 		//}
 		node.Option = optionString
+		if node.Tag == "" {
+			node.Tag = "mrow"
+		}
 	} else if len(siblings) > 1 {
 		node = NewMMLNode("mrow")
 		node.Children = append(node.Children, siblings...)

@@ -338,8 +338,7 @@ func (pitz *Pitziil) ProcessCommand(n *MMLNode, context parseContext, tok Token,
 		}
 		return end - 1
 	}
-	numArgs, ok := command_args[name]
-	if ok {
+	if numArgs, ok := command_args[name]; ok {
 		idx = pitz.processCommandArgs(n, context, name, star, tokens, idx, numArgs)
 	} else if ch, ok := accents[name]; ok {
 		n.Tag = "mover"
