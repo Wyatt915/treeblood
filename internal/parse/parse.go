@@ -93,6 +93,7 @@ type Pitziil struct {
 	EQCount            int              // used for numbering display equations
 	DoNumbering        bool             // Whether or not to number equations in a document
 	currentExpr        []Token          // the expression currently being evaluated
+	currentIsDisplay   bool             // true if the current expression is being rendered in displaystyle
 	cursor             int              // the index of the token currently being evaluated
 	needMacroExpansion map[string]bool  // used if any \newcommand definitions are encountered.
 	depth              int              // recursive parse depth
@@ -109,6 +110,62 @@ func NewPitziil(macros ...map[string]string) *Pitziil {
 	return &out
 }
 
+func (pitz *Pitziil) render(tex string, displaystyle bool) (result string, err error) {
+	var ast *MMLNode
+	var builder strings.Builder
+	defer func() {
+		if r := recover(); r != nil {
+			ast = makeMMLError()
+			if displaystyle {
+				ast.Attrib["display"] = "block"
+			} else {
+				ast.Attrib["display"] = "inline"
+			}
+			if displaystyle {
+				ast.Attrib["displaystyle"] = "true"
+			}
+			fmt.Println(r)
+			ast.Write(&builder, 0)
+			result = builder.String()
+			err = fmt.Errorf("TreeBlood encountered an unexpected error")
+		}
+		pitz.currentIsDisplay = false
+	}()
+	tokens, err := Tokenize(tex)
+	if err != nil {
+		return "", err
+	}
+	if pitz.Macros != nil {
+		tokens, err = ExpandMacros(tokens, pitz.Macros)
+		if err != nil {
+			return "", err
+		}
+	}
+	annotation := NewMMLNode("annotation", strings.ReplaceAll(tex, "<", "&lt;"))
+	annotation.Attrib["encoding"] = "application/x-tex"
+	ast = pitz.ParseTex(tokens, CTX_ROOT)
+	ast.Attrib["xmlns"] = "http://www.w3.org/1998/Math/MathML"
+	if displaystyle {
+		ast.Attrib["display"] = "block"
+	} else {
+		ast.Attrib["display"] = "inline"
+	}
+	if displaystyle {
+		ast.Attrib["displaystyle"] = "true"
+	}
+	ast.Children[0].Children = append(ast.Children[0].Children, annotation)
+	ast.Write(&builder, 1)
+	return builder.String(), err
+}
+
+func (pitz *Pitziil) DisplayStyle(tex string) (string, error) {
+	pitz.currentIsDisplay = true
+	return pitz.render(tex, true)
+}
+func (pitz *Pitziil) TextStyle(tex string) (string, error) {
+	return pitz.render(tex, false)
+}
+
 // An MMLNode is the representation of a MathML tag or tree.
 type MMLNode struct {
 	Tok        Token             // the token from which this node was created
@@ -118,6 +175,16 @@ type MMLNode struct {
 	Properties NodeProperties    // bitfield of NodeProperties
 	Attrib     map[string]string // key value pairs of XML attributes
 	Children   []*MMLNode        // ordered list of child MathML elements
+}
+
+func makeMMLError() *MMLNode {
+	mml := NewMMLNode("math")
+	e := NewMMLNode("merror")
+	t := NewMMLNode("mtext")
+	t.Text = "invalid math input"
+	e.Children = append(e.Children, t)
+	mml.Children = append(mml.Children, e)
+	return mml
 }
 
 // NewMMLNode allocates a new MathML node.
@@ -169,15 +236,40 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 		node = NewMMLNode("math")
 		node.Attrib["style"] = "font-feature-settings: 'dtls' off;"
 		semantics := NewMMLNode("semantics")
-		parsed := pitz.ParseTex(tokens, context^CTX_ROOT)
-		if parsed != nil && parsed.Tag != "mrow" {
-			root := NewMMLNode("mrow")
-			root.appendChild(parsed)
-			root.doPostProcess()
-			semantics.appendChild(root)
+		if pitz.DoNumbering && pitz.currentIsDisplay {
+			pitz.EQCount++
+			numberedEQ := NewMMLNode("mtable")
+			row := NewMMLNode("mlabeledtr")
+			num := NewMMLNode("mtd")
+			eq := NewMMLNode("mtd")
+			numtxt := NewMMLNode("mtext")
+			numtxt.Text = fmt.Sprintf("(%d)", pitz.EQCount)
+			num.appendChild(numtxt)
+			row.appendChild(num)
+			parsed := pitz.ParseTex(tokens, context^CTX_ROOT)
+			if parsed != nil && parsed.Tag != "mrow" {
+				root := NewMMLNode("mrow")
+				root.appendChild(parsed)
+				root.doPostProcess()
+				eq.appendChild(root)
+			} else {
+				eq.appendChild(parsed)
+				eq.doPostProcess()
+			}
+			row.appendChild(eq)
+			numberedEQ.appendChild(row)
+			semantics.appendChild(numberedEQ)
 		} else {
-			semantics.appendChild(parsed)
-			semantics.doPostProcess()
+			parsed := pitz.ParseTex(tokens, context^CTX_ROOT)
+			if parsed != nil && parsed.Tag != "mrow" {
+				root := NewMMLNode("mrow")
+				root.appendChild(parsed)
+				root.doPostProcess()
+				semantics.appendChild(root)
+			} else {
+				semantics.appendChild(parsed)
+				semantics.doPostProcess()
+			}
 		}
 		node.appendChild(semantics)
 		return node
