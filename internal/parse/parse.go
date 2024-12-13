@@ -166,68 +166,6 @@ func (pitz *Pitziil) TextStyle(tex string) (string, error) {
 	return pitz.render(tex, false)
 }
 
-// An MMLNode is the representation of a MathML tag or tree.
-type MMLNode struct {
-	Tok        Token             // the token from which this node was created
-	Text       string            // the <tag>text</tag> enclosed in the Tag.
-	Tag        string            // the value of the MathML tag, e.g. <mrow>, <msqrt>, <mo>....
-	Option     string            // container for any options that may be passed and processed for a tex command
-	Properties NodeProperties    // bitfield of NodeProperties
-	Attrib     map[string]string // key value pairs of XML attributes
-	Children   []*MMLNode        // ordered list of child MathML elements
-}
-
-func makeMMLError() *MMLNode {
-	mml := NewMMLNode("math")
-	e := NewMMLNode("merror")
-	t := NewMMLNode("mtext")
-	t.Text = "invalid math input"
-	e.Children = append(e.Children, t)
-	mml.Children = append(mml.Children, e)
-	return mml
-}
-
-// NewMMLNode allocates a new MathML node.
-// The first optional argument sets the value of Tag.
-// The second optional argument sets the value of Text.
-func NewMMLNode(opt ...string) *MMLNode {
-	tagText := make([]string, 2)
-	for i, o := range opt {
-		if i > 2 {
-			break
-		}
-		tagText[i] = o
-	}
-	return &MMLNode{
-		Tag:      tagText[0],
-		Text:     tagText[1],
-		Children: make([]*MMLNode, 0),
-		Attrib:   make(map[string]string),
-	}
-}
-
-// set the attribute "name" to "true"
-func (n *MMLNode) setTrue(name string) {
-	n.Attrib[name] = "true"
-}
-
-// If a property corresponds to an attribute in the final XML representation, set it here.
-func (n *MMLNode) setAttribsFromProperties() {
-	if n.Properties&prop_largeop > 0 {
-		n.setTrue("largeop")
-	}
-	if n.Properties&prop_movablelimits > 0 {
-		n.setTrue("movablelimits")
-	}
-	if n.Properties&prop_stretchy > 0 {
-		n.setTrue("stretchy")
-	}
-}
-
-func (n *MMLNode) appendChild(child ...*MMLNode) {
-	n.Children = append(n.Children, child...)
-}
-
 func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode {
 	var node *MMLNode
 	siblings := make([]*MMLNode, 0)
@@ -235,43 +173,36 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 	if context&CTX_ROOT > 0 {
 		node = NewMMLNode("math")
 		node.Attrib["style"] = "font-feature-settings: 'dtls' off;"
-		semantics := NewMMLNode("semantics")
+		semantics := node.AppendNew("semantics")
 		if pitz.DoNumbering && pitz.currentIsDisplay {
 			pitz.EQCount++
 			numberedEQ := NewMMLNode("mtable")
-			row := NewMMLNode("mlabeledtr")
-			num := NewMMLNode("mtd")
-			eq := NewMMLNode("mtd")
-			numtxt := NewMMLNode("mtext")
-			numtxt.Text = fmt.Sprintf("(%d)", pitz.EQCount)
-			num.appendChild(numtxt)
-			row.appendChild(num)
+			row := numberedEQ.AppendNew("mlabeledtr")
+			num := row.AppendNew("mtd")
+			eq := row.AppendNew("mtd")
+			num.AppendNew("mtext", fmt.Sprintf("(%d)", pitz.EQCount))
 			parsed := pitz.ParseTex(tokens, context^CTX_ROOT)
 			if parsed != nil && parsed.Tag != "mrow" {
 				root := NewMMLNode("mrow")
-				root.appendChild(parsed)
+				root.AppendChild(parsed)
 				root.doPostProcess()
-				eq.appendChild(root)
+				eq.AppendChild(root)
 			} else {
-				eq.appendChild(parsed)
+				eq.AppendChild(parsed)
 				eq.doPostProcess()
 			}
-			row.appendChild(eq)
-			numberedEQ.appendChild(row)
-			semantics.appendChild(numberedEQ)
+			semantics.AppendChild(numberedEQ)
 		} else {
 			parsed := pitz.ParseTex(tokens, context^CTX_ROOT)
 			if parsed != nil && parsed.Tag != "mrow" {
-				root := NewMMLNode("mrow")
-				root.appendChild(parsed)
+				root := semantics.AppendNew("mrow")
+				root.AppendChild(parsed)
 				root.doPostProcess()
-				semantics.appendChild(root)
 			} else {
-				semantics.appendChild(parsed)
+				semantics.AppendChild(parsed)
 				semantics.doPostProcess()
 			}
 		}
-		node.appendChild(semantics)
 		return node
 	}
 	var i, start int
@@ -359,7 +290,7 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			child.Text = tok.Value
 			child.Tag = "mo"
 			if tok.Kind&(TOK_OPEN|TOK_CLOSE|TOK_FENCE) > 0 {
-				child.setTrue("stretchy")
+				child.SetTrue("stretchy")
 			}
 		case tok.Kind&(TOK_OPEN|TOK_ENV) == TOK_OPEN|TOK_ENV:
 			nextExpr, i, _ = GetNextExpr(tokens, i)
@@ -385,8 +316,8 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			}
 			child.Tag = "mo"
 			if tok.Kind&TOK_FENCE > 0 {
-				child.setTrue("fence")
-				child.setTrue("stretchy")
+				child.SetTrue("fence")
+				child.SetTrue("stretchy")
 			} else {
 				child.Attrib["stretchy"] = "false"
 			}
@@ -405,9 +336,9 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 				i += advance
 				container := NewMMLNode("mrow")
 				if tok.Kind&TOK_NULL == 0 {
-					container.appendChild(child)
+					container.AppendChild(child)
 				}
-				container.appendChild(
+				container.AppendChild(
 					pitz.ParseTex(tokens[i:end], context),
 					pitz.ParseTex(tokens[end:end+1], context), //closing fence
 				)
@@ -423,8 +354,8 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			}
 			child.Tag = "mo"
 			if tok.Kind&TOK_FENCE > 0 {
-				child.setTrue("fence")
-				child.setTrue("stretchy")
+				child.SetTrue("fence")
+				child.SetTrue("stretchy")
 			} else {
 				child.Attrib["stretchy"] = "false"
 			}
@@ -439,8 +370,8 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			}
 		case tok.Kind&TOK_FENCE > 0:
 			child.Tag = "mo"
-			child.setTrue("fence")
-			child.setTrue("stretchy")
+			child.SetTrue("fence")
+			child.SetTrue("stretchy")
 			if tok.Kind&TOK_COMMAND > 0 {
 				if is_symbol(tok) {
 					make_symbol(tok, context, child)
@@ -476,7 +407,7 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			continue
 		}
 		if child.Tag == "mo" && child.Text == "|" && tok.Kind&TOK_FENCE > 0 {
-			child.setTrue("symmetric")
+			child.SetTrue("symmetric")
 		}
 		// apply properties granted by previous sibling, if any
 		child.Properties |= promotedProperties
@@ -539,7 +470,7 @@ func make_symbol(tok Token, ctx parseContext, n *MMLNode) {
 			n.Text = t.entity
 		}
 		if ctx&CTX_TABLE > 0 && t.properties&(prop_horz_arrow|prop_vert_arrow) > 0 {
-			n.setTrue("stretchy")
+			n.SetTrue("stretchy")
 		}
 		if n.Properties&prop_sym_upright > 0 {
 			ctx |= CTX_VAR_NORMAL
@@ -759,68 +690,4 @@ func (node *MMLNode) postProcessScripts() {
 			node.Children[j] = nil
 		}
 	}
-}
-
-func (n *MMLNode) printAST(depth int) {
-	if n == nil {
-		fmt.Println(strings.Repeat("  ", depth), "NIL")
-		return
-	}
-	fmt.Println(strings.Repeat("  ", depth), n.Tok, n.Text, n)
-	for _, child := range n.Children {
-		child.printAST(depth + 1)
-	}
-}
-
-func (n *MMLNode) Write(w *strings.Builder, indent int) {
-	if n == nil {
-		return
-	}
-	if n.Properties&prop_nonprint > 0 {
-		return
-	}
-	var tag string
-	if len(n.Tag) > 0 {
-		tag = n.Tag
-	} else {
-		switch n.Tok.Kind {
-		case TOK_NUMBER:
-			tag = "mn"
-		case TOK_LETTER:
-			tag = "mi"
-		default:
-			tag = "mo"
-			if len(n.Children) > 0 {
-				tag = "mrow"
-			}
-		}
-	}
-	//w.WriteString(strings.Repeat("\t", indent))
-	w.WriteRune('<')
-	w.WriteString(tag)
-	for key, val := range n.Attrib {
-		w.WriteRune(' ')
-		w.WriteString(key)
-		w.WriteString(`="`)
-		w.WriteString(val)
-		w.WriteRune('"')
-	}
-	w.WriteRune('>')
-	if !self_closing_tags[tag] {
-		if len(n.Children) == 0 {
-			if len(n.Text) > 0 {
-				w.WriteString(n.Text)
-			} else {
-				w.WriteString(n.Tok.Value)
-			}
-		} else {
-			//w.WriteRune('\n')
-			for _, child := range n.Children {
-				child.Write(w, indent+1)
-			}
-		}
-	}
-	w.WriteString("</")
-	w.WriteString(tag)
-	w.WriteRune('>')
 }

@@ -302,7 +302,7 @@ func (pitz *Pitziil) ProcessCommand(n *MMLNode, context parseContext, tok Token,
 		pitz.ParseTex(tokens[idx+1:end], context|sw, n)
 		switch name {
 		case "displaystyle":
-			n.setTrue("displaystyle")
+			n.SetTrue("displaystyle")
 			n.Attrib["scriptlevel"] = "0"
 		case "textstyle":
 			n.Attrib["displaystyle"] = "false"
@@ -343,26 +343,26 @@ func (pitz *Pitziil) ProcessCommand(n *MMLNode, context parseContext, tok Token,
 		idx = pitz.processCommandArgs(n, context, name, star, tokens, idx, numArgs)
 	} else if ch, ok := accents[name]; ok {
 		n.Tag = "mover"
-		n.setTrue("accent")
+		n.SetTrue("accent")
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 		acc := NewMMLNode("mo", string(ch))
-		acc.setTrue("stretchy") // once more for chrome...
+		acc.SetTrue("stretchy") // once more for chrome...
 		base := pitz.ParseTex(nextExpr, context)
 		if base.Tag == "mi" {
 			base.Attrib["style"] = "font-feature-settings: 'dtls' on;"
 		}
-		n.appendChild(base, acc)
+		n.AppendChild(base, acc)
 	} else if ch, ok := accents_below[name]; ok {
 		n.Tag = "munder"
-		n.setTrue("accent")
+		n.SetTrue("accent")
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 		acc := NewMMLNode("mo", string(ch))
-		acc.setTrue("stretchy") // once more for chrome...
+		acc.SetTrue("stretchy") // once more for chrome...
 		base := pitz.ParseTex(nextExpr, context)
 		if base.Tag == "mi" {
 			base.Attrib["style"] = "font-feature-settings: 'dtls' on;"
 		}
-		n.appendChild(base, acc)
+		n.AppendChild(base, acc)
 	} else {
 		logger.Printf("NOTE: unknown command '%s'. Treating as operator or function name.\n", name)
 		n.Tag = "mo"
@@ -407,14 +407,14 @@ func (pitz *Pitziil) processCommandArgs(n *MMLNode, context parseContext, name s
 		n.Properties |= prop_limitsunderover | prop_movablelimits
 		n.Tag = "mo"
 		n.Attrib["rspace"] = "0"
-		n.appendChild(pitz.ParseTex(arguments[0], context))
+		n.AppendChild(pitz.ParseTex(arguments[0], context))
 	case "pmod":
 		n.Tag = "mrow"
 		space := NewMMLNode("mspace")
 		space.Attrib["width"] = "0.7em"
 		mod := NewMMLNode("mo", "mod")
 		mod.Attrib["lspace"] = "0"
-		n.appendChild(space,
+		n.AppendChild(space,
 			NewMMLNode("mo", "("),
 			mod,
 			pitz.ParseTex(arguments[0], context),
@@ -425,7 +425,7 @@ func (pitz *Pitziil) processCommandArgs(n *MMLNode, context parseContext, name s
 		space := NewMMLNode("mspace")
 		space.Attrib["width"] = "0.5em"
 		mod := NewMMLNode("mo", "mod")
-		n.appendChild(space,
+		n.AppendChild(space,
 			mod,
 			pitz.ParseTex(arguments[0], context),
 		)
@@ -445,21 +445,21 @@ func (pitz *Pitziil) processCommandArgs(n *MMLNode, context parseContext, name s
 	case "overset":
 		base := pitz.ParseTex(arguments[1], context)
 		if base.Tag == "mo" {
-			base.setTrue("stretchy")
+			base.SetTrue("stretchy")
 		}
 		overset := makeSuperscript(base, pitz.ParseTex(arguments[0], context))
 		overset.Tag = "mover"
 		n.Tag = "mrow"
-		n.appendChild(overset)
+		n.AppendChild(overset)
 	case "underset":
 		base := pitz.ParseTex(arguments[1], context)
 		if base.Tag == "mo" {
-			base.setTrue("stretchy")
+			base.SetTrue("stretchy")
 		}
 		underset := makeSuperscript(base, pitz.ParseTex(arguments[0], context))
 		underset.Tag = "munder"
 		n.Tag = "mrow"
-		n.appendChild(underset)
+		n.AppendChild(underset)
 	case "text":
 		context |= CTX_TEXT
 		n.Children = nil
@@ -467,10 +467,10 @@ func (pitz *Pitziil) processCommandArgs(n *MMLNode, context parseContext, name s
 		n.Text = StringifyTokens(arguments[0])
 	case "sqrt":
 		n.Tag = "msqrt"
-		n.appendChild(pitz.ParseTex(arguments[0], context))
+		n.AppendChild(pitz.ParseTex(arguments[0], context))
 		if option != nil {
 			n.Tag = "mroot"
-			n.appendChild(pitz.ParseTex(option, context))
+			n.AppendChild(pitz.ParseTex(option, context))
 		}
 	case "frac", "cfrac", "dfrac", "tfrac", "binom", "tbinom":
 		num := pitz.ParseTex(arguments[0], context)
@@ -512,7 +512,7 @@ func (pitz *Pitziil) processCommandArgs(n *MMLNode, context parseContext, name s
 	default:
 		n.Text = tok.Value
 		for _, arg := range arguments {
-			n.appendChild(pitz.ParseTex(arg, context))
+			n.AppendChild(pitz.ParseTex(arg, context))
 		}
 	}
 	return idx
@@ -715,48 +715,48 @@ func (pitz *Pitziil) doDerivative(n *MMLNode, name string, star bool, context pa
 	}
 	if slashfrac && shorthand {
 		for i, v := range denominator {
-			n.appendChild(makeOperator())
+			n.AppendChild(makeOperator())
 			if i < len(options) {
-				n.appendChild(makeSuperscript(pitz.ParseTex(v, context), pitz.ParseTex(options[i], context)))
+				n.AppendChild(makeSuperscript(pitz.ParseTex(v, context), pitz.ParseTex(options[i], context)))
 			} else {
-				n.appendChild(pitz.ParseTex(v, context))
+				n.AppendChild(pitz.ParseTex(v, context))
 			}
 		}
 		if len(numerator) > 0 {
-			n.appendChild(pitz.ParseTex(numerator, context))
+			n.AppendChild(pitz.ParseTex(numerator, context))
 		}
 	} else if shorthand {
 		for i, v := range denominator {
 			if i < len(options) {
-				n.appendChild(makeSubSup(makeOperator(), pitz.ParseTex(v, context), pitz.ParseTex(options[i], context)))
+				n.AppendChild(makeSubSup(makeOperator(), pitz.ParseTex(v, context), pitz.ParseTex(options[i], context)))
 			} else {
-				n.appendChild(makeSubscript(makeOperator(), pitz.ParseTex(v, context)))
+				n.AppendChild(makeSubscript(makeOperator(), pitz.ParseTex(v, context)))
 			}
 		}
 		if len(numerator) > 0 {
-			n.appendChild(pitz.ParseTex(numerator, context))
+			n.AppendChild(pitz.ParseTex(numerator, context))
 		}
 	} else {
 		num := NewMMLNode("mrow")
 		if len(order) > 0 {
-			num.appendChild(makeSuperscript(makeOperator(), pitz.ParseTex(order, context)), pitz.ParseTex(numerator, context))
+			num.AppendChild(makeSuperscript(makeOperator(), pitz.ParseTex(order, context)), pitz.ParseTex(numerator, context))
 		} else {
-			num.appendChild(makeOperator(), pitz.ParseTex(numerator, context))
+			num.AppendChild(makeOperator(), pitz.ParseTex(numerator, context))
 		}
 		den := NewMMLNode("mrow")
 		for i, v := range denominator {
-			den.appendChild(makeOperator())
+			den.AppendChild(makeOperator())
 			if i < len(options) {
-				den.appendChild(makeSuperscript(pitz.ParseTex(v, context), pitz.ParseTex(options[i], context)))
+				den.AppendChild(makeSuperscript(pitz.ParseTex(v, context), pitz.ParseTex(options[i], context)))
 			} else {
-				den.appendChild(pitz.ParseTex(v, context))
+				den.AppendChild(pitz.ParseTex(v, context))
 			}
 		}
 		if slashfrac {
 			n.Tag = "mrow"
 			slash := NewMMLNode("mo", "/")
 			slash.Attrib["form"] = "infix"
-			n.appendChild(num, slash, den)
+			n.AppendChild(num, slash, den)
 		} else {
 			doFraction(Token{}, n, num, den)
 		}
@@ -767,38 +767,38 @@ func (pitz *Pitziil) doDerivative(n *MMLNode, name string, star bool, context pa
 
 func makeSubSup(base, sub, sup *MMLNode) *MMLNode {
 	s := NewMMLNode("msubsup")
-	s.appendChild(base, sub, sup)
+	s.AppendChild(base, sub, sup)
 	return s
 }
 func makeSuperscript(base, radical *MMLNode) *MMLNode {
 	s := NewMMLNode("msup")
-	s.appendChild(base, radical)
+	s.AppendChild(base, radical)
 	return s
 }
 func makeSubscript(base, radical *MMLNode) *MMLNode {
 	s := NewMMLNode("msub")
-	s.appendChild(base, radical)
+	s.AppendChild(base, radical)
 	return s
 }
 
 func (pitz *Pitziil) prescript(multi *MMLNode, super, sub, base []Token, context parseContext) {
 	multi.Tag = "mmultiscripts"
-	multi.appendChild(pitz.ParseTex(base, context))
-	multi.appendChild(NewMMLNode("none"), NewMMLNode("none"), NewMMLNode("mprescripts"))
+	multi.AppendChild(pitz.ParseTex(base, context))
+	multi.AppendChild(NewMMLNode("none"), NewMMLNode("none"), NewMMLNode("mprescripts"))
 	temp := pitz.ParseTex(sub, context)
 	if temp != nil {
-		multi.appendChild(temp)
+		multi.AppendChild(temp)
 	}
 	temp = pitz.ParseTex(super, context)
 	if temp != nil {
-		multi.appendChild(temp)
+		multi.AppendChild(temp)
 	}
 }
 
 func (pitz *Pitziil) sideset(multi *MMLNode, left, right, base []Token, context parseContext) {
 	multi.Tag = "mmultiscripts"
 	multi.Properties |= prop_limitsunderover
-	multi.appendChild(pitz.ParseTex(base, context))
+	multi.AppendChild(pitz.ParseTex(base, context))
 	getScripts := func(side []Token) []*MMLNode {
 		i := 0
 		subscripts := make([]*MMLNode, 0)
@@ -839,25 +839,25 @@ func (pitz *Pitziil) sideset(multi *MMLNode, left, right, base []Token, context 
 		}
 		return result
 	}
-	multi.appendChild(getScripts(right)...)
-	multi.appendChild(NewMMLNode("mprescripts"))
-	multi.appendChild(getScripts(left)...)
+	multi.AppendChild(getScripts(right)...)
+	multi.AppendChild(NewMMLNode("mprescripts"))
+	multi.AppendChild(getScripts(left)...)
 }
 
 func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
 	brace := NewMMLNode("mo")
-	brace.setTrue("stretchy")
+	brace.SetTrue("stretchy")
 	switch tok.Value {
 	case "overbrace":
 		parent.Properties |= prop_limitsunderover
 		parent.Tag = "mover"
 		brace.Text = "&OverBrace;"
-		parent.appendChild(annotation, brace)
+		parent.AppendChild(annotation, brace)
 	case "underbrace":
 		parent.Properties |= prop_limitsunderover
 		parent.Tag = "munder"
 		brace.Text = "&UnderBrace;"
-		parent.appendChild(annotation, brace)
+		parent.AppendChild(annotation, brace)
 	}
 }
 
@@ -873,18 +873,18 @@ func doFraction(tok Token, parent, numerator, denominator *MMLNode) {
 		frac = parent
 	}
 	frac.Tag = "mfrac"
-	frac.appendChild(numerator, denominator)
+	frac.AppendChild(numerator, denominator)
 	switch tok.Value {
 	case "cfrac", "dfrac":
-		frac.setTrue("displaystyle")
+		frac.SetTrue("displaystyle")
 	case "tfrac":
 		frac.Attrib["displaystyle"] = "false"
 	case "binom":
 		frac.Attrib["linethickness"] = "0"
-		parent.appendChild(strechyOP("("), frac, strechyOP(")"))
+		parent.AppendChild(strechyOP("("), frac, strechyOP(")"))
 	case "tbinom":
 		parent.Attrib["displaystyle"] = "false"
 		frac.Attrib["linethickness"] = "0"
-		parent.appendChild(strechyOP("("), frac, strechyOP(")"))
+		parent.AppendChild(strechyOP("("), frac, strechyOP(")"))
 	}
 }

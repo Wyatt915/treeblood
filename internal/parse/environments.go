@@ -184,12 +184,12 @@ func processTable(table *MMLNode) {
 						mover := NewMMLNode("mover")
 						mspace := NewMMLNode("mspace")
 						mspace.Attrib["width"] = arrowWidth
-						mover.appendChild(c, mspace)
+						mover.AppendChild(c, mspace)
 						cellNode.Children[0] = mover
 					}
 				}
 			}
-			rowNode.appendChild(cellNode)
+			rowNode.AppendChild(cellNode)
 		}
 		if nonDefaultSpacing {
 			rowspacing = append(rowspacing, space)
