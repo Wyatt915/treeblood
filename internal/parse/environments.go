@@ -249,11 +249,16 @@ func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 		attrib["columnalign"] = "left"
 		if node != nil {
 			for r, row := range node.Children {
+				if row == nil || len(row.Children) == 0 {
+					continue
+				}
 				firstcol := 0
 				for firstcol < len(row.Children) && (row.Children[firstcol] == nil || row.Children[firstcol].Tag != "mtd") {
 					firstcol++
 				}
-				node.Children[r].Children[firstcol].Attrib["columnalign"] = "right"
+				if row.Children[firstcol] != nil {
+					node.Children[r].Children[firstcol].Attrib["columnalign"] = "right"
+				}
 			}
 		}
 	case "subarray":

@@ -91,6 +91,7 @@ var (
 type Pitziil struct {
 	Macros             map[string]Macro // Global macros for the document
 	EQCount            int              // used for numbering display equations
+	DoNumbering        bool             // Whether or not to number equations in a document
 	currentExpr        []Token          // the expression currently being evaluated
 	cursor             int              // the index of the token currently being evaluated
 	needMacroExpansion map[string]bool  // used if any \newcommand definitions are encountered.
