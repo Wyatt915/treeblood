@@ -3580,7 +3580,7 @@ var symbolTable = map[string]symbol{
 		kind:   sym_alphabetic,
 	},
 	"varepsilon": {
-		char:   "ɛ",
+		char:   "ε",
 		entity: "",
 		kind:   sym_other,
 	},
