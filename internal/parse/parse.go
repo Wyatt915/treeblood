@@ -102,7 +102,7 @@ type Pitziil struct {
 func NewPitziil(macros ...map[string]string) *Pitziil {
 	var out Pitziil
 	out.needMacroExpansion = make(map[string]bool)
-	if len(macros) > 0 {
+	if len(macros) > 0 && macros[0] != nil {
 		out.Macros = PrepareMacros(macros[0])
 	} else {
 		out.Macros = make(map[string]Macro)

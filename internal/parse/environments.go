@@ -1,14 +1,11 @@
 package parse
 
 import (
-	"regexp"
 	"strconv"
 	"strings"
 
 	. "github.com/wyatt915/treeblood/internal/token"
 )
-
-var reMatchMatrix = regexp.MustCompile(`.*[mM]atrix\*?`)
 
 func isolateEnvironmentContext(ctx parseContext) parseContext {
 	return ctx & ((CTX_VAR_NORMAL - 1) ^ (CTX_TABLE - 1))
@@ -16,18 +13,17 @@ func isolateEnvironmentContext(ctx parseContext) parseContext {
 
 func setEnvironmentContext(envBegin Token, context parseContext) parseContext {
 	context = context ^ isolateEnvironmentContext(context) // clear other environments
-	name := envBegin.Value
-	star := strings.HasSuffix(name, "*")
-	if reMatchMatrix.MatchString(envBegin.Value) {
+	star := strings.HasSuffix(envBegin.Value, "*")
+	name := strings.TrimSuffix(envBegin.Value, "*")
+	switch name {
+	case "matrix", "pmatrix", "bmatrix", "Bmatrix", "vmatrix", "Vmatrix":
 		if star {
 			context |= CTX_ENV_HAS_ARG
 		}
 		return context | CTX_TABLE
-	}
-	switch envBegin.Value {
 	case "array", "subarray":
 		return context | CTX_TABLE | CTX_ENV_HAS_ARG
-	case "table", "align", "align*", "cases":
+	case "table", "align", "cases":
 		return context | CTX_TABLE
 	}
 	return context

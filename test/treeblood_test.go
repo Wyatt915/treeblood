@@ -114,17 +114,18 @@ func writeHTML(w io.Writer, testname string, test []string, macros map[string]st
 	<body>
 	<table><tbody><tr><th colspan="3">TreeBlood %s Test</th></tr>`, testname, testname, testname)
 	//prepared := treeblood.PrepareMacros(macros)
+	pitz := treeblood.NewDocument(nil, false)
 	for _, tex := range test {
 		//fmt.Println(tex)
 		begin := time.Now()
-		rendered, err := treeblood.TexToMML(tex, nil, true, false)
+		rendered, err := pitz.DisplayStyle(tex)
 		elapsed := time.Since(begin)
 		if err != nil {
 			rendered = "ERROR: " + err.Error()
 		}
 		total_time += elapsed
 		total_chars += len(tex)
-		inline, err := treeblood.TexToMML(tex, nil, false, false)
+		inline, err := pitz.TextStyle(tex)
 		fmt.Fprintf(w, `<tr><td><div class="tex"><pre>%s</pre></div></td><td>%s</td><td>%s</td></tr>`, tex, rendered, inline)
 		fmt.Printf("%d characters in %v (%f characters/ms)\n", len(tex), elapsed, float64(len(tex))/(1000*elapsed.Seconds()))
 	}
