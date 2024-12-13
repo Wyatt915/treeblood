@@ -52,7 +52,7 @@ func (n *MMLNode) SetTrue(name string) {
 	n.Attrib[name] = "true"
 }
 
-// SetAttr sets the attribute name to "value"
+// SetAttr sets the attribute name to "value" and returns the same MMLNode.
 func (n *MMLNode) SetAttr(name, value string) *MMLNode {
 	n.Attrib[name] = value
 	return n
@@ -105,6 +105,7 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 	if len(n.Tag) > 0 {
 		tag = n.Tag
 	} else {
+		fmt.Println("THIS SHOULD NOT HAPPEN")
 		switch n.Tok.Kind {
 		case TOK_NUMBER:
 			tag = "mn"
@@ -117,7 +118,7 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 			}
 		}
 	}
-	//w.WriteString(strings.Repeat("\t", indent))
+	w.WriteString(strings.Repeat(" ", 2*indent))
 	w.WriteRune('<')
 	w.WriteString(tag)
 	for key, val := range n.Attrib {
@@ -130,16 +131,16 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 	w.WriteRune('>')
 	if !self_closing_tags[tag] {
 		if len(n.Children) == 0 {
-			if len(n.Text) > 0 {
-				w.WriteString(n.Text)
-			} else {
-				w.WriteString(n.Tok.Value)
-			}
+			w.WriteString(n.Text)
 		} else {
-			//w.WriteRune('\n')
+			w.WriteRune('\n')
 			for _, child := range n.Children {
 				child.Write(w, indent+1)
+				if child != nil && child.Properties&prop_nonprint == 0 {
+					w.WriteRune('\n')
+				}
 			}
+			w.WriteString(strings.Repeat(" ", 2*indent))
 		}
 	}
 	w.WriteString("</")

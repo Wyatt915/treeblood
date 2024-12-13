@@ -154,7 +154,9 @@ func (pitz *Pitziil) render(tex string, displaystyle bool) (result string, err e
 		ast.Attrib["displaystyle"] = "true"
 	}
 	ast.Children[0].Children = append(ast.Children[0].Children, annotation)
-	ast.Write(&builder, 1)
+	builder.WriteRune('\n')
+	ast.Write(&builder, 0)
+	builder.WriteRune('\n')
 	return builder.String(), err
 }
 
