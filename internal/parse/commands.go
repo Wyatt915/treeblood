@@ -222,7 +222,7 @@ func endOfSwitchContext(switchname string, toks []Token, idx int, ctx parseConte
 }
 
 // ProcessCommand sets the value of n and returns the next index of tokens to be processed.
-func (pitz *Pitziil) ProcessCommand(n *MMLNode, context parseContext, tok Token, tokens []Token, idx int) int {
+func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, tokens []Token, idx int) (*MMLNode, int) {
 	var nextExpr []Token
 	star := strings.HasSuffix(tok.Value, "*")
 	var name string
@@ -240,48 +240,45 @@ func (pitz *Pitziil) ProcessCommand(n *MMLNode, context parseContext, tok Token,
 		}
 		temp, err := ExpandSingleMacro(macro, args)
 		if err != nil {
-			n.Tag = "merror"
-			n.Text = name
+			n := NewMMLNode("merror", name)
 			n.Attrib["title"] = "Error expanding macro"
 			logger.Println(err.Error())
-			return idx + 1
+			return n, idx + 1
 		}
 		temp, err = PostProcessTokens(temp)
 		if err != nil {
-			n.Tag = "merror"
-			n.Text = name
+			n := NewMMLNode("merror", name)
 			n.Attrib["title"] = "Error expanding macro"
 			logger.Println(err.Error())
-			return idx + 1
+			return n, idx + 1
 		}
 		logger.Println(StringifyTokens(temp))
-		pitz.ParseTex(temp, context, n)
-		return idx
+
+		return pitz.ParseTex(temp, context), idx
 	}
 	// dv and family take a variable number of arguments so try them first
 	switch name {
 	case "dv", "adv", "odv", "mdv", "fdv", "jdv", "pdv":
-		return pitz.doDerivative(n, name, star, context, tokens, idx+1)
+		return pitz.doDerivative(name, star, context, tokens, idx+1)
 	case "newcommand":
-		return pitz.newCommand(n, context, tokens, idx+1)
+		return pitz.newCommand(context, tokens, idx+1)
 	}
 	if v, ok := math_variants[name]; ok {
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
-		pitz.ParseTex(nextExpr, context|v, n)
-		return idx
+		return pitz.ParseTex(nextExpr, context|v), idx
 	}
 	if _, ok := space_widths[name]; ok {
+		n := NewMMLNode("mspace")
 		n.Tok = tok
-		n.Tag = "mspace"
 		if name == `\` {
 			n.Attrib["linebreak"] = "newline"
 		}
-		return idx
+		return n, idx
 	}
 	if sw, ok := switches[name]; ok {
 		end := endOfSwitchContext(name, tokens, idx, context)
 		end = min(end, len(tokens))
-		n.Tag = "mstyle"
+		n := NewMMLNode("mstyle")
 		switch name {
 		case "color":
 			var expr []Token
@@ -291,12 +288,9 @@ func (pitz *Pitziil) ProcessCommand(n *MMLNode, context parseContext, tok Token,
 			case EXPR_GROUP:
 				n.Attrib["mathcolor"] = StringifyTokens(expr)
 				pitz.ParseTex(tokens[idx+1:end], context|sw, n)
-				return end - 1
+				return n, end - 1
 			default:
-				n.Tag = "merror"
-				n.Text = name
-				n.Attrib["title"] = fmt.Sprintf("%s expects an argument", name)
-				return idx
+				return NewMMLNode("merror", name).SetAttr("title", fmt.Sprintf("%s expects an argument", name)), idx
 			}
 		}
 		pitz.ParseTex(tokens[idx+1:end], context|sw, n)
@@ -336,13 +330,13 @@ func (pitz *Pitziil) ProcessCommand(n *MMLNode, context parseContext, tok Token,
 		case "Huge":
 			n.Attrib["mathsize"] = "248.8%"
 		}
-		return end - 1
+		return n, end - 1
 	}
+	var n *MMLNode
 	if numArgs, ok := command_args[name]; ok {
-		idx = pitz.processCommandArgs(n, context, name, star, tokens, idx, numArgs)
+		n, idx = pitz.processCommandArgs(context, name, star, tokens, idx, numArgs)
 	} else if ch, ok := accents[name]; ok {
-		n.Tag = "mover"
-		n.SetTrue("accent")
+		n = NewMMLNode("mover").SetTrue("accent")
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 		acc := NewMMLNode("mo", string(ch))
 		acc.SetTrue("stretchy") // once more for chrome...
@@ -352,8 +346,7 @@ func (pitz *Pitziil) ProcessCommand(n *MMLNode, context parseContext, tok Token,
 		}
 		n.AppendChild(base, acc)
 	} else if ch, ok := accents_below[name]; ok {
-		n.Tag = "munder"
-		n.SetTrue("accent")
+		n = NewMMLNode("munder").SetTrue("accent")
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
 		acc := NewMMLNode("mo", string(ch))
 		acc.SetTrue("stretchy") // once more for chrome...
@@ -364,25 +357,22 @@ func (pitz *Pitziil) ProcessCommand(n *MMLNode, context parseContext, tok Token,
 		n.AppendChild(base, acc)
 	} else {
 		logger.Printf("NOTE: unknown command '%s'. Treating as operator or function name.\n", name)
-		n.Tag = "mo"
+		n = NewMMLNode("merror", tok.Value)
 	}
 	n.Tok = tok
 	n.set_variants_from_context(context)
 	n.setAttribsFromProperties()
-	return idx
+	return n, idx
 }
 
-func (pitz *Pitziil) processCommandArgs(n *MMLNode, context parseContext, name string, star bool, tokens []Token, idx int, numArgs int) int {
+func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star bool, tokens []Token, idx int, numArgs int) (*MMLNode, int) {
 	var option []Token
 	arguments := make([][]Token, 0)
 	var expr []Token
 	var kind ExprKind
 	tok := tokens[idx]
 	if idx >= len(tokens) {
-		n.Tag = "merror"
-		n.Text = tok.Value
-		n.Attrib["title"] = tok.Value + " requires one or more arguments"
-		return idx
+		return NewMMLNode("merror", tok.Value).SetAttr("title", tok.Value+" requires one or more arguments"), idx
 	}
 	expr, idx, kind = GetNextExpr(tokens, idx+1)
 	if kind == EXPR_OPTIONS {
@@ -392,23 +382,23 @@ func (pitz *Pitziil) processCommandArgs(n *MMLNode, context parseContext, name s
 		numArgs--
 	}
 	for range numArgs {
-		expr, idx, kind = GetNextExpr(tokens, idx+1)
+		expr, idx, _ = GetNextExpr(tokens, idx+1)
 		arguments = append(arguments, expr)
 	}
+	var n *MMLNode
 	switch name {
 	case "class":
-		pitz.ParseTex(arguments[1], context, n)
+		n = pitz.ParseTex(arguments[1], context)
 		n.Attrib["class"] = StringifyTokens(arguments[0])
 	case "textcolor":
-		pitz.ParseTex(arguments[1], context, n)
+		n = pitz.ParseTex(arguments[1], context)
 		n.Attrib["mathcolor"] = StringifyTokens(arguments[0])
 	case "mathop":
+		n = NewMMLNode("mo").SetAttr("rspace", "0")
 		n.Properties |= prop_limitsunderover | prop_movablelimits
-		n.Tag = "mo"
-		n.Attrib["rspace"] = "0"
 		n.AppendChild(pitz.ParseTex(arguments[0], context))
 	case "pmod":
-		n.Tag = "mrow"
+		n = NewMMLNode("mrow")
 		space := NewMMLNode("mspace")
 		space.Attrib["width"] = "0.7em"
 		mod := NewMMLNode("mo", "mod")
@@ -420,7 +410,7 @@ func (pitz *Pitziil) processCommandArgs(n *MMLNode, context parseContext, name s
 			NewMMLNode("mo", ")"),
 		)
 	case "bmod":
-		n.Tag = "mrow"
+		n = NewMMLNode("mrow")
 		space := NewMMLNode("mspace")
 		space.Attrib["width"] = "0.5em"
 		mod := NewMMLNode("mo", "mod")
@@ -429,18 +419,18 @@ func (pitz *Pitziil) processCommandArgs(n *MMLNode, context parseContext, name s
 			pitz.ParseTex(arguments[0], context),
 		)
 	case "substack":
-		pitz.ParseTex(arguments[0], context|CTX_TABLE, n)
+		n = pitz.ParseTex(arguments[0], context|CTX_TABLE)
 		processTable(n)
 		n.Attrib["rowspacing"] = "0" // Incredibly, chrome does this by default
 		n.Attrib["displaystyle"] = "false"
 	case "multirow":
-		pitz.ParseTex(arguments[2], context, n)
+		n = pitz.ParseTex(arguments[2], context)
 		n.Attrib["rowspan"] = StringifyTokens(arguments[0])
 	case "multicolumn":
-		pitz.ParseTex(arguments[2], context, n)
+		n = pitz.ParseTex(arguments[2], context)
 		n.Attrib["columnspan"] = StringifyTokens(arguments[0])
 	case "underbrace", "overbrace":
-		doUnderOverBrace(tok, n, pitz.ParseTex(arguments[0], context))
+		n = doUnderOverBrace(tok, pitz.ParseTex(arguments[0], context))
 	case "overset":
 		base := pitz.ParseTex(arguments[1], context)
 		if base.Tag == "mo" {
@@ -448,7 +438,7 @@ func (pitz *Pitziil) processCommandArgs(n *MMLNode, context parseContext, name s
 		}
 		overset := makeSuperscript(base, pitz.ParseTex(arguments[0], context))
 		overset.Tag = "mover"
-		n.Tag = "mrow"
+		n = NewMMLNode("mrow")
 		n.AppendChild(overset)
 	case "underset":
 		base := pitz.ParseTex(arguments[1], context)
@@ -457,15 +447,14 @@ func (pitz *Pitziil) processCommandArgs(n *MMLNode, context parseContext, name s
 		}
 		underset := makeSuperscript(base, pitz.ParseTex(arguments[0], context))
 		underset.Tag = "munder"
-		n.Tag = "mrow"
+		n = NewMMLNode("mrow")
 		n.AppendChild(underset)
 	case "text":
 		context |= CTX_TEXT
+		n = NewMMLNode("mtext", StringifyTokens(arguments[0]))
 		n.Children = nil
-		n.Tag = "mtext"
-		n.Text = StringifyTokens(arguments[0])
 	case "sqrt":
-		n.Tag = "msqrt"
+		n = NewMMLNode("msqrt")
 		n.AppendChild(pitz.ParseTex(arguments[0], context))
 		if option != nil {
 			n.Tag = "mroot"
@@ -474,16 +463,14 @@ func (pitz *Pitziil) processCommandArgs(n *MMLNode, context parseContext, name s
 	case "frac", "cfrac", "dfrac", "tfrac", "binom", "tbinom":
 		num := pitz.ParseTex(arguments[0], context)
 		den := pitz.ParseTex(arguments[1], context)
-		doFraction(tok, n, num, den)
+		n = doFraction(tok, num, den)
 	case "not":
 		if len(arguments[0]) < 1 {
-			n.Tag = "merror"
-			n.Text = tok.Value
-			n.Attrib["title"] = tok.Value + " requires an argument"
-			return idx
+			return NewMMLNode("merror", tok.Value).SetAttr("title", " requires an argument"), idx
 		} else if len(arguments[0]) == 1 {
 			t := arguments[0][0]
 			sym, ok := symbolTable[t.Value]
+			n = NewMMLNode()
 			if ok {
 				n.Text = sym.char
 			} else {
@@ -500,45 +487,44 @@ func (pitz *Pitziil) processCommandArgs(n *MMLNode, context parseContext, name s
 				n.Text += "̸" //Once again we have chrome to thank for not implementing menclose
 			}
 		} else {
-			n.Tag = "menclose"
+			n = NewMMLNode("menclose")
 			n.Attrib["notation"] = "updiagonalstrike"
 			pitz.ParseTex(arguments[0], context, n)
 		}
 	case "sideset":
-		pitz.sideset(n, arguments[0], arguments[1], arguments[2], context)
+		n = pitz.sideset(arguments[0], arguments[1], arguments[2], context)
 	case "prescript":
-		pitz.prescript(n, arguments[0], arguments[1], arguments[2], context)
+		n = pitz.prescript(arguments[0], arguments[1], arguments[2], context)
 	default:
+		n = NewMMLNode()
 		n.Text = tok.Value
 		for _, arg := range arguments {
 			n.AppendChild(pitz.ParseTex(arg, context))
 		}
 	}
-	return idx
+	return n, idx
 }
 
-func (pitz *Pitziil) newCommand(n *MMLNode, context parseContext, tokens []Token, index int) int {
+func (pitz *Pitziil) newCommand(context parseContext, tokens []Token, index int) (*MMLNode, int) {
 	var expr, optDefault, definition []Token
 	var kind ExprKind
 	var idx int
 	var argcount int
 	var name string
-	makeMerror := func(msg string) {
-		n.Tag = "merror"
-		n.Text = `\newcommand`
+	makeMerror := func(msg string) *MMLNode {
+		n := NewMMLNode("merror", `\newcommand`)
 		n.Attrib["title"] = msg
+		return n
 	}
 	expr, idx, kind = GetNextExpr(tokens, index)
 	switch kind {
 	case EXPR_GROUP:
 		if len(expr) != 1 || expr[0].Kind != TOK_COMMAND {
-			makeMerror("newcommand expects an argument of exactly one \\command")
-			return idx
+			return makeMerror("newcommand expects an argument of exactly one \\command"), idx
 		}
 		name = expr[0].Value
 	default:
-		makeMerror("newcommand expects an argument")
-		return idx
+		return makeMerror("newcommand expects an argument of exactly one \\command"), idx
 	}
 	keepConsuming := true
 	const (
@@ -559,19 +545,16 @@ func (pitz *Pitziil) newCommand(n *MMLNode, context parseContext, tokens []Token
 				var err error
 				argcount, err = strconv.Atoi(expr[0].Value)
 				if err != nil {
-					makeMerror("expected integer number of macro arguments")
-					return idx
+					return makeMerror("newcommand expects an argument of exactly one \\command"), idx
 				}
 			case 1:
 				idx = temp
 				optDefault = expr
 			default:
-				makeMerror("bad \\newcommand expression")
-				return temp
+				return makeMerror("newcommand expects an argument of exactly one \\command"), temp
 			}
 		default:
-			makeMerror("bad \\newcommand expression")
-			return temp
+			return makeMerror("newcommand expects an argument of exactly one \\command"), temp
 		}
 	}
 	cmd := Macro{
@@ -585,12 +568,11 @@ func (pitz *Pitziil) newCommand(n *MMLNode, context parseContext, tokens []Token
 	} else {
 		logger.Printf("WARN: macro %s was previously defined. The new definition will be ignored.", name)
 	}
-	n = nil
-	return idx
+	return nil, idx
 }
 
 // based on https://github.com/sjelatex/derivative
-func (pitz *Pitziil) doDerivative(n *MMLNode, name string, star bool, context parseContext, tokens []Token, index int) int {
+func (pitz *Pitziil) doDerivative(name string, star bool, context parseContext, tokens []Token, index int) (*MMLNode, int) {
 	var opts []Token
 	arguments := make([][]Token, 0)
 	var expr []Token
@@ -604,11 +586,11 @@ func (pitz *Pitziil) doDerivative(n *MMLNode, name string, star bool, context pa
 	case EXPR_GROUP:
 		arguments = append(arguments, expr)
 	default:
-		n.Tag = "merror"
-		n.Text = name
+		n := NewMMLNode("merror", name)
 		n.Attrib["title"] = fmt.Sprintf("%s expects an argument", name)
-		return idx
+		return n, idx
 	}
+	n := NewMMLNode()
 	keepConsuming := true
 	temp := idx
 	for keepConsuming && len(arguments) < 2 {
@@ -618,10 +600,9 @@ func (pitz *Pitziil) doDerivative(n *MMLNode, name string, star bool, context pa
 			arguments = append(arguments, expr)
 		case EXPR_SINGLE_TOK:
 			if len(arguments) < 1 {
-				n.Tag = "merror"
-				n.Text = name
+				n := NewMMLNode("merror", name)
 				n.Attrib["title"] = fmt.Sprintf("%s expects an argument", name)
-				return idx
+				return n, idx
 			} else if len(arguments) > 1 {
 				keepConsuming = false
 			} else if len(expr) == 0 {
@@ -630,10 +611,10 @@ func (pitz *Pitziil) doDerivative(n *MMLNode, name string, star bool, context pa
 				switch expr[0].Value {
 				case "/":
 					slashfrac = true
-					n.Tag = "mrow"
+					n = NewMMLNode("mrow")
 				case "!":
 					shorthand = true
-					n.Tag = "mrow"
+					n = NewMMLNode("mrow")
 				default:
 					keepConsuming = false
 				}
@@ -646,10 +627,9 @@ func (pitz *Pitziil) doDerivative(n *MMLNode, name string, star bool, context pa
 		}
 	}
 	if len(arguments) == 0 {
-		n.Tag = "merror"
-		n.Text = name
+		n := NewMMLNode("merror", name)
 		n.Attrib["title"] = fmt.Sprintf("%s expects an argument", name)
-		return idx
+		return n, idx
 	}
 	var inf string
 	jacobian := false
@@ -758,11 +738,11 @@ func (pitz *Pitziil) doDerivative(n *MMLNode, name string, star bool, context pa
 			slash.Attrib["form"] = "infix"
 			n.AppendChild(num, slash, den)
 		} else {
-			doFraction(Token{}, n, num, den)
+			n = doFraction(Token{}, num, den)
 		}
 	}
 
-	return idx
+	return n, idx
 }
 
 func makeSubSup(base, sub, sup *MMLNode) *MMLNode {
@@ -781,8 +761,8 @@ func makeSubscript(base, radical *MMLNode) *MMLNode {
 	return s
 }
 
-func (pitz *Pitziil) prescript(multi *MMLNode, super, sub, base []Token, context parseContext) {
-	multi.Tag = "mmultiscripts"
+func (pitz *Pitziil) prescript(super, sub, base []Token, context parseContext) *MMLNode {
+	multi := NewMMLNode("mmultiscripts")
 	multi.AppendChild(pitz.ParseTex(base, context))
 	multi.AppendChild(NewMMLNode("none"), NewMMLNode("none"), NewMMLNode("mprescripts"))
 	temp := pitz.ParseTex(sub, context)
@@ -793,10 +773,11 @@ func (pitz *Pitziil) prescript(multi *MMLNode, super, sub, base []Token, context
 	if temp != nil {
 		multi.AppendChild(temp)
 	}
+	return multi
 }
 
-func (pitz *Pitziil) sideset(multi *MMLNode, left, right, base []Token, context parseContext) {
-	multi.Tag = "mmultiscripts"
+func (pitz *Pitziil) sideset(left, right, base []Token, context parseContext) *MMLNode {
+	multi := NewMMLNode("mmultiscripts")
 	multi.Properties |= prop_limitsunderover
 	multi.AppendChild(pitz.ParseTex(base, context))
 	getScripts := func(side []Token) []*MMLNode {
@@ -842,49 +823,50 @@ func (pitz *Pitziil) sideset(multi *MMLNode, left, right, base []Token, context 
 	multi.AppendChild(getScripts(right)...)
 	multi.AppendChild(NewMMLNode("mprescripts"))
 	multi.AppendChild(getScripts(left)...)
+	return multi
 }
 
-func doUnderOverBrace(tok Token, parent *MMLNode, annotation *MMLNode) {
+func doUnderOverBrace(tok Token, annotation *MMLNode) *MMLNode {
+	n := NewMMLNode()
 	brace := NewMMLNode("mo")
 	brace.SetTrue("stretchy")
 	switch tok.Value {
 	case "overbrace":
-		parent.Properties |= prop_limitsunderover
-		parent.Tag = "mover"
+		n.Properties |= prop_limitsunderover
+		n.Tag = "mover"
 		brace.Text = "&OverBrace;"
-		parent.AppendChild(annotation, brace)
+		n.AppendChild(annotation, brace)
 	case "underbrace":
-		parent.Properties |= prop_limitsunderover
-		parent.Tag = "munder"
+		n.Properties |= prop_limitsunderover
+		n.Tag = "munder"
 		brace.Text = "&UnderBrace;"
-		parent.AppendChild(annotation, brace)
+		n.AppendChild(annotation, brace)
 	}
+	return n
 }
 
-func doFraction(tok Token, parent, numerator, denominator *MMLNode) {
-	var frac *MMLNode
+func doFraction(tok Token, numerator, denominator *MMLNode) *MMLNode {
 	// for a binomial coefficient, we need to wrap it in parentheses, so the "fraction" must
 	// be a child of parent, and parent must be an mrow.
-	switch tok.Value {
-	case "binom", "tbinom":
-		frac = NewMMLNode()
-		parent.Tag = "mrow"
-	default:
-		frac = parent
-	}
-	frac.Tag = "mfrac"
+	wrapper := NewMMLNode("mrow")
+	frac := NewMMLNode("mfrac")
 	frac.AppendChild(numerator, denominator)
 	switch tok.Value {
+	case "", "frac":
+		return frac
 	case "cfrac", "dfrac":
 		frac.SetTrue("displaystyle")
+		return frac
 	case "tfrac":
-		frac.Attrib["displaystyle"] = "false"
+		frac.SetAttr("displaystyle", "false")
+		return frac
 	case "binom":
-		frac.Attrib["linethickness"] = "0"
-		parent.AppendChild(strechyOP("("), frac, strechyOP(")"))
+		frac.SetAttr("linethickness", "0")
+		wrapper.AppendChild(strechyOP("("), frac, strechyOP(")"))
 	case "tbinom":
-		parent.Attrib["displaystyle"] = "false"
-		frac.Attrib["linethickness"] = "0"
-		parent.AppendChild(strechyOP("("), frac, strechyOP(")"))
+		wrapper.SetAttr("displaystyle", "false")
+		frac.SetAttr("linethickness", "0")
+		wrapper.AppendChild(strechyOP("("), frac, strechyOP(")"))
 	}
+	return wrapper
 }

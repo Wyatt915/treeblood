@@ -48,8 +48,9 @@ func NewMMLNode(opt ...string) *MMLNode {
 }
 
 // set the attribute name to "true"
-func (n *MMLNode) SetTrue(name string) {
+func (n *MMLNode) SetTrue(name string) *MMLNode {
 	n.Attrib[name] = "true"
+	return n
 }
 
 // SetAttr sets the attribute name to "value" and returns the same MMLNode.

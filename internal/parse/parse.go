@@ -308,10 +308,10 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			}
 			if tok.Kind&TOK_COMMAND > 0 {
 				if is_symbol(tok) {
-					make_symbol(tok, context, child)
+					child = make_symbol(tok, context)
 					advance = 1
 				} else {
-					i = pitz.ProcessCommand(child, context, tok, tokens, i)
+					child, i = pitz.ProcessCommand(context, tok, tokens, i)
 				}
 			} else {
 				child.Text = tok.Value
@@ -346,9 +346,9 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			}
 			if tok.Kind&TOK_COMMAND > 0 {
 				if is_symbol(tok) {
-					make_symbol(tok, context, child)
+					child = make_symbol(tok, context)
 				} else {
-					i = pitz.ProcessCommand(child, context, tok, tokens, i)
+					child, i = pitz.ProcessCommand(context, tok, tokens, i)
 				}
 			} else {
 				child.Text = tok.Value
@@ -359,9 +359,9 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			child.SetTrue("stretchy")
 			if tok.Kind&TOK_COMMAND > 0 {
 				if is_symbol(tok) {
-					make_symbol(tok, context, child)
+					child = make_symbol(tok, context)
 				} else {
-					i = pitz.ProcessCommand(child, context, tok, tokens, i)
+					child, i = pitz.ProcessCommand(context, tok, tokens, i)
 				}
 			} else {
 				child.Text = tok.Value
@@ -377,11 +377,10 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 				continue
 			}
 		case tok.Kind&TOK_COMMAND > 0:
-			child = NewMMLNode()
 			if is_symbol(tok) {
-				make_symbol(tok, context, child)
+				child = make_symbol(tok, context)
 			} else {
-				i = pitz.ProcessCommand(child, context, tok, tokens, i)
+				child, i = pitz.ProcessCommand(context, tok, tokens, i)
 			}
 		default:
 			child = NewMMLNode("mo", tok.Value)
@@ -451,8 +450,9 @@ func is_symbol(tok Token) bool {
 	return inSymbTbl || inCmdOps
 }
 
-func make_symbol(tok Token, ctx parseContext, n *MMLNode) {
+func make_symbol(tok Token, ctx parseContext) *MMLNode {
 	name := tok.Value
+	n := NewMMLNode()
 	if prop, ok := command_operators[name]; ok {
 		n.Tag = "mo"
 		n.Properties = prop
@@ -501,6 +501,7 @@ func make_symbol(tok Token, ctx parseContext, n *MMLNode) {
 	n.Tok = tok
 	n.set_variants_from_context(ctx)
 	n.setAttribsFromProperties()
+	return n
 }
 
 func (node *MMLNode) doPostProcess() {
