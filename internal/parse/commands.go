@@ -256,7 +256,7 @@ func (pitz *Pitziil) ProcessCommand(n *MMLNode, context parseContext, tok Token,
 		}
 		logger.Println(StringifyTokens(temp))
 		pitz.ParseTex(temp, context, n)
-		return idx + 1
+		return idx
 	}
 	// dv and family take a variable number of arguments so try them first
 	switch name {
@@ -585,6 +585,7 @@ func (pitz *Pitziil) newCommand(n *MMLNode, context parseContext, tokens []Token
 	} else {
 		logger.Printf("WARN: macro %s was previously defined. The new definition will be ignored.", name)
 	}
+	n = nil
 	return idx
 }
 

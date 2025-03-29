@@ -432,6 +432,9 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 	} else {
 		return nil
 	}
+	if len(node.Children) == 0 && len(node.Text) == 0 {
+		return nil
+	}
 	node.doPostProcess()
 	return node
 }
