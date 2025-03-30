@@ -25,27 +25,27 @@ const (
 	lxMacroArg
 )
 const (
-	TOK_NULL TokenKind = 1 << iota
-	TOK_WHITESPACE
-	TOK_COMMENT
-	TOK_COMMAND
-	TOK_ESCAPED
-	TOK_NUMBER
-	TOK_LETTER
-	TOK_CHAR
-	TOK_OPEN
-	TOK_CLOSE
-	TOK_CURLY
-	TOK_ENV
-	TOK_FENCE
-	TOK_SUBSUP
-	TOK_MACROARG
-	TOK_BADMACRO
-	TOK_RESERVED
-	TOK_BIGNESS1
-	TOK_BIGNESS2
-	TOK_BIGNESS3
-	TOK_BIGNESS4
+	tokNull TokenKind = 1 << iota
+	tokWhitespace
+	tokComment
+	tokCommand
+	tokEscaped
+	tokNumber
+	tokLetter
+	tokChar
+	tokOpen
+	tokClose
+	tokCurly
+	tokEnv
+	tokFence
+	tokSubsup
+	tokMacroarg
+	tokBadmacro
+	tokReserved
+	tokBigness1
+	tokBigness2
+	tokBigness3
+	tokBigness4
 )
 
 var (
@@ -129,56 +129,56 @@ func GetToken(tex []rune, start int) (Token, int) {
 			switch {
 			case unicode.IsLetter(r):
 				state = lxEnd
-				kind = TOK_LETTER
+				kind = tokLetter
 				result = append(result, r)
 			case unicode.IsNumber(r):
 				state = lxNumber
-				kind = TOK_NUMBER
+				kind = tokNumber
 				result = append(result, r)
 			case r == '\\':
 				state = lxWasBackslash
 			case r == '{':
 				state = lxEnd
-				kind = TOK_CURLY | TOK_OPEN
+				kind = tokCurly | tokOpen
 				result = append(result, r)
 			case r == '}':
 				state = lxEnd
-				kind = TOK_CURLY | TOK_CLOSE
+				kind = tokCurly | tokClose
 				result = append(result, r)
 			case slices.Contains(char_open, r):
 				state = lxEnd
-				kind = TOK_OPEN
+				kind = tokOpen
 				result = append(result, r)
 			case slices.Contains(char_close, r):
 				state = lxEnd
-				kind = TOK_CLOSE
+				kind = tokClose
 				result = append(result, r)
 			case r == '^' || r == '_':
 				state = lxEnd
-				kind = TOK_SUBSUP
+				kind = tokSubsup
 				result = append(result, r)
 			case r == '%':
 				state = lxComment
-				kind = TOK_COMMENT
+				kind = tokComment
 			case r == '#':
 				state = lxMacroArg
-				kind = TOK_MACROARG
+				kind = tokMacroarg
 			case slices.Contains(char_reserved, r):
 				state = lxEnd
-				kind = TOK_RESERVED
+				kind = tokReserved
 				result = append(result, r)
 			case unicode.IsSpace(r):
 				state = lxSpace
-				kind = TOK_WHITESPACE
+				kind = tokWhitespace
 				result = append(result, ' ')
 				continue
 			case r == '|':
 				state = lxEnd
-				kind = TOK_FENCE
+				kind = tokFence
 				result = append(result, r)
 			default:
 				state = lxEnd
-				kind = TOK_CHAR
+				kind = tokChar
 				result = append(result, r)
 			}
 		case lxComment:
@@ -212,33 +212,33 @@ func GetToken(tex []rune, start int) (Token, int) {
 			switch {
 			case r == '|':
 				state = lxEnd
-				kind = TOK_FENCE | TOK_ESCAPED
+				kind = tokFence | tokEscaped
 				result = append(result, r)
 			case slices.Contains(char_open, r):
 				state = lxEnd
-				kind = TOK_OPEN | TOK_ESCAPED | TOK_FENCE
+				kind = tokOpen | tokEscaped | tokFence
 				result = append(result, r)
 			case slices.Contains(char_close, r):
 				state = lxEnd
-				kind = TOK_CLOSE | TOK_ESCAPED | TOK_FENCE
+				kind = tokClose | tokEscaped | tokFence
 				result = append(result, r)
 			case slices.Contains(char_reserved, r):
 				state = lxEnd
-				kind = TOK_CHAR | TOK_ESCAPED
+				kind = tokChar | tokEscaped
 				result = append(result, r)
 			case unicode.IsSpace(r):
 				state = lxEnd
-				kind = TOK_WHITESPACE | TOK_ESCAPED
+				kind = tokWhitespace | tokEscaped
 				result = append(result, ' ')
 			case unicode.IsLetter(r):
 				state = lxCommand
-				kind = TOK_COMMAND
+				kind = tokCommand
 				result = append(result, r)
 			default:
 				state = lxEnd
-				kind = TOK_COMMAND
+				kind = tokCommand
 				result = append(result, r)
-				//return Token{Kind: TOK_COMMAND, Value: string(result)}, idx
+				//return Token{Kind: tokCommand, Value: string(result)}, idx
 			}
 		case lxCommand:
 			switch {
@@ -274,7 +274,7 @@ const (
 func GetNextExpr(tokens []Token, idx int) ([]Token, int, ExprKind) {
 	var result []Token
 	kind := EXPR_SINGLE_TOK
-	for idx < len(tokens) && tokens[idx].Kind&(TOK_WHITESPACE|TOK_COMMENT) > 0 {
+	for idx < len(tokens) && tokens[idx].Kind&(tokWhitespace|tokComment) > 0 {
 		idx++
 	}
 	if idx >= len(tokens) {
@@ -370,22 +370,22 @@ func matchBracesCritical(tokens []Token, kind TokenKind) error {
 	s := newStack[int]()
 	contextLength := 16
 	for i, t := range tokens {
-		if t.Kind&(TOK_OPEN|kind) == TOK_OPEN|kind {
+		if t.Kind&(tokOpen|kind) == tokOpen|kind {
 			s.Push(i)
-		} else if t.Kind&(TOK_CLOSE|kind) == TOK_CLOSE|kind {
+		} else if t.Kind&(tokClose|kind) == tokClose|kind {
 			if s.empty() {
 				var k string
-				if t.Kind&TOK_CURLY > 0 {
+				if t.Kind&tokCurly > 0 {
 					k = "curly brace"
 				}
-				if t.Kind&TOK_ENV > 0 {
+				if t.Kind&tokEnv > 0 {
 					k = "environment (" + t.Value + ")"
 				}
 				context := errorContext(t, StringifyTokens(tokens[max(0, i-contextLength):min(i+contextLength, len(tokens))]))
 				return newMismatchedBraceError(k, "<pre>"+context+"</pre>", i)
 			}
 			mate := tokens[s.Peek()]
-			if kind == TOK_ENV && mate.Value != t.Value {
+			if kind == tokEnv && mate.Value != t.Value {
 				context := errorContext(t, StringifyTokens(tokens[max(0, i-contextLength):min(i+contextLength, len(tokens))]))
 				return newMismatchedBraceError("environment ("+mate.Value+")", "<pre>"+context+"</pre>", i)
 			}
@@ -400,10 +400,10 @@ func matchBracesCritical(tokens []Token, kind TokenKind) error {
 		pos := s.Pop()
 		t := tokens[pos]
 		var kind string
-		if t.Kind&TOK_CURLY > 0 {
+		if t.Kind&tokCurly > 0 {
 			kind = "curly brace"
 		}
-		if t.Kind&TOK_ENV > 0 {
+		if t.Kind&tokEnv > 0 {
 			kind = "environment (" + t.Value + ")"
 		}
 		context := errorContext(t, StringifyTokens(tokens[max(0, pos-contextLength):min(pos+contextLength, len(tokens))]))
@@ -420,11 +420,11 @@ func matchBracesLazy(tokens []Token) {
 			// Critical regions have already been taken care of.
 			continue
 		}
-		if t.Kind&TOK_OPEN > 0 {
+		if t.Kind&tokOpen > 0 {
 			s.Push(i)
 			continue
 		}
-		if t.Kind&TOK_CLOSE > 0 {
+		if t.Kind&tokClose > 0 {
 			if s.empty() {
 				logger.Println("WARN: Potentially unmatched closing delimeter")
 				context := StringifyTokens(tokens[max(0, i-contextLength):min(i+contextLength, len(tokens))])
@@ -432,7 +432,7 @@ func matchBracesLazy(tokens []Token) {
 				continue
 			}
 			mate := tokens[s.Peek()]
-			if (t.Kind&mate.Kind)&TOK_FENCE > 0 || brace_match_map[mate.Value] == t.Value {
+			if (t.Kind&mate.Kind)&tokFence > 0 || brace_match_map[mate.Value] == t.Value {
 				pos := s.Pop()
 				tokens[i].MatchOffset = pos - i
 				tokens[pos].MatchOffset = i - pos
@@ -452,15 +452,15 @@ func fixFences(toks []Token) []Token {
 	bigLevel := func(s string) TokenKind {
 		switch s {
 		case "big":
-			return TOK_BIGNESS1
+			return tokBigness1
 		case "Big":
-			return TOK_BIGNESS2
+			return tokBigness2
 		case "bigg":
-			return TOK_BIGNESS3
+			return tokBigness3
 		case "Bigg":
-			return TOK_BIGNESS4
+			return tokBigness4
 		}
-		return TOK_NULL
+		return tokNull
 	}
 	for i < len(toks) {
 		if i == len(toks)-1 {
@@ -476,47 +476,47 @@ func fixFences(toks []Token) []Token {
 			temp = toks[i]
 			if nextval == "." {
 				temp.Value = ""
-				temp.Kind = TOK_NULL
+				temp.Kind = tokNull
 			} else {
 				temp.Value = nextval
 			}
-			temp.Kind |= TOK_FENCE | TOK_OPEN
+			temp.Kind |= tokFence | tokOpen
 		case "middle":
 			i++
 			temp = toks[i]
 			if nextval == "." {
 				temp.Value = ""
-				temp.Kind = TOK_NULL
+				temp.Kind = tokNull
 			} else {
 				temp.Value = nextval
 			}
-			temp.Kind |= TOK_FENCE
-			temp.Kind &= ^(TOK_OPEN | TOK_CLOSE)
+			temp.Kind |= tokFence
+			temp.Kind &= ^(tokOpen | tokClose)
 		case "right":
 			i++
 			temp = toks[i]
 			if nextval == "." {
 				temp.Value = ""
-				temp.Kind = TOK_NULL
+				temp.Kind = tokNull
 			} else {
 				temp.Value = nextval
 			}
-			temp.Kind |= TOK_FENCE | TOK_CLOSE
+			temp.Kind |= tokFence | tokClose
 		case "big", "Big", "bigg", "Bigg":
 			i++
 			temp = toks[i]
 			temp.Kind |= bigLevel(val)
-			temp.Kind &= ^(TOK_OPEN | TOK_CLOSE | TOK_FENCE)
+			temp.Kind &= ^(tokOpen | tokClose | tokFence)
 		case "bigl", "Bigl", "biggl", "Biggl":
 			i++
 			temp = toks[i]
-			temp.Kind |= TOK_OPEN | bigLevel(val[:len(val)-1])
-			temp.Kind &= ^TOK_FENCE
+			temp.Kind |= tokOpen | bigLevel(val[:len(val)-1])
+			temp.Kind &= ^tokFence
 		case "bigr", "Bigr", "biggr", "Biggr":
 			i++
 			temp = toks[i]
-			temp.Kind |= TOK_OPEN | bigLevel(val[:len(val)-1])
-			temp.Kind &= ^TOK_FENCE
+			temp.Kind |= tokOpen | bigLevel(val[:len(val)-1])
+			temp.Kind &= ^tokFence
 		}
 		out = append(out, temp)
 		i++
@@ -526,7 +526,7 @@ func fixFences(toks []Token) []Token {
 
 func PostProcessTokens(toks []Token) ([]Token, error) {
 	toks = fixFences(toks)
-	err := matchBracesCritical(toks, TOK_CURLY)
+	err := matchBracesCritical(toks, tokCurly)
 	if err != nil {
 		return toks, err
 	}
@@ -541,21 +541,21 @@ func PostProcessTokens(toks []Token) ([]Token, error) {
 		case "begin":
 			name, i, _ = GetNextExpr(toks, i+1)
 			temp.Value = StringifyTokens(name)
-			temp.Kind = TOK_ENV | TOK_OPEN
+			temp.Kind = tokEnv | tokOpen
 		case "end":
 			name, i, _ = GetNextExpr(toks, i+1)
 			temp.Value = StringifyTokens(name)
-			temp.Kind = TOK_ENV | TOK_CLOSE
+			temp.Kind = tokEnv | tokClose
 		}
 		out = append(out, temp)
 		i++
 	}
-	err = matchBracesCritical(out, TOK_ENV)
+	err = matchBracesCritical(out, tokEnv)
 	if err != nil {
 		return out, err
 	}
 	// Indicies could have changed after processing environments!!
-	err = matchBracesCritical(out, TOK_CURLY)
+	err = matchBracesCritical(out, tokCurly)
 	if err != nil {
 		return out, err
 	}

@@ -71,13 +71,13 @@ func (n *MMLNode) SetAttr(name, value string) *MMLNode {
 
 // If a property corresponds to an attribute in the final XML representation, set it here.
 func (n *MMLNode) setAttribsFromProperties() {
-	if n.Properties&prop_largeop > 0 {
+	if n.Properties&propLargeop > 0 {
 		n.SetTrue("largeop")
 	}
-	if n.Properties&prop_movablelimits > 0 {
+	if n.Properties&propMovablelimits > 0 {
 		n.SetTrue("movablelimits")
 	}
-	if n.Properties&prop_stretchy > 0 {
+	if n.Properties&propStretchy > 0 {
 		n.SetTrue("stretchy")
 	}
 }
@@ -112,7 +112,7 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 	if n == nil {
 		return
 	}
-	if n.Properties&prop_nonprint > 0 {
+	if n.Properties&propNonprint > 0 {
 		return
 	}
 	var tag string
@@ -120,9 +120,9 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 		tag = n.Tag
 	} else {
 		switch n.Tok.Kind {
-		case TOK_NUMBER:
+		case tokNumber:
 			tag = "mn"
-		case TOK_LETTER:
+		case tokLetter:
 			tag = "mi"
 		default:
 			tag = "mo"
@@ -150,7 +150,7 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 			w.WriteRune('\n')
 			for _, child := range n.Children {
 				child.Write(w, indent+1)
-				if child != nil && child.Properties&prop_nonprint == 0 {
+				if child != nil && child.Properties&propNonprint == 0 {
 					w.WriteRune('\n')
 				}
 			}

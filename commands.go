@@ -53,60 +53,60 @@ var (
 		"det":      0,
 		"hom":      0,
 		"inf":      0,
-		"lim":      prop_movablelimits | prop_limitsunderover,
-		"limits":   prop_limits | prop_nonprint,
-		"nolimits": prop_nolimits | prop_nonprint,
+		"lim":      propMovablelimits | propLimitsunderover,
+		"limits":   propLimits | propNonprint,
+		"nolimits": propNolimits | propNonprint,
 		"ln":       0,
 		"log":      0,
 		"max":      0,
 		"min":      0,
-		"prod":     prop_largeop | prop_movablelimits | prop_limitsunderover,
+		"prod":     propLargeop | propMovablelimits | propLimitsunderover,
 		"sec":      0,
 		"sin":      0,
 		"sinh":     0,
-		"sum":      prop_largeop | prop_movablelimits | prop_limitsunderover,
+		"sum":      propLargeop | propMovablelimits | propLimitsunderover,
 		"sup":      0,
 		"tan":      0,
 		"tanh":     0,
 	}
 
 	math_variants = map[string]parseContext{
-		"mathbb":     CTX_VAR_BB,
-		"mathbf":     CTX_VAR_BOLD,
-		"boldsymbol": CTX_VAR_BOLD,
-		"mathbfit":   CTX_VAR_BOLD | CTX_VAR_ITALIC,
-		"mathcal":    CTX_VAR_SCRIPT_CHANCERY,
-		"mathfrak":   CTX_VAR_FRAK,
-		"mathit":     CTX_VAR_ITALIC,
-		"mathrm":     CTX_VAR_NORMAL,
-		"mathscr":    CTX_VAR_SCRIPT_ROUNDHAND,
-		"mathsf":     CTX_VAR_SANS,
-		"mathsfbf":   CTX_VAR_SANS | CTX_VAR_BOLD,
-		"mathsfbfsl": CTX_VAR_SANS | CTX_VAR_BOLD | CTX_VAR_ITALIC,
-		"mathsfsl":   CTX_VAR_SANS | CTX_VAR_ITALIC,
-		"mathtt":     CTX_VAR_MONO,
+		"mathbb":     ctxVarBb,
+		"mathbf":     ctxVarBold,
+		"boldsymbol": ctxVarBold,
+		"mathbfit":   ctxVarBold | ctxVarItalic,
+		"mathcal":    ctxVarScriptChancery,
+		"mathfrak":   ctxVarFrak,
+		"mathit":     ctxVarItalic,
+		"mathrm":     ctxVarNormal,
+		"mathscr":    ctxVarScriptRoundhand,
+		"mathsf":     ctxVarSans,
+		"mathsfbf":   ctxVarSans | ctxVarBold,
+		"mathsfbfsl": ctxVarSans | ctxVarBold | ctxVarItalic,
+		"mathsfsl":   ctxVarSans | ctxVarItalic,
+		"mathtt":     ctxVarMono,
 	}
-	ctx_size_offset int = bits.TrailingZeros64(uint64(CTX_SIZE_1))
+	ctxSizeOffset int = bits.TrailingZeros64(uint64(ctxSize_1))
 	// TODO: Not really using context for switch commands
 	switches = map[string]parseContext{
 		"color":             0,
-		"bf":                CTX_VAR_BOLD,
-		"em":                CTX_VAR_ITALIC,
-		"rm":                CTX_VAR_NORMAL,
-		"displaystyle":      CTX_DISPLAY,
-		"textstyle":         CTX_INLINE,
-		"scriptstyle":       CTX_SCRIPT,
-		"scriptscriptstyle": CTX_SCRIPTSCRIPT,
-		"tiny":              1 << ctx_size_offset,
-		"scriptsize":        2 << ctx_size_offset,
-		"footnotesize":      3 << ctx_size_offset,
-		"small":             4 << ctx_size_offset,
-		"normalsize":        5 << ctx_size_offset,
-		"large":             6 << ctx_size_offset,
-		"Large":             7 << ctx_size_offset,
-		"LARGE":             8 << ctx_size_offset,
-		"huge":              9 << ctx_size_offset,
-		"Huge":              10 << ctx_size_offset,
+		"bf":                ctxVarBold,
+		"em":                ctxVarItalic,
+		"rm":                ctxVarNormal,
+		"displaystyle":      ctxDisplay,
+		"textstyle":         ctxInline,
+		"scriptstyle":       ctxScript,
+		"scriptscriptstyle": ctxScriptscript,
+		"tiny":              1 << ctxSizeOffset,
+		"scriptsize":        2 << ctxSizeOffset,
+		"footnotesize":      3 << ctxSizeOffset,
+		"small":             4 << ctxSizeOffset,
+		"normalsize":        5 << ctxSizeOffset,
+		"large":             6 << ctxSizeOffset,
+		"Large":             7 << ctxSizeOffset,
+		"LARGE":             8 << ctxSizeOffset,
+		"huge":              9 << ctxSizeOffset,
+		"Huge":              10 << ctxSizeOffset,
 	}
 	accents = map[string]rune{
 		"acute":          0x00b4,
@@ -135,13 +135,13 @@ var (
 )
 
 func isolateMathVariant(ctx parseContext) parseContext {
-	return ctx & ^(CTX_VAR_NORMAL - 1)
+	return ctx & ^(ctxVarNormal - 1)
 }
 
 // fontSizeFromContext isolates the size component of ctx and returns a string with size and units (rem)
 // Based on the Absolute Point Sizes table [10pt] from https://en.wikibooks.org/wiki/LaTeX/Fonts#Sizing_text
 //func fontSizeFromContext(ctx parseContext) string {
-//	sz := (ctx >> ctx_size_offset) & 0xF
+//	sz := (ctx >> ctxSizeOffset) & 0xF
 //	switch sz {
 //	case 1:
 //		return "0.500rem"
@@ -192,13 +192,13 @@ func getOption(tokens []Token, idx int) ([]Token, int) {
 
 func endOfSwitchContext(switchname string, toks []Token, idx int, ctx parseContext) int {
 	for i := idx; i < len(toks); i++ {
-		if ctx&CTX_TABLE > 0 {
+		if ctx&ctxTable > 0 {
 			// this will skip over any cell/row breaks in a subexpression or subenvironment
 			if toks[i].MatchOffset > 0 {
 				i += toks[i].MatchOffset
 				continue
 			}
-			if toks[i].Kind&TOK_RESERVED > 0 && toks[i].Value == "&" {
+			if toks[i].Kind&tokReserved > 0 && toks[i].Value == "&" {
 				return i
 			}
 			if toks[i].Value == "\\" || toks[i].Value == "cr" {
@@ -393,7 +393,7 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 		n.SetAttr("mathcolor", StringifyTokens(arguments[0]))
 	case "mathop":
 		n = NewMMLNode("mi", StringifyTokens(arguments[0])).SetAttr("rspace", "0")
-		n.Properties |= prop_limitsunderover | prop_movablelimits
+		n.Properties |= propLimitsunderover | propMovablelimits
 	case "pmod":
 		n = NewMMLNode("mrow")
 		space := NewMMLNode("mspace")
@@ -416,7 +416,7 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 			pitz.ParseTex(arguments[0], context),
 		)
 	case "substack":
-		n = pitz.ParseTex(arguments[0], context|CTX_TABLE)
+		n = pitz.ParseTex(arguments[0], context|ctxTable)
 		processTable(n)
 		n.SetAttr("rowspacing", "0") // Incredibly, chrome does this by default
 		n.SetFalse("displaystyle")
@@ -447,7 +447,7 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 		n = NewMMLNode("mrow")
 		n.AppendChild(underset)
 	case "text":
-		context |= CTX_TEXT
+		context |= ctxText
 		n = NewMMLNode("mtext", StringifyTokens(arguments[0]))
 	case "sqrt":
 		n = NewMMLNode("msqrt")
@@ -515,7 +515,7 @@ func (pitz *Pitziil) newCommand(context parseContext, tokens []Token, index int)
 	expr, idx, kind = GetNextExpr(tokens, index)
 	switch kind {
 	case EXPR_GROUP:
-		if len(expr) != 1 || expr[0].Kind != TOK_COMMAND {
+		if len(expr) != 1 || expr[0].Kind != tokCommand {
 			return makeMerror("newcommand expects an argument of exactly one \\command"), idx
 		}
 		name = expr[0].Value
@@ -672,20 +672,20 @@ func (pitz *Pitziil) doDerivative(name string, star bool, context parseContext, 
 	for _, opt := range options {
 		for _, t := range opt {
 			switch t.Kind {
-			case TOK_NUMBER:
+			case tokNumber:
 				val, _ := strconv.ParseInt(t.Value, 10, 32)
 				temp += int(val)
-			case TOK_COMMAND, TOK_LETTER:
+			case tokCommand, tokLetter:
 				onlyNumbers = false
-				order = append(order, t, Token{Kind: TOK_CHAR, Value: "+"})
+				order = append(order, t, Token{Kind: tokChar, Value: "+"})
 			}
 		}
 	}
 	temp += len(denominator) - len(options)
 	if onlyNumbers && temp > 1 {
-		order = append(order, Token{Kind: TOK_NUMBER, Value: strconv.Itoa(temp)})
+		order = append(order, Token{Kind: tokNumber, Value: strconv.Itoa(temp)})
 	} else if temp > 0 && len(order) > 1 {
-		order = append(order, Token{Kind: TOK_NUMBER, Value: strconv.Itoa(temp)})
+		order = append(order, Token{Kind: tokNumber, Value: strconv.Itoa(temp)})
 	} else if len(order) > 1 {
 		order = order[:len(order)-1]
 	}
@@ -774,7 +774,7 @@ func (pitz *Pitziil) prescript(super, sub, base []Token, context parseContext) *
 
 func (pitz *Pitziil) sideset(left, right, base []Token, context parseContext) *MMLNode {
 	multi := NewMMLNode("mmultiscripts")
-	multi.Properties |= prop_limitsunderover
+	multi.Properties |= propLimitsunderover
 	multi.AppendChild(pitz.ParseTex(base, context))
 	getScripts := func(side []Token) []*MMLNode {
 		i := 0
@@ -828,12 +828,12 @@ func doUnderOverBrace(tok Token, annotation *MMLNode) *MMLNode {
 	brace.SetTrue("stretchy")
 	switch tok.Value {
 	case "overbrace":
-		n.Properties |= prop_limitsunderover
+		n.Properties |= propLimitsunderover
 		n.Tag = "mover"
 		brace.Text = "&OverBrace;"
 		n.AppendChild(annotation, brace)
 	case "underbrace":
-		n.Properties |= prop_limitsunderover
+		n.Properties |= propLimitsunderover
 		n.Tag = "munder"
 		brace.Text = "&UnderBrace;"
 		n.AppendChild(annotation, brace)

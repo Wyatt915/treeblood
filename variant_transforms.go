@@ -28,30 +28,30 @@ func (n *MMLNode) transformByVariant(variant string) {
 func (n *MMLNode) set_variants_from_context(context parseContext) {
 	var variant string
 	switch isolateMathVariant(context) {
-	case CTX_VAR_NORMAL:
+	case ctxVarNormal:
 		n.Attrib["mathvariant"] = "normal"
 		return
-	case CTX_VAR_BB:
+	case ctxVarBb:
 		variant = "double-struck"
-	case CTX_VAR_BOLD:
+	case ctxVarBold:
 		variant = "bold"
-	case CTX_VAR_BOLD | CTX_VAR_ITALIC:
+	case ctxVarBold | ctxVarItalic:
 		variant = "bold-italic"
-	case CTX_VAR_SCRIPT_CHANCERY, CTX_VAR_SCRIPT_ROUNDHAND:
+	case ctxVarScriptChancery, ctxVarScriptRoundhand:
 		variant = "script"
-	case CTX_VAR_FRAK:
+	case ctxVarFrak:
 		variant = "fraktur"
-	case CTX_VAR_ITALIC:
+	case ctxVarItalic:
 		variant = "italic"
-	case CTX_VAR_SANS:
+	case ctxVarSans:
 		variant = "sans-serif"
-	case CTX_VAR_SANS | CTX_VAR_BOLD:
+	case ctxVarSans | ctxVarBold:
 		variant = "sans-serif-bold"
-	case CTX_VAR_SANS | CTX_VAR_BOLD | CTX_VAR_ITALIC:
+	case ctxVarSans | ctxVarBold | ctxVarItalic:
 		variant = "sans-serif-bold-italic"
-	case CTX_VAR_SANS | CTX_VAR_ITALIC:
+	case ctxVarSans | ctxVarItalic:
 		variant = "sans-serif-italic"
-	case CTX_VAR_MONO:
+	case ctxVarMono:
 		variant = "monospace"
 	case 0:
 		return
@@ -59,10 +59,10 @@ func (n *MMLNode) set_variants_from_context(context parseContext) {
 	n.transformByVariant(variant)
 	var variationselector rune
 	switch isolateMathVariant(context) {
-	case CTX_VAR_SCRIPT_CHANCERY:
+	case ctxVarScriptChancery:
 		variationselector = 0xfe00
 		n.Attrib["class"] = "calligraphic"
-	case CTX_VAR_SCRIPT_ROUNDHAND:
+	case ctxVarScriptRoundhand:
 		variationselector = 0xfe01
 	}
 	if variationselector > 0 {

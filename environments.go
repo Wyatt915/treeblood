@@ -6,7 +6,7 @@ import (
 )
 
 func isolateEnvironmentContext(ctx parseContext) parseContext {
-	return ctx & ((CTX_VAR_NORMAL - 1) ^ (CTX_TABLE - 1))
+	return ctx & ((ctxVarNormal - 1) ^ (ctxTable - 1))
 }
 
 func setEnvironmentContext(envBegin Token, context parseContext) parseContext {
@@ -16,13 +16,13 @@ func setEnvironmentContext(envBegin Token, context parseContext) parseContext {
 	switch name {
 	case "matrix", "pmatrix", "bmatrix", "Bmatrix", "vmatrix", "Vmatrix":
 		if star {
-			context |= CTX_ENV_HAS_ARG
+			context |= ctxEnvHasArg
 		}
-		return context | CTX_TABLE
+		return context | ctxTable
 	case "array", "subarray":
-		return context | CTX_TABLE | CTX_ENV_HAS_ARG
+		return context | ctxTable | ctxEnvHasArg
 	case "table", "align", "cases":
-		return context | CTX_TABLE
+		return context | ctxTable
 	}
 	return context
 }
@@ -122,8 +122,8 @@ func processTable(table *MMLNode) {
 	rowspans := make(map[int]int)
 	rowspacing := make([]string, 0)
 	nonDefaultSpacing := false
-	separateRows := func(n *MMLNode) bool { return n != nil && n.Properties&prop_row_sep > 0 }
-	separateCells := func(n *MMLNode) bool { return n != nil && n.Properties&prop_cell_sep > 0 }
+	separateRows := func(n *MMLNode) bool { return n != nil && n.Properties&propRowSep > 0 }
+	separateCells := func(n *MMLNode) bool { return n != nil && n.Properties&propCellSep > 0 }
 	for _, row := range splitByFunc(table.Children, separateRows) {
 		rowNode := NewMMLNode("mtr")
 		var colspan int
@@ -155,7 +155,7 @@ func processTable(table *MMLNode) {
 					if err == nil {
 						rowspans[cidx] = int(span) - 1
 					}
-					if len(cell) == 1 && c.Properties&prop_vert_arrow > 0 {
+					if len(cell) == 1 && c.Properties&propVertArrow > 0 {
 						// rows have a default height of 1em and space of 1ex=½em between them.
 						// There is one less interior space than the number of rows spanned.
 						// total height of this combined cell:
@@ -171,7 +171,7 @@ func processTable(table *MMLNode) {
 					if err == nil {
 						colspan = int(span) - 1
 					}
-					if len(cell) == 1 && c.Properties&prop_horz_arrow > 0 {
+					if len(cell) == 1 && c.Properties&propHorzArrow > 0 {
 						// TODO man idk.... count all the characters in each
 						// text field in the cell and pretend they're all 1 em?
 						// For now, each cell is 1em with a 1em gap. The default
@@ -213,7 +213,7 @@ func strechyOP(c string) *MMLNode {
 
 func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 	switch {
-	case ctx&CTX_TABLE > 0:
+	case ctx&ctxTable > 0:
 		processTable(node)
 	}
 	row := NewMMLNode("mrow")

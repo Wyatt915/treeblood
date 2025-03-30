@@ -58,7 +58,7 @@ func TexToMML(tex string, macros map[string]string, block, displaystyle bool) (r
 	annotation := NewMMLNode("annotation", strings.ReplaceAll(tex, "<", "&lt;"))
 	annotation.Attrib["encoding"] = "application/x-tex"
 	pitz := NewPitziil()
-	ast = pitz.ParseTex(tokens, CTX_ROOT)
+	ast = pitz.ParseTex(tokens, ctxRoot)
 	ast.Attrib["xmlns"] = "http://www.w3.org/1998/Math/MathML"
 	if block {
 		ast.Attrib["display"] = "block"

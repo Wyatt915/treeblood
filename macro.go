@@ -69,7 +69,7 @@ func resolve_dependency_graph(macros map[string][]Token) []string {
 	for i, macro := range idx_macro {
 		toks := macros[macro]
 		for _, t := range toks {
-			if j, ok := macro_idx[t.Value]; ok && t.Kind == TOK_COMMAND {
+			if j, ok := macro_idx[t.Value]; ok && t.Kind == tokCommand {
 				//j has dependent i
 				graph[j][i] = true
 				has_incoming[i] = true
@@ -100,7 +100,7 @@ func ExpandSingleMacro(m Macro, args [][]Token) ([]Token, error) {
 	def := m.Definition
 	result := make([]Token, 0, len(def)*2) // twice the original capacity is probably fine?
 	for i, t := range def {
-		if t.Kind&TOK_MACROARG > 0 {
+		if t.Kind&tokMacroarg > 0 {
 			n, err := strconv.ParseInt(t.Value, 10, 8)
 			if err != nil {
 				return nil, err
@@ -127,7 +127,7 @@ func PrepareMacros(macros map[string]string) map[string]Macro {
 		}
 		argcounts[macro] = 0
 		for _, t := range toks {
-			if t.Kind&TOK_MACROARG > 0 {
+			if t.Kind&tokMacroarg > 0 {
 				argcounts[macro]++
 			}
 		}
@@ -155,7 +155,7 @@ func PrepareMacros(macros map[string]string) map[string]Macro {
 	for macro := range tokenized_macros {
 		if _, ok := flattened[macro]; !ok {
 			flattened[macro] = Macro{
-				Definition: []Token{{Value: macro, Kind: TOK_BADMACRO}},
+				Definition: []Token{{Value: macro, Kind: tokBadmacro}},
 				Argcount:   0,
 			}
 		}
@@ -173,7 +173,7 @@ func ExpandMacros(toks []Token, macros map[string]Macro) ([]Token, error) {
 		i := 0
 		for i < len(toks) {
 			t := toks[i]
-			if def, ok := macros[t.Value]; ok && t.Kind&TOK_COMMAND > 0 {
+			if def, ok := macros[t.Value]; ok && t.Kind&tokCommand > 0 {
 				has_unexpanded_macros = true
 				args := make([][]Token, macros[t.Value].Argcount)
 				for n := range macros[t.Value].Argcount {
