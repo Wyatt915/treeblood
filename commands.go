@@ -1,4 +1,4 @@
-package parse
+package treeblood
 
 import (
 	"fmt"
@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-
-	. "github.com/wyatt915/treeblood/internal/token"
 )
 
 var (
@@ -451,7 +449,6 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 	case "text":
 		context |= CTX_TEXT
 		n = NewMMLNode("mtext", StringifyTokens(arguments[0]))
-		n.Children = nil
 	case "sqrt":
 		n = NewMMLNode("msqrt")
 		n.AppendChild(pitz.ParseTex(arguments[0], context))

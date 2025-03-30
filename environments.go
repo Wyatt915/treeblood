@@ -1,10 +1,8 @@
-package parse
+package treeblood
 
 import (
 	"strconv"
 	"strings"
-
-	. "github.com/wyatt915/treeblood/internal/token"
 )
 
 func isolateEnvironmentContext(ctx parseContext) parseContext {

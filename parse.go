@@ -1,27 +1,11 @@
-package parse
+package treeblood
 
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
-
-	. "github.com/wyatt915/treeblood/internal/token"
 )
 
-func init() {
-	logger = log.New(os.Stderr, "TreeBlood: ", log.LstdFlags)
-	//Symbol Aliases
-	symbolTable["implies"] = symbolTable["Longrightarrow"]
-	symbolTable["impliedby"] = symbolTable["Longleftarrow"]
-	symbolTable["land"] = symbolTable["wedge"]
-	symbolTable["lor"] = symbolTable["vee"]
-	symbolTable["hbar"] = symbolTable["hslash"]
-	symbolTable["gt"] = symbolTable["greater"]
-	symbolTable["unlhd"] = symbolTable["trianglelefteq"]
-	symbolTable["unrhd"] = symbolTable["trianglerighteq"]
-	symbolTable["unicodecdots"] = symbolTable["cdots"]
-}
 
 type NodeClass uint64
 type NodeProperties uint64

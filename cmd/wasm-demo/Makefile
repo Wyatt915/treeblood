@@ -1,4 +1,4 @@
-COMPILER=go
+COMPILER=tinygo
 EXEC=treeblood.wasm
 ifeq ($(COMPILER), tinygo)
 GOROOT := $(shell $(COMPILER) env TINYGOROOT)
@@ -9,7 +9,7 @@ else
 GOROOT := $(shell $(COMPILER) env GOROOT)
 LDFLAGS:=-s -w -X main.VERSION=$(shell git describe --always --long)
 OPTS=
-WASM_EXEC=$(GOROOT)/misc/wasm/wasm_exec.js
+WASM_EXEC=$(GOROOT)/lib/wasm/wasm_exec.js
 endif
 
 all: build

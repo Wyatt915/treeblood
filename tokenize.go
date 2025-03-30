@@ -1,4 +1,4 @@
-package token
+package treeblood
 
 import (
 	"log"
@@ -49,7 +49,6 @@ const (
 )
 
 var (
-	logger          *log.Logger
 	brace_match_map = map[string]string{
 		"(": ")",
 		"{": "}",

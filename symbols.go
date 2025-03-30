@@ -1,4 +1,4 @@
-package parse
+package treeblood
 
 type symbolKind uint64
 
@@ -28,6 +28,7 @@ var (
 		"!":     -3,
 	}
 
+	// Symbols for which a negated version already exists. Otherwise, a combining solidus is used.
 	negation_map = map[string]string{
 		"<":               "≮",
 		"=":               "≠",
@@ -97,7 +98,7 @@ type symbol struct {
 
 // NOTE ABOUT PROPERTIES FIELD
 // All integral symbols have the property prop_limitsunderover. This is the
-// OPPOSITE of what we want, so in commands.go, we use an XOR rather than an OR
+// OPPOSITE of what we want, so in commands.go:make_symbol, we use an XOR rather than an OR
 // when setting the properties for the emitted MMLNode.
 
 // Greek Capital letters are upright, unless prefixed by 'var', in which case

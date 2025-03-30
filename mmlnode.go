@@ -1,10 +1,8 @@
-package parse
+package treeblood
 
 import (
 	"fmt"
 	"strings"
-
-	. "github.com/wyatt915/treeblood/internal/token"
 )
 
 // An MMLNode is the representation of a MathML tag or tree.

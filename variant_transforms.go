@@ -1,4 +1,4 @@
-package parse
+package treeblood
 
 func (n *MMLNode) transformByVariant(variant string) {
 	rules, ok := transforms[variant]
