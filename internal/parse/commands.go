@@ -241,14 +241,14 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, tokens []To
 		temp, err := ExpandSingleMacro(macro, args)
 		if err != nil {
 			n := NewMMLNode("merror", name)
-			n.Attrib["title"] = "Error expanding macro"
+			n.SetAttr("title", "Error expanding macro")
 			logger.Println(err.Error())
 			return n, idx + 1
 		}
 		temp, err = PostProcessTokens(temp)
 		if err != nil {
 			n := NewMMLNode("merror", name)
-			n.Attrib["title"] = "Error expanding macro"
+			n.SetAttr("title", "Error expanding macro")
 			logger.Println(err.Error())
 			return n, idx + 1
 		}
@@ -271,7 +271,7 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, tokens []To
 		n := NewMMLNode("mspace")
 		n.Tok = tok
 		if name == `\` {
-			n.Attrib["linebreak"] = "newline"
+			n.SetAttr("linebreak", "newline")
 		}
 		return n, idx
 	}
@@ -286,7 +286,7 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, tokens []To
 			expr, idx, kind = GetNextExpr(tokens, idx+1)
 			switch kind {
 			case EXPR_GROUP:
-				n.Attrib["mathcolor"] = StringifyTokens(expr)
+				n.SetAttr("mathcolor", StringifyTokens(expr))
 				pitz.ParseTex(tokens[idx+1:end], context|sw, n)
 				return n, end - 1
 			default:
@@ -297,38 +297,38 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, tokens []To
 		switch name {
 		case "displaystyle":
 			n.SetTrue("displaystyle")
-			n.Attrib["scriptlevel"] = "0"
+			n.SetAttr("scriptlevel", "0")
 		case "textstyle":
-			n.Attrib["displaystyle"] = "false"
-			n.Attrib["scriptlevel"] = "0"
+			n.SetFalse("displaystyle")
+			n.SetAttr("scriptlevel", "0")
 		case "scriptstyle":
-			n.Attrib["displaystyle"] = "false"
-			n.Attrib["scriptlevel"] = "1"
+			n.SetFalse("displaystyle")
+			n.SetAttr("scriptlevel", "1")
 		case "scriptscriptstyle":
-			n.Attrib["displaystyle"] = "false"
-			n.Attrib["scriptlevel"] = "2"
+			n.SetFalse("displaystyle")
+			n.SetAttr("scriptlevel", "2")
 		case "rm":
-			n.Attrib["mathvariant"] = "normal"
+			n.SetAttr("mathvariant", "normal")
 		case "tiny":
-			n.Attrib["mathsize"] = "050.0%"
+			n.SetAttr("mathsize", "050.0%")
 		case "scriptsize":
-			n.Attrib["mathsize"] = "070.0%"
+			n.SetAttr("mathsize", "070.0%")
 		case "footnotesize":
-			n.Attrib["mathsize"] = "080.0%"
+			n.SetAttr("mathsize", "080.0%")
 		case "small":
-			n.Attrib["mathsize"] = "090.0%"
+			n.SetAttr("mathsize", "090.0%")
 		case "normalsize":
-			n.Attrib["mathsize"] = "100.0%"
+			n.SetAttr("mathsize", "100.0%")
 		case "large":
-			n.Attrib["mathsize"] = "120.0%"
+			n.SetAttr("mathsize", "120.0%")
 		case "Large":
-			n.Attrib["mathsize"] = "144.0%"
+			n.SetAttr("mathsize", "144.0%")
 		case "LARGE":
-			n.Attrib["mathsize"] = "172.8%"
+			n.SetAttr("mathsize", "172.8%")
 		case "huge":
-			n.Attrib["mathsize"] = "207.4%"
+			n.SetAttr("mathsize", "207.4%")
 		case "Huge":
-			n.Attrib["mathsize"] = "248.8%"
+			n.SetAttr("mathsize", "248.8%")
 		}
 		return n, end - 1
 	}
@@ -342,7 +342,7 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, tokens []To
 		acc.SetTrue("stretchy") // once more for chrome...
 		base := pitz.ParseTex(nextExpr, context)
 		if base.Tag == "mi" {
-			base.Attrib["style"] = "font-feature-settings: 'dtls' on;"
+			base.SetAttr("style", "font-feature-settings: 'dtls' on;")
 		}
 		n.AppendChild(base, acc)
 	} else if ch, ok := accents_below[name]; ok {
@@ -352,7 +352,7 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, tokens []To
 		acc.SetTrue("stretchy") // once more for chrome...
 		base := pitz.ParseTex(nextExpr, context)
 		if base.Tag == "mi" {
-			base.Attrib["style"] = "font-feature-settings: 'dtls' on;"
+			base.SetAttr("style", "font-feature-settings: 'dtls' on;")
 		}
 		n.AppendChild(base, acc)
 	} else {
@@ -389,20 +389,19 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 	switch name {
 	case "class":
 		n = pitz.ParseTex(arguments[1], context)
-		n.Attrib["class"] = StringifyTokens(arguments[0])
+		n.SetAttr("class", StringifyTokens(arguments[0]))
 	case "textcolor":
 		n = pitz.ParseTex(arguments[1], context)
-		n.Attrib["mathcolor"] = StringifyTokens(arguments[0])
+		n.SetAttr("mathcolor", StringifyTokens(arguments[0]))
 	case "mathop":
-		n = NewMMLNode("mo").SetAttr("rspace", "0")
+		n = NewMMLNode("mi", StringifyTokens(arguments[0])).SetAttr("rspace", "0")
 		n.Properties |= prop_limitsunderover | prop_movablelimits
-		n.AppendChild(pitz.ParseTex(arguments[0], context))
 	case "pmod":
 		n = NewMMLNode("mrow")
 		space := NewMMLNode("mspace")
-		space.Attrib["width"] = "0.7em"
+		space.SetAttr("width", "0.7em")
 		mod := NewMMLNode("mo", "mod")
-		mod.Attrib["lspace"] = "0"
+		mod.SetAttr("lspace", "0")
 		n.AppendChild(space,
 			NewMMLNode("mo", "("),
 			mod,
@@ -412,7 +411,7 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 	case "bmod":
 		n = NewMMLNode("mrow")
 		space := NewMMLNode("mspace")
-		space.Attrib["width"] = "0.5em"
+		space.SetAttr("width", "0.5em")
 		mod := NewMMLNode("mo", "mod")
 		n.AppendChild(space,
 			mod,
@@ -421,14 +420,14 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 	case "substack":
 		n = pitz.ParseTex(arguments[0], context|CTX_TABLE)
 		processTable(n)
-		n.Attrib["rowspacing"] = "0" // Incredibly, chrome does this by default
-		n.Attrib["displaystyle"] = "false"
+		n.SetAttr("rowspacing", "0") // Incredibly, chrome does this by default
+		n.SetFalse("displaystyle")
 	case "multirow":
 		n = pitz.ParseTex(arguments[2], context)
-		n.Attrib["rowspan"] = StringifyTokens(arguments[0])
+		n.SetAttr("rowspan", StringifyTokens(arguments[0]))
 	case "multicolumn":
 		n = pitz.ParseTex(arguments[2], context)
-		n.Attrib["columnspan"] = StringifyTokens(arguments[0])
+		n.SetAttr("columnspan", StringifyTokens(arguments[0]))
 	case "underbrace", "overbrace":
 		n = doUnderOverBrace(tok, pitz.ParseTex(arguments[0], context))
 	case "overset":
@@ -488,7 +487,7 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 			}
 		} else {
 			n = NewMMLNode("menclose")
-			n.Attrib["notation"] = "updiagonalstrike"
+			n.SetAttr("notation", "updiagonalstrike")
 			pitz.ParseTex(arguments[0], context, n)
 		}
 	case "sideset":
@@ -513,7 +512,7 @@ func (pitz *Pitziil) newCommand(context parseContext, tokens []Token, index int)
 	var name string
 	makeMerror := func(msg string) *MMLNode {
 		n := NewMMLNode("merror", `\newcommand`)
-		n.Attrib["title"] = msg
+		n.SetAttr("title", msg)
 		return n
 	}
 	expr, idx, kind = GetNextExpr(tokens, index)
@@ -587,7 +586,7 @@ func (pitz *Pitziil) doDerivative(name string, star bool, context parseContext, 
 		arguments = append(arguments, expr)
 	default:
 		n := NewMMLNode("merror", name)
-		n.Attrib["title"] = fmt.Sprintf("%s expects an argument", name)
+		n.SetAttr("title", fmt.Sprintf("%s expects an argument", name))
 		return n, idx
 	}
 	n := NewMMLNode()
@@ -601,7 +600,7 @@ func (pitz *Pitziil) doDerivative(name string, star bool, context parseContext, 
 		case EXPR_SINGLE_TOK:
 			if len(arguments) < 1 {
 				n := NewMMLNode("merror", name)
-				n.Attrib["title"] = fmt.Sprintf("%s expects an argument", name)
+				n.SetAttr("title", fmt.Sprintf("%s expects an argument", name))
 				return n, idx
 			} else if len(arguments) > 1 {
 				keepConsuming = false
@@ -628,7 +627,7 @@ func (pitz *Pitziil) doDerivative(name string, star bool, context parseContext, 
 	}
 	if len(arguments) == 0 {
 		n := NewMMLNode("merror", name)
-		n.Attrib["title"] = fmt.Sprintf("%s expects an argument", name)
+		n.SetAttr("title", fmt.Sprintf("%s expects an argument", name))
 		return n, idx
 	}
 	var inf string
@@ -665,9 +664,9 @@ func (pitz *Pitziil) doDerivative(name string, star bool, context parseContext, 
 	options := splitByFunc(opts, isComma)
 	makeOperator := func() *MMLNode {
 		op := NewMMLNode("mo", inf)
-		op.Attrib["form"] = "prefix"
-		op.Attrib["rspace"] = "0.05556em"
-		op.Attrib["lspace"] = "0.11111em"
+		op.SetAttr("form", "prefix")
+		op.SetAttr("rspace", "0.05556em")
+		op.SetAttr("lspace", "0.11111em")
 		return op
 	}
 	order := make([]Token, 0, 2*len(options))
@@ -735,7 +734,7 @@ func (pitz *Pitziil) doDerivative(name string, star bool, context parseContext, 
 		if slashfrac {
 			n.Tag = "mrow"
 			slash := NewMMLNode("mo", "/")
-			slash.Attrib["form"] = "infix"
+			slash.SetAttr("form", "infix")
 			n.AppendChild(num, slash, den)
 		} else {
 			n = doFraction(Token{}, num, den)
@@ -858,13 +857,13 @@ func doFraction(tok Token, numerator, denominator *MMLNode) *MMLNode {
 		frac.SetTrue("displaystyle")
 		return frac
 	case "tfrac":
-		frac.SetAttr("displaystyle", "false")
+		frac.SetFalse("displaystyle")
 		return frac
 	case "binom":
 		frac.SetAttr("linethickness", "0")
 		wrapper.AppendChild(strechyOP("("), frac, strechyOP(")"))
 	case "tbinom":
-		wrapper.SetAttr("displaystyle", "false")
+		wrapper.SetFalse("displaystyle")
 		frac.SetAttr("linethickness", "0")
 		wrapper.AppendChild(strechyOP("("), frac, strechyOP(")"))
 	}

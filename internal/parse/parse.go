@@ -117,12 +117,12 @@ func (pitz *Pitziil) render(tex string, displaystyle bool) (result string, err e
 		if r := recover(); r != nil {
 			ast = makeMMLError()
 			if displaystyle {
-				ast.Attrib["display"] = "block"
-				ast.Attrib["class"] = "math-displaystyle"
-				ast.Attrib["displaystyle"] = "true"
+				ast.SetAttr("display", "block")
+				ast.SetAttr("class", "math-displaystyle")
+				ast.SetAttr("displaystyle", "true")
 			} else {
-				ast.Attrib["display"] = "inline"
-				ast.Attrib["class"] = "math-textstyle"
+				ast.SetAttr("display", "inline")
+				ast.SetAttr("class", "math-textstyle")
 			}
 			fmt.Println(r)
 			ast.Write(&builder, 0)
@@ -142,16 +142,16 @@ func (pitz *Pitziil) render(tex string, displaystyle bool) (result string, err e
 		}
 	}
 	annotation := NewMMLNode("annotation", strings.ReplaceAll(tex, "<", "&lt;"))
-	annotation.Attrib["encoding"] = "application/x-tex"
+	annotation.SetAttr("encoding", "application/x-tex")
 	ast = pitz.ParseTex(tokens, CTX_ROOT)
-	ast.Attrib["xmlns"] = "http://www.w3.org/1998/Math/MathML"
+	ast.SetAttr("xmlns", "http://www.w3.org/1998/Math/MathML")
 	if displaystyle {
-		ast.Attrib["display"] = "block"
-		ast.Attrib["class"] = "math-displaystyle"
-		ast.Attrib["displaystyle"] = "true"
+		ast.SetAttr("display", "block")
+		ast.SetAttr("class", "math-displaystyle")
+		ast.SetAttr("displaystyle", "true")
 	} else {
-		ast.Attrib["display"] = "inline"
-		ast.Attrib["class"] = "math-textstyle"
+		ast.SetAttr("display", "inline")
+		ast.SetAttr("class", "math-textstyle")
 	}
 	ast.Children[0].Children = append(ast.Children[0].Children, annotation)
 	builder.WriteRune('\n')
@@ -174,7 +174,7 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 	var optionString string
 	if context&CTX_ROOT > 0 {
 		node = NewMMLNode("math")
-		node.Attrib["style"] = "font-feature-settings: 'dtls' off;"
+		node.SetAttr("style", "font-feature-settings: 'dtls' off;")
 		semantics := node.AppendNew("semantics")
 		if pitz.DoNumbering && pitz.currentIsDisplay {
 			pitz.EQCount++
@@ -243,7 +243,7 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 				if kind == EXPR_OPTIONS {
 					dummy := NewMMLNode("rowspacing")
 					dummy.Properties = prop_nonprint
-					dummy.Attrib["rowspacing"] = StringifyTokens(opt)
+					dummy.SetAttr("rowspacing", StringifyTokens(opt))
 					siblings = append(siblings, dummy)
 					i = idx
 				}
@@ -268,11 +268,11 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 		case tok.Kind&TOK_BADMACRO > 0:
 			child = NewMMLNode("merror", tok.Value)
 			child.Tok = tok
-			child.Attrib["title"] = "cyclic dependency in macro definition"
+			child.SetAttr("title", "cyclic dependency in macro definition")
 		case tok.Kind&TOK_MACROARG > 0:
 			child = NewMMLNode("merror", "?"+tok.Value)
 			child.Tok = tok
-			child.Attrib["title"] = "Unexpanded macro argument"
+			child.SetAttr("title", "Unexpanded macro argument")
 		case tok.Kind&TOK_ESCAPED > 0:
 			child = NewMMLNode("mo", tok.Value)
 			child.Tok = tok
@@ -304,7 +304,7 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 				child.SetTrue("fence")
 				child.SetTrue("stretchy")
 			} else {
-				child.Attrib["stretchy"] = "false"
+				child.SetFalse("stretchy")
 			}
 			if tok.Kind&TOK_COMMAND > 0 {
 				if is_symbol(tok) {
@@ -342,7 +342,7 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 				child.SetTrue("fence")
 				child.SetTrue("stretchy")
 			} else {
-				child.Attrib["stretchy"] = "false"
+				child.SetFalse("stretchy")
 			}
 			if tok.Kind&TOK_COMMAND > 0 {
 				if is_symbol(tok) {
@@ -370,7 +370,7 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			if context&CTX_TEXT > 0 {
 				child = NewMMLNode("mspace", " ")
 				child.Tok.Value = " "
-				child.Attrib["width"] = "1em"
+				child.SetAttr("width", "1em")
 				siblings = append(siblings, child)
 				continue
 			} else {
@@ -391,17 +391,17 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 		}
 		switch k := tok.Kind & (TOK_BIGNESS1 | TOK_BIGNESS2 | TOK_BIGNESS3 | TOK_BIGNESS4); k {
 		case TOK_BIGNESS1:
-			child.Attrib["scriptlevel"] = "-1"
-			child.Attrib["stretchy"] = "false"
+			child.SetAttr("scriptlevel", "-1")
+			child.SetFalse("stretchy")
 		case TOK_BIGNESS2:
-			child.Attrib["scriptlevel"] = "-2"
-			child.Attrib["stretchy"] = "false"
+			child.SetAttr("scriptlevel", "-2")
+			child.SetFalse("stretchy")
 		case TOK_BIGNESS3:
-			child.Attrib["scriptlevel"] = "-3"
-			child.Attrib["stretchy"] = "false"
+			child.SetAttr("scriptlevel", "-3")
+			child.SetFalse("stretchy")
 		case TOK_BIGNESS4:
-			child.Attrib["scriptlevel"] = "-4"
-			child.Attrib["stretchy"] = "false"
+			child.SetAttr("scriptlevel", "-4")
+			child.SetFalse("stretchy")
 		}
 		if child.Tag == "mo" && child.Text == "|" && tok.Kind&TOK_FENCE > 0 {
 			child.SetTrue("symmetric")
@@ -464,7 +464,7 @@ func make_symbol(tok Token, ctx parseContext) *MMLNode {
 			}
 		} else {
 			n.Text = name
-			n.Attrib["lspace"] = "0.11111em"
+			n.SetAttr("lspace", "0.11111em")
 		}
 	} else if t, ok := symbolTable[name]; ok {
 		n.Properties = t.properties
@@ -523,7 +523,7 @@ func (node *MMLNode) postProcessLimitSwitch() {
 		if child.Properties&prop_limits > 0 {
 			node.Children[i-1].Properties |= prop_limitsunderover
 			node.Children[i-1].Properties &= ^prop_movablelimits
-			node.Children[i-1].Attrib["movablelimits"] = "false"
+			node.Children[i-1].SetFalse("movablelimits")
 			placeholder := NewMMLNode()
 			placeholder.Properties = prop_nonprint
 			node.Children[i-1], node.Children[i] = placeholder, node.Children[i-1]
@@ -553,7 +553,7 @@ func (node *MMLNode) postProcessSpace() {
 			node.Children[j] = nil
 			j++
 		}
-		node.Children[i].Attrib["width"] = fmt.Sprintf("%.2fem", float64(width)/18.0)
+		node.Children[i].SetAttr("width", fmt.Sprintf("%.2fem", float64(width)/18.0))
 		i = j
 	}
 }

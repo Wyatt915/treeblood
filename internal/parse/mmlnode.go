@@ -53,6 +53,18 @@ func (n *MMLNode) SetTrue(name string) *MMLNode {
 	return n
 }
 
+// set the attribute name to "false"
+func (n *MMLNode) SetFalse(name string) *MMLNode {
+	n.Attrib[name] = "false"
+	return n
+}
+
+// remove the attribute entirely
+func (n *MMLNode) UnsetAttr(name string) *MMLNode {
+	delete(n.Attrib, name)
+	return n
+}
+
 // SetAttr sets the attribute name to "value" and returns the same MMLNode.
 func (n *MMLNode) SetAttr(name, value string) *MMLNode {
 	n.Attrib[name] = value
