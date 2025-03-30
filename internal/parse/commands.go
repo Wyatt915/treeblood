@@ -22,7 +22,7 @@ var (
 		"binom":         2,
 		"tbinom":        2,
 		"dfrac":         2,
-		"textfrac":      2,
+		"tfrac":         2,
 		"overset":       2,
 		"underset":      2,
 		"class":         2,
