@@ -13,13 +13,14 @@ import (
 
 var VERSION string
 var mmlContainer, statusContainer js.Value
+var pitz *treeblood.Pitziil
 
 func renderMathML(this js.Value, args []js.Value) interface{} {
 	event := args[0]
 	inputElement := event.Get("target") // The element that triggered the event
 	tex := inputElement.Get("value").String()
 	start := time.Now()
-	math, err := treeblood.DisplayStyle(tex, nil)
+	math, err := pitz.DisplayStyle(tex)
 	elapsed := time.Since(start)
 	var sb strings.Builder
 	fmt.Fprintln(&sb, "TreeBlood took ", elapsed.String())
@@ -49,9 +50,9 @@ func main() {
 	if statusContainer.IsUndefined() {
 		panic("could not get status element")
 	}
-
+	pitz = treeblood.NewDocument(nil, false)
 	initialTex := inputElement.Get("innerHTML").String()
-	math, _ := treeblood.DisplayStyle(initialTex, nil)
+	math, _ := pitz.DisplayStyle(initialTex)
 	mmlContainer.Set("innerHTML", math)
 	// Add the event listener for the 'input' event
 	inputElement.Call("addEventListener", "input", js.FuncOf(renderMathML))

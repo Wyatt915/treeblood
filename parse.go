@@ -124,9 +124,7 @@ func (pitz *Pitziil) render(tex string, displaystyle bool) (result string, err e
 			return "", err
 		}
 	}
-	annotation := NewMMLNode("annotation", strings.ReplaceAll(tex, "<", "&lt;"))
-	annotation.SetAttr("encoding", "application/x-tex")
-	ast = pitz.ParseTex(tokens, ctxRoot)
+	ast = pitz.wrapInMathTag(pitz.ParseTex(tokens, ctxRoot), tex)
 	ast.SetAttr("xmlns", "http://www.w3.org/1998/Math/MathML")
 	if displaystyle {
 		ast.SetAttr("display", "block")
@@ -136,11 +134,47 @@ func (pitz *Pitziil) render(tex string, displaystyle bool) (result string, err e
 		ast.SetAttr("display", "inline")
 		ast.SetAttr("class", "math-textstyle")
 	}
-	ast.Children[0].Children = append(ast.Children[0].Children, annotation)
 	builder.WriteRune('\n')
 	ast.Write(&builder, 0)
 	builder.WriteRune('\n')
 	return builder.String(), err
+}
+
+func (pitz *Pitziil) wrapInMathTag(mrow *MMLNode, tex string) *MMLNode {
+	node := NewMMLNode("math")
+	node.SetAttr("style", "font-feature-settings: 'dtls' off;")
+	semantics := node.AppendNew("semantics")
+	if pitz.DoNumbering && pitz.currentIsDisplay {
+		pitz.EQCount++
+		numberedEQ := NewMMLNode("mtable")
+		row := numberedEQ.AppendNew("mlabeledtr")
+		num := row.AppendNew("mtd")
+		eq := row.AppendNew("mtd")
+		num.AppendNew("mtext", fmt.Sprintf("(%d)", pitz.EQCount))
+		if mrow != nil && mrow.Tag != "mrow" {
+			root := NewMMLNode("mrow")
+			root.AppendChild(mrow)
+			root.doPostProcess()
+			eq.AppendChild(root)
+		} else {
+			eq.AppendChild(mrow)
+			eq.doPostProcess()
+		}
+		semantics.AppendChild(numberedEQ)
+	} else {
+		if mrow != nil && mrow.Tag != "mrow" {
+			root := semantics.AppendNew("mrow")
+			root.AppendChild(mrow)
+			root.doPostProcess()
+		} else {
+			semantics.AppendChild(mrow)
+			semantics.doPostProcess()
+		}
+	}
+	annotation := NewMMLNode("annotation", strings.ReplaceAll(tex, "<", "&lt;"))
+	annotation.SetAttr("encoding", "application/x-tex")
+	semantics.AppendChild(annotation)
+	return node
 }
 
 func (pitz *Pitziil) DisplayStyle(tex string) (string, error) {
@@ -150,46 +184,27 @@ func (pitz *Pitziil) DisplayStyle(tex string) (string, error) {
 func (pitz *Pitziil) TextStyle(tex string) (string, error) {
 	return pitz.render(tex, false)
 }
+func (pitz *Pitziil) SemanticsOnly(tex string) (string, error) {
+	tokens, err := Tokenize(tex)
+	if err != nil {
+		return "", err
+	}
+	if pitz.Macros != nil {
+		tokens, err = ExpandMacros(tokens, pitz.Macros)
+		if err != nil {
+			return "", err
+		}
+	}
+	ast := pitz.ParseTex(tokens, ctxRoot)
+	var builder strings.Builder
+	ast.Write(&builder, 0)
+	return builder.String(), err
+}
 
 func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode {
 	var node *MMLNode
 	siblings := make([]*MMLNode, 0)
 	var optionString string
-	if context&ctxRoot > 0 {
-		node = NewMMLNode("math")
-		node.SetAttr("style", "font-feature-settings: 'dtls' off;")
-		semantics := node.AppendNew("semantics")
-		if pitz.DoNumbering && pitz.currentIsDisplay {
-			pitz.EQCount++
-			numberedEQ := NewMMLNode("mtable")
-			row := numberedEQ.AppendNew("mlabeledtr")
-			num := row.AppendNew("mtd")
-			eq := row.AppendNew("mtd")
-			num.AppendNew("mtext", fmt.Sprintf("(%d)", pitz.EQCount))
-			parsed := pitz.ParseTex(tokens, context^ctxRoot)
-			if parsed != nil && parsed.Tag != "mrow" {
-				root := NewMMLNode("mrow")
-				root.AppendChild(parsed)
-				root.doPostProcess()
-				eq.AppendChild(root)
-			} else {
-				eq.AppendChild(parsed)
-				eq.doPostProcess()
-			}
-			semantics.AppendChild(numberedEQ)
-		} else {
-			parsed := pitz.ParseTex(tokens, context^ctxRoot)
-			if parsed != nil && parsed.Tag != "mrow" {
-				root := semantics.AppendNew("mrow")
-				root.AppendChild(parsed)
-				root.doPostProcess()
-			} else {
-				semantics.AppendChild(parsed)
-				semantics.doPostProcess()
-			}
-		}
-		return node
-	}
 	var i, start int
 	var nextExpr []Token
 	if context&ctxEnvHasArg > 0 {
@@ -203,6 +218,28 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			start = 0
 		}
 		context ^= ctxEnvHasArg
+	}
+	doCommand := func(tok Token) (*MMLNode, int) {
+		var n *MMLNode
+		if is_symbol(tok) {
+			n = make_symbol(tok, context)
+			i++
+		} else {
+			n, i = pitz.ProcessCommand(context, tok, tokens, i)
+		}
+		return n, i
+	}
+	doFence := func(tok Token) (*MMLNode, int) {
+		var n *MMLNode
+		if tok.Kind&tokCommand > 0 {
+			n, i = doCommand(tok)
+		} else {
+			n = NewMMLNode("mo")
+			n.Text = tok.Value
+		}
+		n.SetTrue("fence")
+		n.SetTrue("stretchy")
+		return n, i
 	}
 	// properties granted by a previous node
 	var promotedProperties NodeProperties
@@ -250,15 +287,15 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			continue
 		case tok.Kind&tokBadmacro > 0:
 			child = NewMMLNode("merror", tok.Value)
-			child.Tok = tok
+
 			child.SetAttr("title", "cyclic dependency in macro definition")
 		case tok.Kind&tokMacroarg > 0:
 			child = NewMMLNode("merror", "?"+tok.Value)
-			child.Tok = tok
+
 			child.SetAttr("title", "Unexpanded macro argument")
 		case tok.Kind&tokEscaped > 0:
 			child = NewMMLNode("mo", tok.Value)
-			child.Tok = tok
+
 			if tok.Kind&(tokOpen|tokClose|tokFence) > 0 {
 				child.SetTrue("stretchy")
 			}
@@ -271,11 +308,11 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			child = pitz.ParseTex(nextExpr, context)
 		case tok.Kind&tokLetter > 0:
 			child = NewMMLNode("mi", tok.Value)
-			child.Tok = tok
+
 			child.set_variants_from_context(context)
 		case tok.Kind&tokNumber > 0:
 			child = NewMMLNode("mn", tok.Value)
-			child.Tok = tok
+
 		case tok.Kind&tokOpen > 0:
 			child = NewMMLNode("mo")
 			var end, advance int
@@ -290,12 +327,7 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 				child.SetFalse("stretchy")
 			}
 			if tok.Kind&tokCommand > 0 {
-				if is_symbol(tok) {
-					child = make_symbol(tok, context)
-					advance = 1
-				} else {
-					child, i = pitz.ProcessCommand(context, tok, tokens, i)
-				}
+				child, i = doCommand(tok)
 			} else {
 				child.Text = tok.Value
 				advance = 1
@@ -328,27 +360,12 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 				child.SetFalse("stretchy")
 			}
 			if tok.Kind&tokCommand > 0 {
-				if is_symbol(tok) {
-					child = make_symbol(tok, context)
-				} else {
-					child, i = pitz.ProcessCommand(context, tok, tokens, i)
-				}
+				child, i = doCommand(tok)
 			} else {
 				child.Text = tok.Value
 			}
 		case tok.Kind&tokFence > 0:
-			child = NewMMLNode("mo")
-			child.SetTrue("fence")
-			child.SetTrue("stretchy")
-			if tok.Kind&tokCommand > 0 {
-				if is_symbol(tok) {
-					child = make_symbol(tok, context)
-				} else {
-					child, i = pitz.ProcessCommand(context, tok, tokens, i)
-				}
-			} else {
-				child.Text = tok.Value
-			}
+			child, i = doFence(tok)
 		case tok.Kind&tokWhitespace > 0:
 			if context&ctxText > 0 {
 				child = NewMMLNode("mspace", " ")
@@ -367,11 +384,11 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			}
 		default:
 			child = NewMMLNode("mo", tok.Value)
-			child.Tok = tok
 		}
 		if child == nil {
 			continue
 		}
+		child.Tok = tok
 		switch k := tok.Kind & (tokBigness1 | tokBigness2 | tokBigness3 | tokBigness4); k {
 		case tokBigness1:
 			child.SetAttr("scriptlevel", "-1")

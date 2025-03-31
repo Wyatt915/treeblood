@@ -2,6 +2,7 @@ package treeblood
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -135,7 +136,16 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 	w.WriteString(strings.Repeat(" ", 2*indent))
 	w.WriteRune('<')
 	w.WriteString(tag)
-	for key, val := range n.Attrib {
+	var keys []string
+	if len(n.Attrib) > 0 {
+		keys = make([]string, 0, len(n.Attrib))
+		for key := range n.Attrib {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+	}
+	for _, key := range keys {
+		val := n.Attrib[key]
 		w.WriteRune(' ')
 		w.WriteString(key)
 		w.WriteString(`="`)

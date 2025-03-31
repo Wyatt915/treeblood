@@ -860,6 +860,12 @@ var symbolTable = map[string]symbol{
 		kind:       sym_alphabetic,
 		properties: propSymUpright,
 	},
+	"Omicron": {
+		char:       "Ο",
+		entity:     "",
+		kind:       sym_alphabetic,
+		properties: propSymUpright,
+	},
 	"P": {
 		char:   "¶",
 		entity: "&para;",
@@ -2140,6 +2146,12 @@ var symbolTable = map[string]symbol{
 		entity: "&le;",
 		kind:   sym_relation,
 	},
+	"leadsto": {
+		char:       "⇝",
+		entity:     "",
+		kind:       sym_relation,
+		properties: propHorzArrow,
+	},
 	"leftarrow": {
 		char:       "←",
 		entity:     "&larr;",
@@ -2769,6 +2781,11 @@ var symbolTable = map[string]symbol{
 		entity: "&ohgr;",
 		kind:   sym_alphabetic,
 	},
+	"omicron": {
+		char:   "ο",
+		entity: "",
+		kind:   sym_alphabetic,
+	},
 	"ominus": {
 		char:   "⊖",
 		entity: "&ominus;",
@@ -3104,12 +3121,6 @@ var symbolTable = map[string]symbol{
 		entity: "&sim;",
 		kind:   sym_relation,
 	},
-	// SPURIOUS
-	//"sim\\joinrel\\leadsto": {
-	//	char:   "⟿",
-	//	entity: "&dzigrarr;",
-	//	kind:   sym_relation,
-	//},
 	"simeq": {
 		char:   "≃",
 		entity: "&sime;",

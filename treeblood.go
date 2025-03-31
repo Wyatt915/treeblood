@@ -19,6 +19,10 @@ func init() {
 	symbolTable["unlhd"] = symbolTable["trianglelefteq"]
 	symbolTable["unrhd"] = symbolTable["trianglerighteq"]
 	symbolTable["unicodecdots"] = symbolTable["cdots"]
+	symbolTable["ldots"] = symbolTable["dots"]
+	symbolTable["leq"] = symbolTable["le"]
+	symbolTable["geq"] = symbolTable["ge"]
+	symbolTable["gets"] = symbolTable["leftarrow"]
 }
 
 // tex - the string of math to render. Do not include delimeters like \\(...\\) or $...$
