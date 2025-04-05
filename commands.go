@@ -354,8 +354,12 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, tokens []To
 		}
 		n.AppendChild(base, acc)
 	} else {
-		logger.Printf("NOTE: unknown command '%s'. Treating as operator or function name.\n", name)
-		n = NewMMLNode("merror", tok.Value)
+		if pitz.unknownCommandsAsOps {
+			logger.Printf("NOTE: unknown command '%s'. Treating as operator or function name.\n", name)
+			n = NewMMLNode("mo", tok.Value)
+		} else {
+			n = NewMMLNode("merror", tok.Value)
+		}
 	}
 	n.Tok = tok
 	n.set_variants_from_context(context)

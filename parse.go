@@ -72,14 +72,15 @@ var (
 // data to be used across parsing calls.
 // As a rule of thumb, create one new Pitziil for each unique document
 type Pitziil struct {
-	Macros             map[string]Macro // Global macros for the document
-	EQCount            int              // used for numbering display equations
-	DoNumbering        bool             // Whether or not to number equations in a document
-	currentExpr        []Token          // the expression currently being evaluated
-	currentIsDisplay   bool             // true if the current expression is being rendered in displaystyle
-	cursor             int              // the index of the token currently being evaluated
-	needMacroExpansion map[string]bool  // used if any \newcommand definitions are encountered.
-	depth              int              // recursive parse depth
+	Macros               map[string]Macro // Global macros for the document
+	EQCount              int              // used for numbering display equations
+	DoNumbering          bool             // Whether or not to number equations in a document
+	currentExpr          []Token          // the expression currently being evaluated
+	currentIsDisplay     bool             // true if the current expression is being rendered in displaystyle
+	cursor               int              // the index of the token currently being evaluated
+	needMacroExpansion   map[string]bool  // used if any \newcommand definitions are encountered.
+	depth                int              // recursive parse depth
+	unknownCommandsAsOps bool             // treat unknown \commands as operators
 }
 
 func NewPitziil(macros ...map[string]string) *Pitziil {
