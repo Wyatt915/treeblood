@@ -228,7 +228,7 @@ func GetToken(tex []rune, start int) (Token, int) {
 				result = append(result, r)
 			case unicode.IsSpace(r):
 				state = lxEnd
-				kind = tokWhitespace | tokEscaped
+				kind = tokWhitespace | tokCommand
 				result = append(result, ' ')
 			case unicode.IsLetter(r):
 				state = lxCommand
@@ -344,6 +344,7 @@ func (e MismatchedBraceError) Error() string {
 
 func errorContext(t Token, context string) string {
 	var sb strings.Builder
+	sb.WriteRune('\n')
 	sb.WriteString(context)
 	sb.WriteRune('\n')
 	toklen := len(t.Value)

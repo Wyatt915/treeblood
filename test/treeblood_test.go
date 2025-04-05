@@ -72,9 +72,7 @@ func TestIntmathSet(t *testing.T) {
 		a       int
 		in, out string
 	}{
-
-		{
-			0,
+		{0,
 			`\frac{1}{\Bigl(\sqrt{\phi \sqrt{5}}-\phi\Bigr) e^{\frac25 \pi}} \equiv 1+\frac{e^{-2\pi}} {1+\frac{e^{-4\pi}} {1+\frac{e^{-6\pi}} {1+\frac{e^{-8\pi}} {1+\cdots} } } }`,
 			`<mrow>
   <mfrac>
@@ -452,9 +450,8 @@ func TestIntmathSet(t *testing.T) {
 		},
 		{
 			10,
-			`\displaystyle\n1 + \frac{q^2}{(1-q)}+\frac{q^6}{(1-q)(1-q^2)}+\cdots`,
+			`\displaystyle 1 + \frac{q^2}{(1-q)}+\frac{q^6}{(1-q)(1-q^2)}+\cdots`,
 			`<mstyle displaystyle="true" scriptlevel="0">
-  <merror>n</merror>
   <mn>1</mn>
   <mo>+</mo>
   <mfrac>
@@ -539,25 +536,25 @@ func TestIntmathSet(t *testing.T) {
 			`\Gamma\ \Delta\ \Theta\ \Lambda\ \Xi\ \Pi\ \Sigma\ \Upsilon\ \Phi\ \Psi\ \Omega`,
 			`<mrow>
   <mi mathvariant="normal">Γ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi mathvariant="normal">Δ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi mathvariant="normal">Θ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi mathvariant="normal">Λ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi mathvariant="normal">Ξ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi mathvariant="normal">Π</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi mathvariant="normal">Σ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi mathvariant="normal">Υ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi mathvariant="normal">Φ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi mathvariant="normal">Ψ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi mathvariant="normal">Ω</mi>
 </mrow>`,
 		},
@@ -566,35 +563,35 @@ func TestIntmathSet(t *testing.T) {
 			`\omicron\ \pi\ \rho\ \sigma\ \tau\ \upsilon\ \phi\ \chi\ \psi\ \omega\ \varepsilon\ \vartheta\ \varpi\ \varrho\ \varsigma\ \varphi`,
 			`<mrow>
   <mi>ο</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>π</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>ρ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>σ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>τ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>υ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>ϕ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>χ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>ψ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>ω</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>ε</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>ϑ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>ϖ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>ϱ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>ς</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>φ</mi>
 </mrow>`,
 		},
@@ -603,31 +600,31 @@ func TestIntmathSet(t *testing.T) {
 			`\alpha\ \beta\ \gamma\ \delta\ \epsilon\ \zeta\ \eta\ \theta\ \iota\ \kappa\ \lambda\ \mu\ \nu\ \xi`,
 			`<mrow>
   <mi>α</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>β</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>γ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>δ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>ϵ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>ζ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>η</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>θ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>ι</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>κ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>λ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>μ</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>ν</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>ξ</mi>
 </mrow>`,
 		},
@@ -636,23 +633,23 @@ func TestIntmathSet(t *testing.T) {
 			`\gets\ \to\ \leftarrow\ \rightarrow\ \uparrow\ \Uparrow\ \downarrow\ \Downarrow\ \updownarrow\ \Updownarrow`,
 			`<mrow>
   <mo>←</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>→</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>←</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>→</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>↑</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⇑</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>↓</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⇓</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>↕</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⇕</mo>
 </mrow>`,
 		},
@@ -661,15 +658,15 @@ func TestIntmathSet(t *testing.T) {
 			`\Leftarrow\ \Rightarrow\ \leftrightarrow\ \Leftrightarrow\ \mapsto\ \hookleftarrow`,
 			`<mrow>
   <mo>⇐</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⇒</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>↔</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⇔</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>↦</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>↩</mo>
 </mrow>`,
 		},
@@ -678,15 +675,15 @@ func TestIntmathSet(t *testing.T) {
 			`\leftharpoonup\ \leftharpoondown\ \rightleftharpoons\ \longleftarrow\ \Longleftarrow\ \longrightarrow`,
 			`<mrow>
   <mo>↼</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>↽</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⇌</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⟵</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⟸</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⟶</mo>
 </mrow>`,
 		},
@@ -695,15 +692,15 @@ func TestIntmathSet(t *testing.T) {
 			`\Longrightarrow\ \longleftrightarrow\ \Longleftrightarrow\ \longmapsto\ \hookrightarrow\ \rightharpoonup`,
 			`<mrow>
   <mo>⟹</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⟷</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⟺</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⟼</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>↪</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⇀</mo>
 </mrow>`,
 		},
@@ -712,15 +709,15 @@ func TestIntmathSet(t *testing.T) {
 			`\rightharpoondown\ \leadsto\ \nearrow\ \searrow\ \swarrow\ \nwarrow`,
 			`<mrow>
   <mo>⇁</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⇝</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>↗</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>↘</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>↙</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>↖</mo>
 </mrow>`,
 		},
@@ -729,23 +726,23 @@ func TestIntmathSet(t *testing.T) {
 			`\surd\ \barwedge\ \veebar\ \odot\ \oplus\ \otimes\ \oslash\ \circledcirc\ \boxdot\ \bigtriangleup`,
 			`<mrow>
   <mi>√</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>⌅</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⊻</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⊙</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⊕</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⊗</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⊘</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⊚</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⊡</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>△</mi>
 </mrow>`,
 		},
@@ -754,23 +751,23 @@ func TestIntmathSet(t *testing.T) {
 			`\bigtriangledown\ \dagger\ \diamond\ \star\ \triangleleft\ \triangleright\ \angle\ \infty\ \prime\ \triangle`,
 			`<mrow>
   <mi>▽</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>†</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⋄</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mo>⋆</mo>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>◃</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>▹</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>∠</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>∞</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>′</mi>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mi>△</mi>
 </mrow>`,
 		},
@@ -1105,12 +1102,12 @@ func TestIntmathSet(t *testing.T) {
     <mi style="font-feature-settings: 'dtls' on;">x</mi>
     <mo stretchy="true">̂</mo>
   </mover>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mover accent="true">
     <mi style="font-feature-settings: 'dtls' on;">x</mi>
     <mo stretchy="true">⃗</mo>
   </mover>
-  <mo> </mo>
+  <mspace width="0.50em"></mspace>
   <mover accent="true">
     <mi style="font-feature-settings: 'dtls' on;">x</mi>
     <mo stretchy="true">̈</mo>
@@ -1715,8 +1712,8 @@ func TestIntmathSet(t *testing.T) {
 			`\mathcal L_{\mathcal T}(\vec{\lambda}) = \sum_{(\mathbf{x},\mathbf{s})\in \mathcal T} \log P(\mathbf{s}\mid\mathbf{x}) - \sum_{i=1}^m \frac{\lambda_i^2}{2\sigma^2}`,
 			`<mrow>
   <msub>
-    <mi class="calligraphic">ℒ︀</mi>
-    <mi class="calligraphic">𝒯︀</mi>
+    <mi class="mathcal">ℒ︀</mi>
+    <mi class="mathcal">𝒯︀</mi>
   </msub>
   <mo stretchy="false">(</mo>
   <mover accent="true">
@@ -1734,7 +1731,7 @@ func TestIntmathSet(t *testing.T) {
       <mi>𝐬</mi>
       <mo stretchy="false">)</mo>
       <mo>∈</mo>
-      <mi class="calligraphic">𝒯︀</mi>
+      <mi class="mathcal">𝒯︀</mi>
     </mrow>
   </munder>
   <mo lspace="0.11111em">log</mo>

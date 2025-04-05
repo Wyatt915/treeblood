@@ -1,4 +1,4 @@
-COMPILER=tinygo
+COMPILER=go
 EXEC=treeblood.wasm
 ifeq ($(COMPILER), tinygo)
 GOROOT := $(shell $(COMPILER) env TINYGOROOT)

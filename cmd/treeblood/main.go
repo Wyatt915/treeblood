@@ -20,7 +20,7 @@ func main() {
 		`\displaystyle= \frac{(k+1)((k+1)+1)}{2}`,
 		`\displaystyle\text{ for }\lvert q\rvert < 1.`,
 		`= \displaystyle \prod_{j=0}^{\infty}\frac{1}{(1-q^{5j+2})(1-q^{5j+3})},`,
-		`\displaystyle\n1 + \frac{q^2}{(1-q)}+\frac{q^6}{(1-q)(1-q^2)}+\cdots`,
+		`\displaystyle 1 + \frac{q^2}{(1-q)}+\frac{q^6}{(1-q)(1-q^2)}+\cdots`,
 		`k_{n+1} = n^2 + k_n^2 - k_{n-1}`,
 		`\Gamma\ \Delta\ \Theta\ \Lambda\ \Xi\ \Pi\ \Sigma\ \Upsilon\ \Phi\ \Psi\ \Omega`,
 		`\omicron\ \pi\ \rho\ \sigma\ \tau\ \upsilon\ \phi\ \chi\ \psi\ \omega\ \varepsilon\ \vartheta\ \varpi\ \varrho\ \varsigma\ \varphi`,

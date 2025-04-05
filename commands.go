@@ -363,6 +363,7 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, tokens []To
 	return n, idx
 }
 
+// Process commands that take arguments
 func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star bool, tokens []Token, idx int, numArgs int) (*MMLNode, int) {
 	var option []Token
 	arguments := make([][]Token, 0)
@@ -826,18 +827,16 @@ func doUnderOverBrace(tok Token, annotation *MMLNode) *MMLNode {
 	n := NewMMLNode()
 	brace := NewMMLNode("mo")
 	brace.SetTrue("stretchy")
+	n.Properties |= propLimitsunderover
 	switch tok.Value {
 	case "overbrace":
-		n.Properties |= propLimitsunderover
 		n.Tag = "mover"
 		brace.Text = "&OverBrace;"
-		n.AppendChild(annotation, brace)
 	case "underbrace":
-		n.Properties |= propLimitsunderover
 		n.Tag = "munder"
 		brace.Text = "&UnderBrace;"
-		n.AppendChild(annotation, brace)
 	}
+	n.AppendChild(annotation, brace)
 	return n
 }
 

@@ -120,18 +120,19 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 	if len(n.Tag) > 0 {
 		tag = n.Tag
 	} else {
-		switch n.Tok.Kind {
-		case tokNumber:
-			tag = "mn"
-		case tokLetter:
-			tag = "mi"
-		default:
-			tag = "mo"
-			if len(n.Children) > 0 {
-				tag = "mrow"
-			}
-		}
-		logger.Println("WARN: Unknown tag; treating as ", tag)
+		//switch n.Tok.Kind {
+		//case tokNumber:
+		//	tag = "mn"
+		//case tokLetter:
+		//	tag = "mi"
+		//default:
+		//	tag = "mo"
+		//	if len(n.Children) > 0 {
+		//		tag = "mrow"
+		//	}
+		//}
+		logger.Printf("WARN: Unknown tag '%s'. Ignoring.")
+		return
 	}
 	w.WriteString(strings.Repeat(" ", 2*indent))
 	w.WriteRune('<')

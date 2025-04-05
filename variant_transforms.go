@@ -61,9 +61,10 @@ func (n *MMLNode) set_variants_from_context(context parseContext) {
 	switch isolateMathVariant(context) {
 	case ctxVarScriptChancery:
 		variationselector = 0xfe00
-		n.Attrib["class"] = "calligraphic"
+		n.Attrib["class"] = "mathcal"
 	case ctxVarScriptRoundhand:
 		variationselector = 0xfe01
+		n.Attrib["class"] = "mathscr"
 	}
 	if variationselector > 0 {
 		temp := make([]rune, 0)

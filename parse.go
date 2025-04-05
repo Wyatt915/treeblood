@@ -184,6 +184,8 @@ func (pitz *Pitziil) DisplayStyle(tex string) (string, error) {
 func (pitz *Pitziil) TextStyle(tex string) (string, error) {
 	return pitz.render(tex, false)
 }
+
+// only produce the MathML that would be within the <semantics> tag. I.e. the root level <mrow>.
 func (pitz *Pitziil) SemanticsOnly(tex string) (string, error) {
 	tokens, err := Tokenize(tex)
 	if err != nil {
@@ -366,6 +368,12 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			}
 		case tok.Kind&tokFence > 0:
 			child, i = doFence(tok)
+		case tok.Kind&tokCommand > 0:
+			if is_symbol(tok) {
+				child = make_symbol(tok, context)
+			} else {
+				child, i = pitz.ProcessCommand(context, tok, tokens, i)
+			}
 		case tok.Kind&tokWhitespace > 0:
 			if context&ctxText > 0 {
 				child = NewMMLNode("mspace", " ")
@@ -375,12 +383,6 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 				continue
 			} else {
 				continue
-			}
-		case tok.Kind&tokCommand > 0:
-			if is_symbol(tok) {
-				child = make_symbol(tok, context)
-			} else {
-				child, i = pitz.ProcessCommand(context, tok, tokens, i)
 			}
 		default:
 			child = NewMMLNode("mo", tok.Value)
