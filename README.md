@@ -1,7 +1,7 @@
 # TreeBlood
 Translate LaTeX equations to MathML faster than anyone else
 
-[Check out the live demo!](https://wyatts.xyz/projects/2511_treeblood)
+[Check out the live demo!](https://wyatts.xyz/projects/treeblood)
 
 ## Why TreeBlood?
 ### MathML is an Open Standard
