@@ -2826,6 +2826,11 @@ var symbolTable = map[string]symbol{
 		entity: "&par;",
 		kind:   sym_relation,
 	},
+	"parr": {
+		char:   "⅋",
+		entity: "&part;",
+		kind:   sym_relation,
+	},
 	"partial": {
 		char:   "∂",
 		entity: "&part;",
@@ -3696,6 +3701,11 @@ var symbolTable = map[string]symbol{
 		char:   "≙",
 		entity: "&wedgeq;",
 		kind:   sym_relation,
+	},
+	"with": {
+		char:   "&",
+		entity: "&amp;",
+		kind:   sym_binaryop,
 	},
 	"wp": {
 		char:   "℘",
