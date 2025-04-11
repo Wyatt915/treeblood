@@ -219,6 +219,33 @@ func endOfSwitchContext(switchname string, toks []Token, idx int, ctx parseConte
 	return len(toks)
 }
 
+// isLaTeXLogo argument is true for \LaTeX and false for \TeX
+func makeTexLogo(isLaTeXLogo bool) *MMLNode {
+	mrow := NewMMLNode("mrow")
+	if isLaTeXLogo {
+		mrow.AppendNew("mtext", "L")
+		mrow.AppendNew("mspace").SetAttr("width", "-0.35em").SetAttr("style", "margin-left:-0.35em;")
+
+		mpadded := mrow.AppendNew("mpadded").SetAttr("voffset", "0.2em").SetAttr("style", "padding:0.2em 0 0 0;")
+		mstyle1 := mpadded.AppendNew("mstyle").SetAttr("scriptlevel", "0").SetAttr("displaystyle", "false")
+		mstyle2 := mstyle1.AppendNew("mstyle").SetAttr("scriptlevel", "1").SetAttr("displaystyle", "false")
+		mstyle2.AppendNew("mtext", "A")
+
+		mrow.AppendNew("mspace").SetAttr("width", "-0.15em").SetAttr("style", "margin-left:-0.15em;")
+	}
+	mrow.AppendNew("mtext", "T")
+	mrow.AppendNew("mspace").SetAttr("width", "-0.1667em").SetAttr("style", "margin-left:-0.1667em;")
+
+	mpadded := mrow.AppendNew("mpadded").SetAttr("voffset", "-0.2155em").SetAttr("style", "padding:0 0 0.2155em 0;")
+	mstyle := mpadded.AppendNew("mstyle").SetAttr("scriptlevel", "0").SetAttr("displaystyle", "false")
+	mstyle.AppendNew("mtext", "E")
+
+	mrow.AppendNew("mspace").SetAttr("width", "-0.125em").SetAttr("style", "margin-left:-0.125em;")
+	mrow.AppendNew("mtext", "X")
+
+	return mrow
+}
+
 // ProcessCommand sets the value of n and returns the next index of tokens to be processed.
 func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, tokens []Token, idx int) (*MMLNode, int) {
 	var nextExpr []Token
@@ -260,6 +287,10 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, tokens []To
 		return pitz.doDerivative(name, star, context, tokens, idx+1)
 	case "newcommand":
 		return pitz.newCommand(context, tokens, idx+1)
+	case "LaTeX":
+		return makeTexLogo(true), idx + 1
+	case "TeX":
+		return makeTexLogo(false), idx + 1
 	}
 	if v, ok := math_variants[name]; ok {
 		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
