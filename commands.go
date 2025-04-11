@@ -224,12 +224,11 @@ func makeTexLogo(isLaTeXLogo bool) *MMLNode {
 	mrow := NewMMLNode("mrow")
 	if isLaTeXLogo {
 		mrow.AppendNew("mtext", "L")
-		mrow.AppendNew("mspace").SetAttr("width", "-0.35em").SetAttr("style", "margin-left:-0.35em;")
+		mrow.AppendNew("mspace").SetAttr("style", "margin-left:-0.35em;")
 
 		mpadded := mrow.AppendNew("mpadded").SetAttr("voffset", "0.2em").SetAttr("style", "padding:0.2em 0 0 0;")
 		mstyle1 := mpadded.AppendNew("mstyle").SetAttr("scriptlevel", "0").SetAttr("displaystyle", "false")
-		mstyle2 := mstyle1.AppendNew("mstyle").SetAttr("scriptlevel", "1").SetAttr("displaystyle", "false")
-		mstyle2.AppendNew("mtext", "A")
+		mstyle1.AppendNew("mtext", "A")
 
 		mrow.AppendNew("mspace").SetAttr("width", "-0.15em").SetAttr("style", "margin-left:-0.15em;")
 	}
