@@ -11,7 +11,7 @@ import (
 	"github.com/wyatt915/treeblood"
 )
 
-var VERSION string
+var VERSION, COMPILER string
 var mmlContainer, statusContainer js.Value
 var pitz *treeblood.Pitziil
 
@@ -34,7 +34,7 @@ func renderMathML(this js.Value, args []js.Value) interface{} {
 
 func main() {
 	document := js.Global().Get("document")
-	document.Call("getElementById", "version").Set("innerHTML", VERSION)
+	document.Call("getElementById", "version").Set("innerHTML", fmt.Sprintf("<pre>%s\n%s</pre>",VERSION, COMPILER))
 
 	inputElement := document.Call("getElementById", "tex")
 	if inputElement.IsUndefined() {

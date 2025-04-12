@@ -267,10 +267,11 @@ const (
 
 // Get the next single token or expression enclosed in brackets. Return the index immediately after the end of the
 // returned expression. Example:
-// \frac{a^2+b^2}{c+d}
-// .    │╰──┬──╯╰─ final position returned
-// .    │   ╰───── slice of tokens returned
-// .    ╰───────── idx (initial position)
+//
+//	\frac{a^2+b^2}{c+d}
+//	     │╰──┬──╯╰─ final position returned
+//	     │   ╰───── slice of tokens returned
+//	     ╰───────── idx (initial position)
 func GetNextExpr(tokens []Token, idx int) ([]Token, int, ExprKind) {
 	var result []Token
 	kind := EXPR_SINGLE_TOK
