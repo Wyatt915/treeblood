@@ -483,7 +483,7 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 		n.AppendChild(underset)
 	case "text":
 		context |= ctxText
-		n = NewMMLNode("mtext", StringifyTokens(arguments[0]))
+		n = NewMMLNode("mtext", stringifyTokensHtml(arguments[0]))
 	case "sqrt":
 		n = NewMMLNode("msqrt")
 		n.AppendChild(pitz.ParseTex(arguments[0], context))

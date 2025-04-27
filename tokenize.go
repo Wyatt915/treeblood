@@ -276,7 +276,7 @@ const (
 func GetNextExpr(tokens []Token, idx int) ([]Token, int, ExprKind) {
 	var result []Token
 	kind := EXPR_SINGLE_TOK
-	for idx < len(tokens) && tokens[idx].Kind&(tokWhitespace|tokComment) > 0 {
+	for idx < len(tokens) && tokens[idx].Kind&(tokComment) > 0 {
 		idx++
 	}
 	if idx >= len(tokens) {
@@ -320,6 +320,17 @@ func StringifyTokens(toks []Token) string {
 	var sb strings.Builder
 	for _, t := range toks {
 		sb.WriteString(t.Value)
+	}
+	return sb.String()
+}
+func stringifyTokensHtml(toks []Token) string {
+	var sb strings.Builder
+	for _, t := range toks {
+		if t.Value == " " {
+			sb.WriteString("&nbsp;")
+		} else {
+			sb.WriteString(t.Value)
+		}
 	}
 	return sb.String()
 }
