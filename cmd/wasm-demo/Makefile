@@ -1,4 +1,4 @@
-COMPILER=tinygo
+COMPILER=go
 EXEC=treeblood.wasm
 LDFLAGS=-X "main.VERSION=TreeBlood $(shell git describe --always --long)" -X "main.COMPILER=$(shell $(COMPILER) version)"
 ifeq ($(COMPILER), tinygo)
@@ -15,8 +15,10 @@ endif
 all: build
 
 .PHONY: build
-wasm_exec.js:
+wasm_exec.js: FORCE
 	cp $(WASM_EXEC) .
+
+FORCE: ;
 
 build: wasm_exec.js
 	GOOS=js GOARCH=wasm $(COMPILER) build -o $(EXEC) $(OPTS) -ldflags='$(LDFLAGS)'

@@ -14,6 +14,7 @@ type MMLNode struct {
 	Option     string            // container for any options that may be passed and processed for a tex command
 	Properties NodeProperties    // bitfield of NodeProperties
 	Attrib     map[string]string // key value pairs of XML attributes
+	CSS        map[string]string // inline css styling
 	Children   []*MMLNode        // ordered list of child MathML elements
 }
 
@@ -43,6 +44,7 @@ func NewMMLNode(opt ...string) *MMLNode {
 		Text:     tagText[1],
 		Children: make([]*MMLNode, 0),
 		Attrib:   make(map[string]string),
+		CSS:      make(map[string]string),
 	}
 }
 
@@ -131,7 +133,7 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 		//		tag = "mrow"
 		//	}
 		//}
-		logger.Printf("WARN: Unknown tag '%s'. Ignoring.")
+		logger.Println("WARN: Unknown tag. Ignoring.")
 		return
 	}
 	w.WriteString(strings.Repeat(" ", 2*indent))
@@ -151,6 +153,16 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 		w.WriteString(key)
 		w.WriteString(`="`)
 		w.WriteString(val)
+		w.WriteRune('"')
+	}
+	if len(n.CSS) > 0 {
+		w.WriteString(` style="`)
+		for key, val := range n.CSS {
+			w.WriteString(key)
+			w.WriteRune(':')
+			w.WriteString(val)
+			w.WriteRune(';')
+		}
 		w.WriteRune('"')
 	}
 	w.WriteRune('>')

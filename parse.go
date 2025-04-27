@@ -14,6 +14,7 @@ const (
 	propNull NodeProperties = 1 << iota
 	propNonprint
 	propLargeop
+	propScriptBase
 	propSuperscript
 	propSubscript
 	propMovablelimits
@@ -178,10 +179,13 @@ func (pitz *Pitziil) wrapInMathTag(mrow *MMLNode, tex string) *MMLNode {
 	return node
 }
 
+// Create a display style equation from the tex string.
 func (pitz *Pitziil) DisplayStyle(tex string) (string, error) {
 	pitz.currentIsDisplay = true
 	return pitz.render(tex, true)
 }
+
+// Create an inline or text style equation from the tex string
 func (pitz *Pitziil) TextStyle(tex string) (string, error) {
 	return pitz.render(tex, false)
 }
@@ -204,6 +208,7 @@ func (pitz *Pitziil) SemanticsOnly(tex string) (string, error) {
 	return builder.String(), err
 }
 
+// Parse a list of TeX tokens into a MathML node tree
 func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode {
 	var node *MMLNode
 	siblings := make([]*MMLNode, 0)
@@ -539,6 +544,7 @@ func (node *MMLNode) postProcessLimitSwitch() {
 		}
 	}
 }
+
 func (node *MMLNode) postProcessSpace() {
 	i := 0
 	limit := len(node.Children)
@@ -594,10 +600,8 @@ func (node *MMLNode) postProcessChars() {
 			count -= 4
 			text = append(text, temp)
 		}
-		if idx > 0 {
-			node.Children[idx-1] = makeSuperscript(node.Children[idx-1], NewMMLNode("mo", string(text)))
-		} else {
-			node.Children[0] = makeSuperscript(NewMMLNode("none"), NewMMLNode("mo", string(text)))
+		for _, primes := range text {
+			node.Children[idx] = NewMMLNode("mo", string(primes))
 			idx++
 		}
 		for i = idx; i <= nillifyUpTo; i++ {
@@ -616,7 +620,7 @@ func (node *MMLNode) postProcessChars() {
 		switch n.Text {
 		case "-":
 			node.Children[i].Text = "−"
-		case "'", "’":
+		case "'", "’", "ʹ":
 			combinePrimes(i)
 		}
 		i++
