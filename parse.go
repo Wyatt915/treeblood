@@ -27,6 +27,9 @@ const (
 	propStretchy
 	propHorzArrow
 	propVertArrow
+	propInfixOver
+	propInfixChoose
+	propInfixAtop
 )
 
 const (
@@ -284,26 +287,29 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			continue
 		case tok.Kind&tokComment > 0:
 			continue
-		case tok.Kind&tokSubsup > 0:
+		case tok.Kind&(tokSubsup|tokInfix) > 0:
 			switch tok.Value {
 			case "^":
 				promotedProperties |= propSuperscript
 			case "_":
 				promotedProperties |= propSubscript
+			case "over":
+				promotedProperties |= propInfixOver
+			case "choose":
+				promotedProperties |= propInfixChoose
+			case "atop":
+				promotedProperties |= propInfixAtop
 			}
 			// tell the next sibling to be a super- or subscript
 			continue
 		case tok.Kind&tokBadmacro > 0:
 			child = NewMMLNode("merror", tok.Value)
-
 			child.SetAttr("title", "cyclic dependency in macro definition")
 		case tok.Kind&tokMacroarg > 0:
 			child = NewMMLNode("merror", "?"+tok.Value)
-
 			child.SetAttr("title", "Unexpanded macro argument")
 		case tok.Kind&tokEscaped > 0:
 			child = NewMMLNode("mo", tok.Value)
-
 			if tok.Kind&(tokOpen|tokClose|tokFence) > 0 {
 				child.SetTrue("stretchy")
 			}
@@ -316,11 +322,10 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			child = pitz.ParseTex(nextExpr, context)
 		case tok.Kind&tokLetter > 0:
 			child = NewMMLNode("mi", tok.Value)
-
 			child.set_variants_from_context(context)
 		case tok.Kind&tokNumber > 0:
 			child = NewMMLNode("mn", tok.Value)
-
+			child.set_variants_from_context(context)
 		case tok.Kind&tokOpen > 0:
 			child = NewMMLNode("mo")
 			var end, advance int
@@ -514,6 +519,7 @@ func make_symbol(tok Token, ctx parseContext) *MMLNode {
 
 func (node *MMLNode) doPostProcess() {
 	if node != nil {
+		node.postProcessInfix()
 		node.postProcessLimitSwitch()
 		node.postProcessScripts()
 		node.postProcessSpace()
@@ -700,6 +706,23 @@ func (node *MMLNode) postProcessScripts() {
 		node.Children[pos] = script
 		for j := pos + 1; j <= skip+pos && j < len(node.Children); j++ {
 			node.Children[j] = nil
+		}
+	}
+}
+
+func (node *MMLNode) postProcessInfix() {
+	for i := 1; i < len(node.Children); i++ {
+		a := node.Children[i-1]
+		b := node.Children[i]
+		if b.Properties&propInfixOver > 0 {
+			node.Children[i-1] = doFraction(Token{Value: "frac"}, a, b)
+		} else if b.Properties&propInfixChoose > 0 {
+			node.Children[i-1] = doFraction(Token{Value: "binom"}, a, b)
+		} else if b.Properties&propInfixAtop > 0 {
+			node.Children[i-1] = doFraction(Token{Value: "frac"}, a, b).SetAttr("linethickness", "0")
+		}
+		if b.Properties&(propInfixOver|propInfixChoose|propInfixAtop) > 0 {
+			node.Children[i] = nil
 		}
 	}
 }

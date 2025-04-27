@@ -46,6 +46,7 @@ const (
 	tokBigness2
 	tokBigness3
 	tokBigness4
+	tokInfix
 )
 
 var (
@@ -306,6 +307,10 @@ func Tokenize(str string) ([]Token, error) {
 	idx := 0
 	for idx < len(tex) {
 		tok, idx = GetToken(tex, idx)
+		switch tok.Value {
+		case "over", "choose", "atop":
+			tok.Kind |= tokInfix
+		}
 		tokens = append(tokens, tok)
 	}
 	return PostProcessTokens(tokens)
@@ -517,7 +522,7 @@ func fixFences(toks []Token) []Token {
 		case "bigr", "Bigr", "biggr", "Biggr":
 			i++
 			temp = toks[i]
-			temp.Kind |= tokOpen | bigLevel(val[:len(val)-1])
+			temp.Kind |= tokClose | bigLevel(val[:len(val)-1])
 			temp.Kind &= ^tokFence
 		}
 		out = append(out, temp)
