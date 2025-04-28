@@ -69,7 +69,7 @@ func trim(lst []string) []string {
 // take a string like "l|c|r" and produce the strings "left center right" and "solid solid",
 // these being the values of the columnalign and colunlines properties respectively
 // Note that mathml does not directly support drawing a line before the first or after the last column.
-func parseAlignmentString(str string) (string, string) {
+func parseAlignmentString(str string) ([]string, []string) {
 	align := make([]string, 0, len(str))
 	lines := make([]string, 0, len(str))
 	wasline := true
@@ -100,7 +100,7 @@ func parseAlignmentString(str string) (string, string) {
 			wasline = false
 		}
 	}
-	return strings.Join(trim(align), " "), strings.Join(trim(lines), " ")
+	return trim(align), trim(lines)
 }
 
 func processTable(table *MMLNode) {
@@ -108,14 +108,12 @@ func processTable(table *MMLNode) {
 		return
 	}
 	table.Attrib["columnalign"] = "center" //default
-	if table.Option != "" {
-		align, lines := parseAlignmentString(table.Option)
-		if align != "" {
-			table.Attrib["columnalign"] = align
-		}
-		if lines != "" {
-			table.Attrib["columnlines"] = lines
-		}
+	align, lines := parseAlignmentString(table.Option)
+	if len(align) > 0 {
+		table.Attrib["columnalign"] = strings.Join(align, " ")
+	}
+	if len(lines) > 0 {
+		table.Attrib["columnlines"] = strings.Join(lines, " ")
 	}
 	rows := make([]*MMLNode, 0)
 	var cellNode *MMLNode
@@ -140,6 +138,12 @@ func processTable(table *MMLNode) {
 			}
 			cellNode = NewMMLNode("mtd")
 			cellNode.Children = append(cellNode.Children, cell...)
+
+			if cidx < len(align) {
+				cellNode.CSS["text-align"] = align[cidx]
+			} else if len(align) > 0 {
+				cellNode.CSS["text-align"] = align[len(align)-1]
+			}
 			for i, c := range cell {
 				if c == nil {
 					continue
@@ -211,6 +215,35 @@ func strechyOP(c string) *MMLNode {
 	return n
 }
 
+// Sets inline CSS to render mtd cell alignment correctly
+func setAlignmentStyle(node *MMLNode) {
+	var recurse func(n *MMLNode, alignList ...string)
+	recurse = func(n *MMLNode, alignList ...string) {
+		if n.Tag == "mtd" {
+			n.CSS["text-align"] = alignList[0]
+			return
+		}
+		var align string
+		for i, child := range n.Children {
+			if child.Tag == "mtr" {
+				recurse(child, alignList...)
+				continue
+			}
+			if i < len(alignList) {
+				align = alignList[i]
+			} else {
+				align = alignList[len(alignList)-1]
+			}
+			if thisalign, ok := n.Attrib["columnalign"]; ok && thisalign != align {
+				recurse(child, thisalign)
+			} else {
+				recurse(child, align)
+			}
+		}
+	}
+	recurse(node, strings.Split(node.Attrib["columnalign"], " ")...)
+}
+
 func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 	switch {
 	case ctx&ctxTable > 0:
@@ -242,6 +275,7 @@ func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 		attrib["displaystyle"] = "true"
 		attrib["columnalign"] = "left"
 		if node != nil {
+			node.CSS["text-align"] = "left"
 			for r, row := range node.Children {
 				if row == nil || len(row.Children) == 0 {
 					continue
@@ -252,6 +286,7 @@ func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 				}
 				if row.Children[firstcol] != nil {
 					node.Children[r].Children[firstcol].Attrib["columnalign"] = "right"
+					node.Children[r].Children[firstcol].CSS["text-align"] = "right"
 				}
 			}
 		}
@@ -265,6 +300,7 @@ func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 			node.Attrib[k] = v
 		}
 	}
+	setAlignmentStyle(node)
 	row.Children = append(row.Children, left, node, right)
 	return row
 }

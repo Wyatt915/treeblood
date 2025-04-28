@@ -316,6 +316,7 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 		case tok.Kind&(tokOpen|tokEnv) == tokOpen|tokEnv:
 			nextExpr, i, _ = GetNextExpr(tokens, i)
 			ctx := setEnvironmentContext(tok, context)
+
 			child = processEnv(pitz.ParseTex(nextExpr, ctx), tok.Value, ctx)
 		case tok.Kind&(tokOpen|tokCurly) == tokOpen|tokCurly:
 			nextExpr, i, _ = GetNextExpr(tokens, i)
@@ -431,14 +432,12 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 		//} else if len(siblings) == 1 {
 		//	*node = *siblings[0]
 		//}
-		node.Option = optionString
 		if node.Tag == "" {
 			node.Tag = "mrow"
 		}
 	} else if len(siblings) > 1 {
 		node = NewMMLNode("mrow")
 		node.Children = append(node.Children, siblings...)
-		node.Option = optionString
 	} else if len(siblings) == 1 {
 		return siblings[0]
 	} else {
@@ -447,6 +446,7 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 	if len(node.Children) == 0 && len(node.Text) == 0 {
 		return nil
 	}
+	node.Option = optionString
 	node.doPostProcess()
 	return node
 }
