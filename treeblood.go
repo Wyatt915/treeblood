@@ -10,19 +10,21 @@ import (
 func init() {
 	logger = log.New(os.Stderr, "TreeBlood: ", log.LstdFlags)
 	//Symbol Aliases
-	symbolTable["implies"] = symbolTable["Longrightarrow"]
-	symbolTable["impliedby"] = symbolTable["Longleftarrow"]
-	symbolTable["land"] = symbolTable["wedge"]
-	symbolTable["lor"] = symbolTable["vee"]
-	symbolTable["hbar"] = symbolTable["hslash"]
-	symbolTable["gt"] = symbolTable["greater"]
-	symbolTable["unlhd"] = symbolTable["trianglelefteq"]
-	symbolTable["unrhd"] = symbolTable["trianglerighteq"]
-	symbolTable["unicodecdots"] = symbolTable["cdots"]
-	symbolTable["ldots"] = symbolTable["dots"]
-	symbolTable["leq"] = symbolTable["le"]
 	symbolTable["geq"] = symbolTable["ge"]
 	symbolTable["gets"] = symbolTable["leftarrow"]
+	symbolTable["gt"] = symbolTable["greater"]
+	symbolTable["hbar"] = symbolTable["hslash"]
+	symbolTable["impliedby"] = symbolTable["Longleftarrow"]
+	symbolTable["implies"] = symbolTable["Longrightarrow"]
+	symbolTable["land"] = symbolTable["wedge"]
+	symbolTable["ldots"] = symbolTable["dots"]
+	symbolTable["leq"] = symbolTable["le"]
+	symbolTable["lll"] = symbolTable["verymuchless"]
+	symbolTable["lor"] = symbolTable["vee"]
+	symbolTable["neq"] = symbolTable["ne"]
+	symbolTable["unicodecdots"] = symbolTable["cdots"]
+	symbolTable["unlhd"] = symbolTable["trianglelefteq"]
+	symbolTable["unrhd"] = symbolTable["trianglerighteq"]
 }
 
 // tex - the string of math to render. Do not include delimeters like \\(...\\) or $...$

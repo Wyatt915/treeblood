@@ -1745,6 +1745,11 @@ var symbolTable = map[string]symbol{
 		entity: "&epsi;",
 		kind:   sym_alphabetic,
 	},
+	"eq": {
+		char:   "=",
+		entity: "&equals;",
+		kind:   sym_relation,
+	},
 	"eqcirc": {
 		char:   "≖",
 		entity: "&ecir;",
