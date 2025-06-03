@@ -256,7 +256,7 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, tokens []To
 		name = tok.Value
 	}
 	if pitz.needMacroExpansion[name] {
-		macro := pitz.Macros[name]
+		macro := pitz.macros[name]
 		argc := macro.Argcount
 		args := make([][]Token, argc)
 		for n := range argc {
@@ -593,8 +593,8 @@ func (pitz *Pitziil) newCommand(context parseContext, tokens []Token, index int)
 		OptionDefault: optDefault,
 		Argcount:      argcount,
 	}
-	if _, ok := pitz.Macros[name]; !ok {
-		pitz.Macros[name] = cmd
+	if _, ok := pitz.macros[name]; !ok {
+		pitz.macros[name] = cmd
 		pitz.needMacroExpansion[name] = true
 	} else {
 		logger.Printf("WARN: macro %s was previously defined. The new definition will be ignored.", name)
