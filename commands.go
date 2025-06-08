@@ -24,6 +24,9 @@ var (
 		"overset":       2,
 		"underset":      2,
 		"class":         2,
+		"cancel":        1,
+		"bcancel":       1,
+		"xcancel":       1,
 		"mathop":        1,
 		"bmod":          1,
 		"pmod":          1,
@@ -42,7 +45,7 @@ var (
 	}
 
 	// Special properties of any operators accessed via a \command
-	command_operators = map[string]NodeProperties{
+	command_identifiers = map[string]NodeProperties{
 		"arccos":   0,
 		"arcsin":   0,
 		"arctan":   0,
@@ -431,10 +434,8 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 		n.Properties |= propLimitsunderover | propMovablelimits
 	case "pmod":
 		n = NewMMLNode("mrow")
-		space := NewMMLNode("mspace")
-		space.SetAttr("width", "0.7em")
-		mod := NewMMLNode("mo", "mod")
-		mod.SetAttr("lspace", "0")
+		space := NewMMLNode("mspace").SetAttr("width", "0.7em")
+		mod := NewMMLNode("mo", "mod").SetAttr("lspace", "0")
 		n.AppendChild(space,
 			NewMMLNode("mo", "("),
 			mod,
@@ -443,8 +444,7 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 		)
 	case "bmod":
 		n = NewMMLNode("mrow")
-		space := NewMMLNode("mspace")
-		space.SetAttr("width", "0.5em")
+		space := NewMMLNode("mspace").SetAttr("width", "0.5em")
 		mod := NewMMLNode("mo", "mod")
 		n.AppendChild(space,
 			mod,
@@ -522,6 +522,18 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 			n.SetAttr("notation", "updiagonalstrike")
 			pitz.ParseTex(arguments[0], context, n)
 		}
+	case "cancel":
+		n = NewMMLNode("menclose")
+		n.SetAttr("notation", "updiagonalstrike")
+		pitz.ParseTex(arguments[0], context, n)
+	case "bcancel":
+		n = NewMMLNode("menclose")
+		n.SetAttr("notation", "downdiagonalstrike")
+		pitz.ParseTex(arguments[0], context, n)
+	case "xcancel":
+		n = NewMMLNode("menclose")
+		n.SetAttr("notation", "updiagonalstrike downdiagonalstrike")
+		pitz.ParseTex(arguments[0], context, n)
 	case "sideset":
 		n = pitz.sideset(arguments[0], arguments[1], arguments[2], context)
 	case "prescript":

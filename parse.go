@@ -318,14 +318,14 @@ func is_symbol(tok Token) bool {
 		return false
 	}
 	_, inSymbTbl := symbolTable[tok.Value]
-	_, inCmdOps := command_operators[tok.Value]
+	_, inCmdOps := command_identifiers[tok.Value]
 	return inSymbTbl || inCmdOps
 }
 
 func make_symbol(tok Token, ctx parseContext) *MMLNode {
 	name := tok.Value
 	n := NewMMLNode()
-	if prop, ok := command_operators[name]; ok {
+	if prop, ok := command_identifiers[name]; ok {
 		n.Tag = "mi"
 		n.Properties = prop
 		if t, ok := symbolTable[name]; ok {
