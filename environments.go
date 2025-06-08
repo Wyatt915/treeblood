@@ -220,7 +220,19 @@ func setAlignmentStyle(node *MMLNode) {
 	var recurse func(n *MMLNode, alignList ...string)
 	recurse = func(n *MMLNode, alignList ...string) {
 		if n.Tag == "mtd" {
-			n.CSS["text-align"] = alignList[0]
+			a := alignList[0]
+			if columnalign, ok := n.Attrib["columnalign"]; ok {
+				a = columnalign
+			}
+			n.CSS["text-align"] = a
+			switch a {
+			case "left":
+				n.CSS["padding-left"] = "0em"
+				n.CSS["padding-right"] = "1em"
+			case "right":
+				n.CSS["padding-left"] = "1em"
+				n.CSS["padding-right"] = "0em"
+			}
 			return
 		}
 		var align string
@@ -234,7 +246,7 @@ func setAlignmentStyle(node *MMLNode) {
 			} else {
 				align = alignList[len(alignList)-1]
 			}
-			if thisalign, ok := n.Attrib["columnalign"]; ok && thisalign != align {
+			if thisalign, ok := n.Attrib["columnalign"]; ok {
 				recurse(child, thisalign)
 			} else {
 				recurse(child, align)
@@ -273,20 +285,19 @@ func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 		attrib["columnalign"] = "left"
 	case "align", "align*":
 		attrib["displaystyle"] = "true"
-		attrib["columnalign"] = "left"
+		//attrib["columnalign"] = "left"
+		flipflop := []string{"right", "left"}
 		if node != nil {
-			node.CSS["text-align"] = "left"
-			for r, row := range node.Children {
+			//node.CSS["text-align"] = "left"
+			for _, row := range node.Children {
 				if row == nil || len(row.Children) == 0 {
 					continue
 				}
-				firstcol := 0
-				for firstcol < len(row.Children) && (row.Children[firstcol] == nil || row.Children[firstcol].Tag != "mtd") {
-					firstcol++
-				}
-				if row.Children[firstcol] != nil {
-					node.Children[r].Children[firstcol].Attrib["columnalign"] = "right"
-					node.Children[r].Children[firstcol].CSS["text-align"] = "right"
+				for c, col := range row.Children {
+					if col != nil && col.Tag == "mtd" {
+						col.Attrib["columnalign"] = flipflop[c%2]
+						col.CSS["text-align"] = flipflop[c%2]
+					}
 				}
 			}
 		}
