@@ -70,7 +70,6 @@ var (
 	}
 )
 
-
 // Parse a list of TeX tokens into a MathML node tree
 func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode {
 	var node *MMLNode
@@ -327,7 +326,7 @@ func make_symbol(tok Token, ctx parseContext) *MMLNode {
 	name := tok.Value
 	n := NewMMLNode()
 	if prop, ok := command_operators[name]; ok {
-		n.Tag = "mo"
+		n.Tag = "mi"
 		n.Properties = prop
 		if t, ok := symbolTable[name]; ok {
 			if t.char != "" {
