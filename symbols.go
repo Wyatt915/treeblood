@@ -2193,6 +2193,11 @@ var symbolTable = map[string]symbol{
 		kind:       sym_relation,
 		properties: propHorzArrow,
 	},
+	"leftmoon": {
+		char:   "☾",
+		entity: "",
+		kind:   sym_other,
+	},
 	"leftrightarrow": {
 		char:       "↔",
 		entity:     "&harr;",
@@ -3044,7 +3049,7 @@ var symbolTable = map[string]symbol{
 		properties: propHorzArrow,
 	},
 	"rightmoon": {
-		char:   "☾",
+		char:   "☽",
 		entity: "",
 		kind:   sym_other,
 	},
