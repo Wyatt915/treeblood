@@ -411,15 +411,23 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 		return NewMMLNode("merror", tok.Value).SetAttr("title", tok.Value+" requires one or more arguments"), idx
 	}
 	expr, idx, kind = GetNextExpr(tokens, idx+1)
+	for kind == EXPR_SINGLE_TOK && expr[0].Kind&tokWhitespace > 0 {
+		expr, idx, kind = GetNextExpr(tokens, idx+1)
+	}
 	if kind == EXPR_OPTIONS {
 		option = expr
 	} else {
 		arguments = append(arguments, expr)
 		numArgs--
 	}
-	for range numArgs {
-		expr, idx, _ = GetNextExpr(tokens, idx+1)
+	argc := 0
+	for argc < numArgs {
+		expr, idx, kind = GetNextExpr(tokens, idx+1)
+		for kind == EXPR_SINGLE_TOK && expr[0].Kind&tokWhitespace > 0 {
+			expr, idx, kind = GetNextExpr(tokens, idx+1)
+		}
 		arguments = append(arguments, expr)
+		argc++
 	}
 	var n *MMLNode
 	switch name {
