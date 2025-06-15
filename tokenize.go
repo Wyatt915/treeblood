@@ -219,11 +219,12 @@ func GetToken(tex []rune, start int) (Token, int) {
 type ExprKind int
 
 const (
-	EXPR_SINGLE_TOK ExprKind = 1 << iota
-	EXPR_OPTIONS
-	EXPR_FENCED
-	EXPR_GROUP
-	EXPR_WHITESPACE
+	expr_single_tok ExprKind = 1 << iota
+	expr_options
+	expr_fenced
+	expr_group
+	expr_environment
+	expr_whitespace
 )
 
 // Get the next single token or expression enclosed in brackets. Return the index immediately after the end of the
@@ -235,7 +236,7 @@ const (
 //	     ╰───────── idx (initial position)
 func GetNextExpr(tokens []Token, idx int) ([]Token, int, ExprKind) {
 	var result []Token
-	kind := EXPR_SINGLE_TOK
+	kind := expr_single_tok
 	// an expression may contain whitespace, but never start with whitespace
 	for idx < len(tokens) && tokens[idx].Kind&(tokComment|tokWhitespace) > 0 {
 		idx++
@@ -246,11 +247,11 @@ func GetNextExpr(tokens []Token, idx int) ([]Token, int, ExprKind) {
 	if tokens[idx].MatchOffset > 0 {
 		switch tokens[idx].Value {
 		case "{":
-			kind = EXPR_GROUP
+			kind = expr_group
 		case "[":
-			kind = EXPR_OPTIONS
+			kind = expr_options
 		default:
-			kind = EXPR_FENCED
+			kind = expr_fenced
 		}
 		end := idx + tokens[idx].MatchOffset
 		result = tokens[idx+1 : end]
@@ -267,7 +268,7 @@ type Expression struct {
 }
 
 func isExprWhitespace(e Expression) bool {
-	return (e.kind & EXPR_WHITESPACE) > 0
+	return (e.kind & expr_whitespace) > 0
 }
 
 func ExpressionQueue(tokens []Token) *queue[Expression] {
@@ -281,26 +282,30 @@ func ExpressionQueue(tokens []Token) *queue[Expression] {
 		}
 		if tokens[idx].MatchOffset > 0 {
 			end := idx + tokens[idx].MatchOffset
-			switch tokens[idx].Value {
-			case "{":
-				kind = EXPR_GROUP
+			if tokens[idx].Value == "{" {
+				kind = expr_group
 				q.PushBack(Expression{toks: tokens[idx+1 : end], kind: kind})
-			case "[":
-				kind = EXPR_OPTIONS
+			} else if tokens[idx].Value == "[" {
+				kind = expr_options
 				q.PushBack(Expression{toks: tokens[idx : idx+1], kind: kind})
 				q.PushBack(Expression{toks: tokens[idx+1 : end], kind: kind})
 				q.PushBack(Expression{toks: tokens[end : end+1], kind: kind})
-			default:
-				kind = EXPR_FENCED
+			} else if tokens[idx].Kind&(tokOpen|tokEnv) == tokOpen|tokEnv {
+				kind = expr_environment
+				q.PushBack(Expression{toks: tokens[idx : idx+1], kind: kind})
+				q.PushBack(Expression{toks: tokens[idx+1 : end], kind: kind})
+				q.PushBack(Expression{toks: tokens[end : end+1], kind: kind})
+			} else {
+				kind = expr_fenced
 				q.PushBack(Expression{toks: tokens[idx : idx+1], kind: kind})
 				q.PushBack(Expression{toks: tokens[idx+1 : end], kind: kind})
 				q.PushBack(Expression{toks: tokens[end : end+1], kind: kind})
 			}
 			idx = end
 		} else {
-			kind = EXPR_SINGLE_TOK
+			kind = expr_single_tok
 			if tokens[idx].Kind&tokWhitespace > 0 {
-				kind |= EXPR_WHITESPACE
+				kind |= expr_whitespace
 			}
 			q.PushBack(Expression{toks: []Token{tokens[idx]}, kind: kind})
 		}

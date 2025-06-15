@@ -48,6 +48,7 @@ type Macro struct {
 	Definition    []Token
 	OptionDefault []Token
 	Argcount      int
+	Dynamic       bool // true for macros defined with \def or \newcommand
 }
 
 // get the order in which to expand the macros for flattening
@@ -174,7 +175,8 @@ func ExpandMacros(toks []Token, macros map[string]Macro) ([]Token, error) {
 		i := 0
 		for i < len(toks) {
 			t := toks[i]
-			if def, ok := macros[t.Value]; ok && t.Kind&tokCommand > 0 {
+			if def, ok := macros[t.Value]; ok && t.Kind&tokCommand > 0 && !def.Dynamic {
+
 				has_unexpanded_macros = true
 				args := make([]Expression, macros[t.Value].Argcount)
 				for n := range macros[t.Value].Argcount {

@@ -77,7 +77,7 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 	var optionString string
 	if context&ctxEnvHasArg > 0 {
 		nextExpr, _ := q.PeekFront()
-		if nextExpr.kind == EXPR_GROUP || nextExpr.kind == EXPR_OPTIONS {
+		if nextExpr.kind == expr_group || nextExpr.kind == expr_options {
 			optionString = StringifyTokens(nextExpr.toks)
 			q.PopFront()
 		} else {
@@ -111,6 +111,11 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 	for !q.Empty() {
 		expr, _ := q.PopFront()
 		var child *MMLNode
+		if len(expr.toks) == 0 {
+			siblings = append(siblings, nil)
+			promotedProperties = 0
+			continue
+		}
 		if len(expr.toks) > 1 {
 			temp := pitz.ParseTex(ExpressionQueue(expr.toks), context)
 			temp.Properties |= promotedProperties
@@ -133,7 +138,7 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 				child = NewMMLNode()
 				child.Properties = propRowSep
 				expr, _ = q.PopFront()
-				if expr.kind == EXPR_OPTIONS {
+				if expr.kind == expr_options {
 					dummy := NewMMLNode("rowspacing")
 					dummy.Properties = propNonprint
 					dummy.SetAttr("rowspacing", StringifyTokens(expr.toks))
@@ -144,7 +149,9 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 			}
 		}
 		switch {
-		case tok.Kind&(tokClose|tokCurly) == tokClose|tokCurly, tok.Kind&(tokClose|tokEnv) == tokClose|tokEnv:
+		case tok.Kind&(tokClose|tokCurly) == tokClose|tokCurly:
+			continue
+		case tok.Kind&(tokClose|tokEnv) == tokClose|tokEnv:
 			continue
 		case tok.Kind&tokComment > 0:
 			continue
@@ -176,7 +183,9 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 			}
 		case tok.Kind&(tokOpen|tokEnv) == tokOpen|tokEnv:
 			ctx := setEnvironmentContext(tok, context)
-			child = processEnv(pitz.ParseTex(q, ctx), tok.Value, ctx)
+			env, _ := q.PopFront()
+			child = processEnv(pitz.ParseTex(ExpressionQueue(env.toks), ctx), tok.Value, ctx)
+			q.PopFront()
 		case tok.Kind&(tokOpen|tokCurly) == tokOpen|tokCurly:
 			child = pitz.ParseTex(q, context)
 		case tok.Kind&tokLetter > 0:
