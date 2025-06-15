@@ -1,4 +1,4 @@
-COMPILER=tinygo
+COMPILER=go
 EXEC=treeblood.wasm
 LDFLAGS=-X "main.VERSION=TreeBlood $(shell git describe --always --long)" -X "main.COMPILER=$(shell $(COMPILER) version)"
 ifeq ($(COMPILER), tinygo)

@@ -204,9 +204,10 @@ func TexToMML(tex string, macros map[string]string, block, displaystyle bool) (r
 				ast.Attrib["displaystyle"] = "true"
 			}
 			fmt.Println(r)
+			fmt.Println(tex)
 			ast.Write(&builder, 0)
 			result = builder.String()
-			err = fmt.Errorf("TreeBlood encountered an unexpected error")
+			err = fmt.Errorf("TreeBlood encountered an unexpected error while processing\n%s\n", tex)
 		}
 	}()
 	tokens, err := Tokenize(tex)
@@ -222,7 +223,7 @@ func TexToMML(tex string, macros map[string]string, block, displaystyle bool) (r
 	annotation := NewMMLNode("annotation", strings.ReplaceAll(tex, "<", "&lt;"))
 	annotation.Attrib["encoding"] = "application/x-tex"
 	pitz := NewPitziil()
-	ast = pitz.ParseTex(tokens, ctxRoot)
+	ast = pitz.ParseTex(ExpressionQueue(tokens), ctxRoot)
 	ast.Attrib["xmlns"] = "http://www.w3.org/1998/Math/MathML"
 	if block {
 		ast.Attrib["display"] = "block"
@@ -312,6 +313,7 @@ func (pitz *Pitziil) render(tex string, displaystyle bool) (result string, err e
 				ast.SetAttr("class", "math-textstyle")
 			}
 			fmt.Println(r)
+			fmt.Println(tex)
 			ast.Write(&builder, 0)
 			result = builder.String()
 			err = fmt.Errorf("TreeBlood encountered an unexpected error")
@@ -328,7 +330,7 @@ func (pitz *Pitziil) render(tex string, displaystyle bool) (result string, err e
 			return "", err
 		}
 	}
-	ast = pitz.wrapInMathTag(pitz.ParseTex(tokens, ctxRoot), tex)
+	ast = pitz.wrapInMathTag(pitz.ParseTex(ExpressionQueue(tokens), ctxRoot), tex)
 	ast.SetAttr("xmlns", "http://www.w3.org/1998/Math/MathML")
 	if displaystyle {
 		ast.SetAttr("display", "block")
@@ -395,6 +397,24 @@ func (pitz *Pitziil) TextStyle(tex string) (string, error) {
 // only produce the MathML that would be within the <semantics> tag. I.e. the root level <mrow>.
 func (pitz *Pitziil) SemanticsOnly(tex string) (string, error) {
 	tokens, err := Tokenize(tex)
+	defer func() {
+		if r := recover(); r != nil {
+			//ast = makeMMLError()
+			//if block {
+			//	ast.Attrib["display"] = "block"
+			//} else {
+			//	ast.Attrib["display"] = "inline"
+			//}
+			//if displaystyle {
+			//	ast.Attrib["displaystyle"] = "true"
+			//}
+			//fmt.Println(r)
+			//fmt.Println(tex)
+			//ast.Write(&builder, 0)
+			//result = builder.String()
+			fmt.Printf("TreeBlood encountered an unexpected error while processing\n%s\n", tex)
+		}
+	}()
 	if err != nil {
 		return "", err
 	}
@@ -404,7 +424,7 @@ func (pitz *Pitziil) SemanticsOnly(tex string) (string, error) {
 			return "", err
 		}
 	}
-	ast := pitz.ParseTex(tokens, ctxRoot)
+	ast := pitz.ParseTex(ExpressionQueue(tokens), ctxRoot)
 	var builder strings.Builder
 	ast.Write(&builder, 0)
 	return builder.String(), err

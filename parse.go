@@ -71,51 +71,54 @@ var (
 )
 
 // Parse a list of TeX tokens into a MathML node tree
-func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*MMLNode) *MMLNode {
+func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent ...*MMLNode) *MMLNode {
 	var node *MMLNode
 	siblings := make([]*MMLNode, 0)
 	var optionString string
-	var i, start int
-	var nextExpr []Token
 	if context&ctxEnvHasArg > 0 {
-		var kind ExprKind
-		nextExpr, start, kind = GetNextExpr(tokens, i)
-		if kind == EXPR_GROUP || kind == EXPR_OPTIONS {
-			optionString = StringifyTokens(nextExpr)
-			start++
+		nextExpr, _ := q.PeekFront()
+		if nextExpr.kind == EXPR_GROUP || nextExpr.kind == EXPR_OPTIONS {
+			optionString = StringifyTokens(nextExpr.toks)
+			q.PopFront()
 		} else {
 			logger.Println("WARN: environment expects an argument")
-			start = 0
 		}
 		context ^= ctxEnvHasArg
 	}
-	doCommand := func(tok Token) (*MMLNode, int) {
+	doCommand := func(tok Token) *MMLNode {
 		var n *MMLNode
 		if is_symbol(tok) {
 			n = make_symbol(tok, context)
-			i++
 		} else {
-			n, i = pitz.ProcessCommand(context, tok, tokens, i)
+			n = pitz.ProcessCommand(context, tok, q)
 		}
-		return n, i
+		return n
 	}
-	doFence := func(tok Token) (*MMLNode, int) {
+	doFence := func(tok Token) *MMLNode {
 		var n *MMLNode
 		if tok.Kind&tokCommand > 0 {
-			n, i = doCommand(tok)
+			n = doCommand(tok)
 		} else {
 			n = NewMMLNode("mo")
 			n.Text = tok.Value
 		}
 		n.SetTrue("fence")
 		n.SetTrue("stretchy")
-		return n, i
+		return n
 	}
 	// properties granted by a previous node
 	var promotedProperties NodeProperties
-	for i = start; i < len(tokens); i++ {
-		tok := tokens[i]
+	for !q.Empty() {
+		expr, _ := q.PopFront()
 		var child *MMLNode
+		if len(expr.toks) > 1 {
+			temp := pitz.ParseTex(ExpressionQueue(expr.toks), context)
+			temp.Properties |= promotedProperties
+			siblings = append(siblings, temp)
+			promotedProperties = 0
+			continue
+		}
+		tok := expr.toks[0]
 		if context&ctxTable > 0 {
 			switch tok.Value {
 			case "&":
@@ -129,13 +132,12 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			case "\\", "cr":
 				child = NewMMLNode()
 				child.Properties = propRowSep
-				opt, idx, kind := GetNextExpr(tokens, i+1)
-				if kind == EXPR_OPTIONS {
+				expr, _ = q.PopFront()
+				if expr.kind == EXPR_OPTIONS {
 					dummy := NewMMLNode("rowspacing")
 					dummy.Properties = propNonprint
-					dummy.SetAttr("rowspacing", StringifyTokens(opt))
+					dummy.SetAttr("rowspacing", StringifyTokens(expr.toks))
 					siblings = append(siblings, dummy)
-					i = idx
 				}
 				siblings = append(siblings, child)
 				continue
@@ -173,13 +175,10 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 				child.SetTrue("stretchy")
 			}
 		case tok.Kind&(tokOpen|tokEnv) == tokOpen|tokEnv:
-			nextExpr, i, _ = GetNextExpr(tokens, i)
 			ctx := setEnvironmentContext(tok, context)
-
-			child = processEnv(pitz.ParseTex(nextExpr, ctx), tok.Value, ctx)
+			child = processEnv(pitz.ParseTex(q, ctx), tok.Value, ctx)
 		case tok.Kind&(tokOpen|tokCurly) == tokOpen|tokCurly:
-			nextExpr, i, _ = GetNextExpr(tokens, i)
-			child = pitz.ParseTex(nextExpr, context)
+			child = pitz.ParseTex(q, context)
 		case tok.Kind&tokLetter > 0:
 			child = NewMMLNode("mi", tok.Value)
 			child.set_variants_from_context(context)
@@ -188,11 +187,10 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 			child.set_variants_from_context(context)
 		case tok.Kind&tokOpen > 0:
 			child = NewMMLNode("mo")
-			var end, advance int
 			// process the (bracketed expression) as a standalone mrow
-			if tok.Kind&(tokOpen|tokFence) == (tokOpen|tokFence) && tok.MatchOffset > 0 {
-				end = i + tok.MatchOffset
-			}
+			//if tok.Kind&(tokOpen|tokFence) == (tokOpen|tokFence) && tok.MatchOffset > 0 {
+			//	end = i + tok.MatchOffset
+			//}
 			if tok.Kind&tokFence > 0 {
 				child.SetTrue("fence")
 				child.SetTrue("stretchy")
@@ -200,23 +198,20 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 				child.SetFalse("stretchy")
 			}
 			if tok.Kind&tokCommand > 0 {
-				child, i = doCommand(tok)
+				child = doCommand(tok)
 			} else {
 				child.Text = tok.Value
-				advance = 1
 			}
-			if end > 0 {
-				i += advance
+			if tok.Kind&(tokOpen|tokFence) == (tokOpen|tokFence) && tok.MatchOffset > 0 {
 				container := NewMMLNode("mrow")
 				if tok.Kind&tokNull == 0 {
 					container.AppendChild(child)
 				}
 				container.AppendChild(
-					pitz.ParseTex(tokens[i:end], context),
-					pitz.ParseTex(tokens[end:end+1], context), //closing fence
+					pitz.ParseTex(q, context),
+					pitz.ParseTex(q, context), //closing fence
 				)
 				siblings = append(siblings, container)
-				i = end
 				//don't need to worry about promotedProperties here.
 				continue
 			}
@@ -233,17 +228,17 @@ func (pitz *Pitziil) ParseTex(tokens []Token, context parseContext, parent ...*M
 				child.SetFalse("stretchy")
 			}
 			if tok.Kind&tokCommand > 0 {
-				child, i = doCommand(tok)
+				child = doCommand(tok)
 			} else {
 				child.Text = tok.Value
 			}
 		case tok.Kind&tokFence > 0:
-			child, i = doFence(tok)
+			child = doFence(tok)
 		case tok.Kind&tokCommand > 0:
 			if is_symbol(tok) {
 				child = make_symbol(tok, context)
 			} else {
-				child, i = pitz.ProcessCommand(context, tok, tokens, i)
+				child = pitz.ProcessCommand(context, tok, q)
 			}
 		case tok.Kind&tokWhitespace > 0:
 			if context&ctxText > 0 {
@@ -574,11 +569,11 @@ func (node *MMLNode) postProcessInfix() {
 		a := node.Children[i-1]
 		b := node.Children[i]
 		if b.Properties&propInfixOver > 0 {
-			node.Children[i-1] = doFraction(Token{Value: "frac"}, a, b)
+			node.Children[i-1] = doFraction("frac", a, b)
 		} else if b.Properties&propInfixChoose > 0 {
-			node.Children[i-1] = doFraction(Token{Value: "binom"}, a, b)
+			node.Children[i-1] = doFraction("binom", a, b)
 		} else if b.Properties&propInfixAtop > 0 {
-			node.Children[i-1] = doFraction(Token{Value: "frac"}, a, b).SetAttr("linethickness", "0")
+			node.Children[i-1] = doFraction("frac", a, b).SetAttr("linethickness", "0")
 		}
 		if b.Properties&(propInfixOver|propInfixChoose|propInfixAtop) > 0 {
 			node.Children[i] = nil
