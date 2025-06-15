@@ -267,7 +267,7 @@ type Expression struct {
 }
 
 func isExprWhitespace(e Expression) bool {
-	return e.kind == EXPR_SINGLE_TOK && e.toks[0].Kind&tokWhitespace > 0
+	return (e.kind & EXPR_WHITESPACE) > 0
 }
 
 func ExpressionQueue(tokens []Token) *queue[Expression] {
@@ -280,17 +280,22 @@ func ExpressionQueue(tokens []Token) *queue[Expression] {
 			continue
 		}
 		if tokens[idx].MatchOffset > 0 {
+			end := idx + tokens[idx].MatchOffset
 			switch tokens[idx].Value {
 			case "{":
 				kind = EXPR_GROUP
+				q.PushBack(Expression{toks: tokens[idx+1 : end], kind: kind})
 			case "[":
 				kind = EXPR_OPTIONS
+				q.PushBack(Expression{toks: tokens[idx : idx+1], kind: kind})
+				q.PushBack(Expression{toks: tokens[idx+1 : end], kind: kind})
+				q.PushBack(Expression{toks: tokens[end : end+1], kind: kind})
 			default:
-				// TODO: I think this expression should only be the tokens within the fences, excluding the fences
 				kind = EXPR_FENCED
+				q.PushBack(Expression{toks: tokens[idx : idx+1], kind: kind})
+				q.PushBack(Expression{toks: tokens[idx+1 : end], kind: kind})
+				q.PushBack(Expression{toks: tokens[end : end+1], kind: kind})
 			}
-			end := idx + tokens[idx].MatchOffset
-			q.PushBack(Expression{toks: tokens[idx+1 : end], kind: kind})
 			idx = end
 		} else {
 			kind = EXPR_SINGLE_TOK
