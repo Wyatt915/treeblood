@@ -186,7 +186,7 @@ func restringify(n *MMLNode, sb *strings.Builder) {
 func getOption(tokens []Token, idx int) ([]Token, int) {
 	if idx < len(tokens)-1 {
 		result, i, kind := GetNextExpr(tokens, idx+1)
-		if kind == EXPR_OPTIONS {
+		if kind == expr_options {
 			return result, i
 		}
 	}
@@ -249,8 +249,8 @@ func makeTexLogo(isLaTeXLogo bool) *MMLNode {
 }
 
 // ProcessCommand sets the value of n and returns the next index of tokens to be processed.
-func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, tokens []Token, idx int) (*MMLNode, int) {
-	var nextExpr []Token
+func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Expression]) *MMLNode {
+	var nextExpr Expression
 	star := strings.HasSuffix(tok.Value, "*")
 	var name string
 	if star {
@@ -258,45 +258,50 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, tokens []To
 	} else {
 		name = tok.Value
 	}
+	// dv and family take a variable number of arguments so try them first
+	switch name {
+	//case "dv", "adv", "odv", "mdv", "fdv", "jdv", "pdv":
+	//	return pitz.doDerivative(name, star, context, q)
+	case "newcommand", "def", "renewcommand":
+		return pitz.newCommand(name, context, q)
+	case "LaTeX":
+		return makeTexLogo(true)
+	case "TeX":
+		return makeTexLogo(false)
+	}
 	if pitz.needMacroExpansion[name] {
 		macro := pitz.macros[name]
 		argc := macro.Argcount
-		args := make([][]Token, argc)
+		args := make([]Expression, argc)
+		var err error
 		for n := range argc {
-			args[n], idx, _ = GetNextExpr(tokens, idx+1)
+			args[n], err = q.PopFrontWhile(isExprWhitespace)
+			if err != nil {
+				n := NewMMLNode("merror", name)
+				n.SetAttr("title", "Error expanding macro")
+				logger.Println(err.Error())
+				return n
+			}
 		}
 		temp, err := ExpandSingleMacro(macro, args)
 		if err != nil {
 			n := NewMMLNode("merror", name)
 			n.SetAttr("title", "Error expanding macro")
 			logger.Println(err.Error())
-			return n, idx + 1
+			return n
 		}
 		temp, err = PostProcessTokens(temp)
 		if err != nil {
 			n := NewMMLNode("merror", name)
 			n.SetAttr("title", "Error expanding macro")
 			logger.Println(err.Error())
-			return n, idx + 1
+			return n
 		}
-		logger.Println(StringifyTokens(temp))
-
-		return pitz.ParseTex(temp, context), idx
-	}
-	// dv and family take a variable number of arguments so try them first
-	switch name {
-	case "dv", "adv", "odv", "mdv", "fdv", "jdv", "pdv":
-		return pitz.doDerivative(name, star, context, tokens, idx+1)
-	case "newcommand":
-		return pitz.newCommand(context, tokens, idx+1)
-	case "LaTeX":
-		return makeTexLogo(true), idx + 1
-	case "TeX":
-		return makeTexLogo(false), idx + 1
+		return pitz.ParseTex(ExpressionQueue(temp), context)
 	}
 	if v, ok := math_variants[name]; ok {
-		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
-		return pitz.ParseTex(nextExpr, context|v), idx
+		nextExpr, _ := q.PopFrontWhile(isExprWhitespace)
+		return pitz.ParseTex(ExpressionQueue(nextExpr.toks), context|v)
 	}
 	if _, ok := space_widths[name]; ok {
 		n := NewMMLNode("mspace")
@@ -304,27 +309,43 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, tokens []To
 		if name == `\` {
 			n.SetAttr("linebreak", "newline")
 		}
-		return n, idx
+		return n
 	}
 	if sw, ok := switches[name]; ok {
-		end := endOfSwitchContext(name, tokens, idx, context)
-		end = min(end, len(tokens))
+		cellEnd := func(ex Expression) bool {
+			if len(ex.toks) > 1 {
+				return false
+			}
+			if ex.toks[0].Kind&tokReserved > 0 && ex.toks[0].Value == "&" {
+				return true
+			}
+			if ex.toks[0].Value == "\\" || ex.toks[0].Value == "cr" {
+				return true
+			}
+			return false
+		}
+		switchExpressions := newQueue[Expression]()
+		exp, err := q.PeekFront()
+		for err == nil && cellEnd(exp) {
+			switchExpressions.PushFront(exp)
+			q.PopFront()
+			exp, err = q.PeekFront()
+		}
+
 		n := NewMMLNode("mstyle")
 		switch name {
 		case "color":
-			var expr []Token
-			var kind ExprKind
-			expr, idx, kind = GetNextExpr(tokens, idx+1)
-			switch kind {
-			case EXPR_GROUP:
-				n.SetAttr("mathcolor", StringifyTokens(expr))
-				pitz.ParseTex(tokens[idx+1:end], context|sw, n)
-				return n, end - 1
+			expr, _ := switchExpressions.PopFront()
+			switch expr.kind {
+			case expr_group:
+				n.SetAttr("mathcolor", StringifyTokens(expr.toks))
+				pitz.ParseTex(switchExpressions, context|sw, n)
+				return n
 			default:
-				return NewMMLNode("merror", name).SetAttr("title", fmt.Sprintf("%s expects an argument", name)), idx
+				return NewMMLNode("merror", name).SetAttr("title", fmt.Sprintf("%s expects an argument", name))
 			}
 		}
-		pitz.ParseTex(tokens[idx+1:end], context|sw, n)
+		pitz.ParseTex(switchExpressions, context|sw, n)
 		switch name {
 		case "displaystyle":
 			n.SetTrue("displaystyle")
@@ -361,27 +382,30 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, tokens []To
 		case "Huge":
 			n.SetAttr("mathsize", "248.8%")
 		}
-		return n, end - 1
+		return n
 	}
 	var n *MMLNode
+	tempQ := newQueue[Expression]()
 	if numArgs, ok := command_args[name]; ok {
-		n, idx = pitz.processCommandArgs(context, name, star, tokens, idx, numArgs)
+		n = pitz.processCommandArgs(context, name, star, q, numArgs)
 	} else if ch, ok := accents[name]; ok {
 		n = NewMMLNode("mover").SetTrue("accent")
-		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
+		nextExpr, _ = q.PopFrontWhile(isExprWhitespace)
 		acc := NewMMLNode("mo", string(ch))
 		acc.SetTrue("stretchy") // once more for chrome...
-		base := pitz.ParseTex(nextExpr, context)
+		tempQ.PushBack(nextExpr)
+		base := pitz.ParseTex(tempQ, context)
 		if base.Tag == "mi" {
 			base.SetAttr("style", "font-feature-settings: 'dtls' on;")
 		}
 		n.AppendChild(base, acc)
 	} else if ch, ok := accents_below[name]; ok {
 		n = NewMMLNode("munder").SetTrue("accent")
-		nextExpr, idx, _ = GetNextExpr(tokens, idx+1)
+		nextExpr, _ = q.PopFrontWhile(isExprWhitespace)
+		tempQ.PushBack(nextExpr)
 		acc := NewMMLNode("mo", string(ch))
 		acc.SetTrue("stretchy") // once more for chrome...
-		base := pitz.ParseTex(nextExpr, context)
+		base := pitz.ParseTex(tempQ, context)
 		if base.Tag == "mi" {
 			base.SetAttr("style", "font-feature-settings: 'dtls' on;")
 		}
@@ -397,40 +421,40 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, tokens []To
 	n.Tok = tok
 	n.set_variants_from_context(context)
 	n.setAttribsFromProperties()
-	return n, idx
+	return n
 }
 
 // Process commands that take arguments
-func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star bool, tokens []Token, idx int, numArgs int) (*MMLNode, int) {
-	var option []Token
-	arguments := make([][]Token, 0)
-	var expr []Token
-	var kind ExprKind
-	tok := tokens[idx]
-	if idx >= len(tokens) {
-		return NewMMLNode("merror", tok.Value).SetAttr("title", tok.Value+" requires one or more arguments"), idx
+func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star bool, q *queue[Expression], numArgs int) *MMLNode {
+	var option Expression
+	arguments := make([]Expression, 0)
+	var expr Expression
+	if q.Empty() {
+		return NewMMLNode("merror", name).SetAttr("title", name+" requires one or more arguments")
 	}
-	expr, idx, kind = GetNextExpr(tokens, idx+1)
-	if kind == EXPR_OPTIONS {
+	expr, _ = q.PopFrontWhile(isExprWhitespace)
+	if expr.kind == expr_options {
+		expr, _ = q.PopFront() //discard the opening '['
 		option = expr
+		q.PopFront() // discard the closing ']'
 	} else {
 		arguments = append(arguments, expr)
 		numArgs--
 	}
 	for range numArgs {
-		expr, idx, _ = GetNextExpr(tokens, idx+1)
+		expr, _ = q.PopFrontWhile(isExprWhitespace)
 		arguments = append(arguments, expr)
 	}
 	var n *MMLNode
 	switch name {
 	case "class":
-		n = pitz.ParseTex(arguments[1], context)
-		n.SetAttr("class", StringifyTokens(arguments[0]))
+		n = pitz.ParseTex(ExpressionQueue(expr.toks), context)
+		n.SetAttr("class", StringifyTokens(arguments[0].toks))
 	case "textcolor":
-		n = pitz.ParseTex(arguments[1], context)
-		n.SetAttr("mathcolor", StringifyTokens(arguments[0]))
+		n = pitz.ParseTex(ExpressionQueue(arguments[1].toks), context)
+		n.SetAttr("mathcolor", StringifyTokens(arguments[0].toks))
 	case "mathop":
-		n = NewMMLNode("mi", StringifyTokens(arguments[0])).SetAttr("rspace", "0")
+		n = NewMMLNode("mi", StringifyTokens(arguments[0].toks)).SetAttr("rspace", "0")
 		n.Properties |= propLimitsunderover | propMovablelimits
 	case "pmod":
 		n = NewMMLNode("mrow")
@@ -439,7 +463,7 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 		n.AppendChild(space,
 			NewMMLNode("mo", "("),
 			mod,
-			pitz.ParseTex(arguments[0], context),
+			pitz.ParseTex(ExpressionQueue(arguments[0].toks), context),
 			NewMMLNode("mo", ")"),
 		)
 	case "bmod":
@@ -448,58 +472,58 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 		mod := NewMMLNode("mo", "mod")
 		n.AppendChild(space,
 			mod,
-			pitz.ParseTex(arguments[0], context),
+			pitz.ParseTex(ExpressionQueue(arguments[0].toks), context),
 		)
 	case "substack":
-		n = pitz.ParseTex(arguments[0], context|ctxTable)
+		n = pitz.ParseTex(ExpressionQueue(arguments[0].toks), context|ctxTable)
 		processTable(n)
 		n.SetAttr("rowspacing", "0") // Incredibly, chrome does this by default
 		n.SetFalse("displaystyle")
 	case "multirow":
-		n = pitz.ParseTex(arguments[2], context)
-		n.SetAttr("rowspan", StringifyTokens(arguments[0]))
+		n = pitz.ParseTex(ExpressionQueue(arguments[2].toks), context)
+		n.SetAttr("rowspan", StringifyTokens(arguments[0].toks))
 	case "multicolumn":
-		n = pitz.ParseTex(arguments[2], context)
-		n.SetAttr("columnspan", StringifyTokens(arguments[0]))
+		n = pitz.ParseTex(ExpressionQueue(arguments[2].toks), context)
+		n.SetAttr("columnspan", StringifyTokens(arguments[0].toks))
 	case "underbrace", "overbrace":
-		n = doUnderOverBrace(tok, pitz.ParseTex(arguments[0], context))
+		n = doUnderOverBrace(name, pitz.ParseTex(ExpressionQueue(arguments[0].toks), context))
 	case "overset":
-		base := pitz.ParseTex(arguments[1], context)
+		base := pitz.ParseTex(ExpressionQueue(arguments[1].toks), context)
 		if base.Tag == "mo" {
 			base.SetTrue("stretchy")
 		}
-		overset := makeSuperscript(base, pitz.ParseTex(arguments[0], context))
+		overset := makeSuperscript(base, pitz.ParseTex(ExpressionQueue(arguments[0].toks), context))
 		overset.Tag = "mover"
 		n = NewMMLNode("mrow")
 		n.AppendChild(overset)
 	case "underset":
-		base := pitz.ParseTex(arguments[1], context)
+		base := pitz.ParseTex(ExpressionQueue(arguments[1].toks), context)
 		if base.Tag == "mo" {
 			base.SetTrue("stretchy")
 		}
-		underset := makeSuperscript(base, pitz.ParseTex(arguments[0], context))
+		underset := makeSuperscript(base, pitz.ParseTex(ExpressionQueue(arguments[0].toks), context))
 		underset.Tag = "munder"
 		n = NewMMLNode("mrow")
 		n.AppendChild(underset)
 	case "text":
 		context |= ctxText
-		n = NewMMLNode("mtext", stringifyTokensHtml(arguments[0]))
+		n = NewMMLNode("mtext", stringifyTokensHtml(arguments[0].toks))
 	case "sqrt":
 		n = NewMMLNode("msqrt")
-		n.AppendChild(pitz.ParseTex(arguments[0], context))
-		if option != nil {
+		n.AppendChild(pitz.ParseTex(ExpressionQueue(arguments[0].toks), context))
+		if option.toks != nil {
 			n.Tag = "mroot"
-			n.AppendChild(pitz.ParseTex(option, context))
+			n.AppendChild(pitz.ParseTex(ExpressionQueue(option.toks), context))
 		}
 	case "frac", "cfrac", "dfrac", "tfrac", "binom", "tbinom":
-		num := pitz.ParseTex(arguments[0], context)
-		den := pitz.ParseTex(arguments[1], context)
-		n = doFraction(tok, num, den)
+		num := pitz.ParseTex(ExpressionQueue(arguments[0].toks), context)
+		den := pitz.ParseTex(ExpressionQueue(arguments[1].toks), context)
+		n = doFraction(name, num, den)
 	case "not":
-		if len(arguments[0]) < 1 {
-			return NewMMLNode("merror", tok.Value).SetAttr("title", " requires an argument"), idx
-		} else if len(arguments[0]) == 1 {
-			t := arguments[0][0]
+		if len(arguments[0].toks) < 1 {
+			return NewMMLNode("merror", name).SetAttr("title", " requires an argument")
+		} else if len(arguments[0].toks) == 1 {
+			t := arguments[0].toks[0]
 			sym, ok := symbolTable[t.Value]
 			n = NewMMLNode()
 			if ok {
@@ -520,38 +544,35 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 		} else {
 			n = NewMMLNode("menclose")
 			n.SetAttr("notation", "updiagonalstrike")
-			pitz.ParseTex(arguments[0], context, n)
+			pitz.ParseTex(ExpressionQueue(arguments[0].toks), context, n)
 		}
 	case "cancel":
 		n = NewMMLNode("menclose")
 		n.SetAttr("notation", "updiagonalstrike")
-		pitz.ParseTex(arguments[0], context, n)
+		pitz.ParseTex(ExpressionQueue(arguments[0].toks), context, n)
 	case "bcancel":
 		n = NewMMLNode("menclose")
 		n.SetAttr("notation", "downdiagonalstrike")
-		pitz.ParseTex(arguments[0], context, n)
+		pitz.ParseTex(ExpressionQueue(arguments[0].toks), context, n)
 	case "xcancel":
 		n = NewMMLNode("menclose")
 		n.SetAttr("notation", "updiagonalstrike downdiagonalstrike")
-		pitz.ParseTex(arguments[0], context, n)
+		pitz.ParseTex(ExpressionQueue(arguments[0].toks), context, n)
 	case "sideset":
 		n = pitz.sideset(arguments[0], arguments[1], arguments[2], context)
 	case "prescript":
 		n = pitz.prescript(arguments[0], arguments[1], arguments[2], context)
 	default:
-		n = NewMMLNode()
-		n.Text = tok.Value
+		n = NewMMLNode(name)
 		for _, arg := range arguments {
-			n.AppendChild(pitz.ParseTex(arg, context))
+			n.AppendChild(pitz.ParseTex(ExpressionQueue(arg.toks), context))
 		}
 	}
-	return n, idx
+	return n
 }
 
-func (pitz *Pitziil) newCommand(context parseContext, tokens []Token, index int) (*MMLNode, int) {
-	var expr, optDefault, definition []Token
-	var kind ExprKind
-	var idx int
+func (pitz *Pitziil) newCommand(macroCommand string, context parseContext, q *queue[Expression]) (errNode *MMLNode) {
+	var expr, optDefault, definition Expression
 	var argcount int
 	var name string
 	makeMerror := func(msg string) *MMLNode {
@@ -559,234 +580,238 @@ func (pitz *Pitziil) newCommand(context parseContext, tokens []Token, index int)
 		n.SetAttr("title", msg)
 		return n
 	}
-	expr, idx, kind = GetNextExpr(tokens, index)
-	switch kind {
-	case EXPR_GROUP:
-		if len(expr) != 1 || expr[0].Kind != tokCommand {
-			return makeMerror("newcommand expects an argument of exactly one \\command"), idx
-		}
-		name = expr[0].Value
-	default:
-		return makeMerror("newcommand expects an argument of exactly one \\command"), idx
+	expr, _ = q.PopFrontWhile(isExprWhitespace)
+	if len(expr.toks) != 1 || expr.toks[0].Kind != tokCommand {
+		errNode = makeMerror("newcommand expects an argument of exactly one \\command")
 	}
+	name = expr.toks[0].Value
 	keepConsuming := true
 	const (
 		begin int = 1 << iota
 	)
 	for count := 0; keepConsuming; count++ {
-		var temp int
-		expr, temp, kind = GetNextExpr(tokens, idx+1)
-		switch kind {
-		case EXPR_GROUP:
-			idx = temp
+		expr, err := q.PopFront()
+		if err != nil {
+			errNode = makeMerror("newcommand expects a definition")
+			break
+		}
+		switch expr.kind {
+		case expr_group:
 			definition = expr
 			keepConsuming = false
-		case EXPR_OPTIONS:
+		case expr_options:
+			expr, _ = q.PopFront()
 			switch count {
 			case 0:
-				idx = temp
 				var err error
-				argcount, err = strconv.Atoi(expr[0].Value)
+				argcount, err = strconv.Atoi(expr.toks[0].Value)
 				if err != nil {
-					return makeMerror("newcommand expects an argument of exactly one \\command"), idx
+					errNode = makeMerror("newcommand expects an argument of exactly one \\command")
 				}
 			case 1:
-				idx = temp
 				optDefault = expr
 			default:
-				return makeMerror("newcommand expects an argument of exactly one \\command"), temp
+				errNode = makeMerror("newcommand expects an argument of exactly one \\command")
 			}
+			expr, _ = q.PopFront() //discard ']'
 		default:
-			return makeMerror("newcommand expects an argument of exactly one \\command"), temp
+			errNode = makeMerror("newcommand expects an argument of exactly one \\command")
+		}
+	}
+	for _, t := range definition.toks {
+		if t.Value == name && t.Kind&tokCommand > 0 {
+			logger.Println("Recursive macro definition detected")
+			return
 		}
 	}
 	cmd := Macro{
-		Definition:    definition,
-		OptionDefault: optDefault,
+		Definition:    definition.toks,
+		OptionDefault: optDefault.toks,
 		Argcount:      argcount,
+		Dynamic:       true,
 	}
-	if _, ok := pitz.macros[name]; !ok {
+	if _, ok := pitz.macros[name]; !ok || macroCommand != "newcommand" {
 		pitz.macros[name] = cmd
 		pitz.needMacroExpansion[name] = true
 	} else {
 		logger.Printf("WARN: macro %s was previously defined. The new definition will be ignored.", name)
 	}
-	return nil, idx
+	return
 }
 
 // based on https://github.com/sjelatex/derivative
-func (pitz *Pitziil) doDerivative(name string, star bool, context parseContext, tokens []Token, index int) (*MMLNode, int) {
-	var opts []Token
-	arguments := make([][]Token, 0)
-	var expr []Token
-	var kind ExprKind
-	var idx int
-	var slashfrac, shorthand bool
-	expr, idx, kind = GetNextExpr(tokens, index)
-	switch kind {
-	case EXPR_OPTIONS:
-		opts = expr
-	case EXPR_GROUP:
-		arguments = append(arguments, expr)
-	default:
-		n := NewMMLNode("merror", name)
-		n.SetAttr("title", fmt.Sprintf("%s expects an argument", name))
-		return n, idx
-	}
-	n := NewMMLNode()
-	keepConsuming := true
-	temp := idx
-	for keepConsuming && len(arguments) < 2 {
-		expr, temp, kind = GetNextExpr(tokens, idx+1)
-		switch kind {
-		case EXPR_GROUP:
-			arguments = append(arguments, expr)
-		case EXPR_SINGLE_TOK:
-			if len(arguments) < 1 {
-				n := NewMMLNode("merror", name)
-				n.SetAttr("title", fmt.Sprintf("%s expects an argument", name))
-				return n, idx
-			} else if len(arguments) > 1 {
-				keepConsuming = false
-			} else if len(expr) == 0 {
-				keepConsuming = false
-			} else {
-				switch expr[0].Value {
-				case "/":
-					slashfrac = true
-					n = NewMMLNode("mrow")
-				case "!":
-					shorthand = true
-					n = NewMMLNode("mrow")
-				default:
-					keepConsuming = false
-				}
-			}
-		default:
-			keepConsuming = false
-		}
-		if keepConsuming {
-			idx = temp
-		}
-	}
-	if len(arguments) == 0 {
-		n := NewMMLNode("merror", name)
-		n.SetAttr("title", fmt.Sprintf("%s expects an argument", name))
-		return n, idx
-	}
-	var inf string
-	jacobian := false
-	switch name[0] {
-	case 'd':
-		inf = "d"
-		slashfrac = slashfrac || star
-	case 'o':
-		inf = "d"
-	case 'p':
-		inf = "𝜕" // U+1D715 MATHEMATICAL ITALIC PARTIAL DIFFERENTIAL
-	case 'j':
-		inf = "𝜕" // U+1D715 MATHEMATICAL ITALIC PARTIAL DIFFERENTIAL
-		jacobian = true
-	case 'm':
-		inf = "D"
-	case 'a':
-		inf = "Δ"
-	case 'f':
-		inf = "δ"
-	}
-	_ = jacobian //TODO: handle jacobian
-	isComma := func(t Token) bool { return t.Value == "," }
-	var denominator [][]Token
-	var numerator []Token
-	switch len(arguments) {
-	case 1:
-		denominator = splitByFunc(arguments[0], isComma)
-	case 2:
-		numerator = arguments[0]
-		denominator = splitByFunc(arguments[1], isComma)
-	}
-	options := splitByFunc(opts, isComma)
-	makeOperator := func() *MMLNode {
-		op := NewMMLNode("mo", inf)
-		op.SetAttr("form", "prefix")
-		op.SetAttr("rspace", "0.05556em")
-		op.SetAttr("lspace", "0.11111em")
-		return op
-	}
-	order := make([]Token, 0, 2*len(options))
-	temp = 0
-	onlyNumbers := true
-	for _, opt := range options {
-		for _, t := range opt {
-			switch t.Kind {
-			case tokNumber:
-				val, _ := strconv.ParseInt(t.Value, 10, 32)
-				temp += int(val)
-			case tokCommand, tokLetter:
-				onlyNumbers = false
-				order = append(order, t, Token{Kind: tokChar, Value: "+"})
-			}
-		}
-	}
-	temp += len(denominator) - len(options)
-	if onlyNumbers && temp > 1 {
-		order = append(order, Token{Kind: tokNumber, Value: strconv.Itoa(temp)})
-	} else if temp > 0 && len(order) > 1 {
-		order = append(order, Token{Kind: tokNumber, Value: strconv.Itoa(temp)})
-	} else if len(order) > 1 {
-		order = order[:len(order)-1]
-	}
-	if slashfrac && shorthand {
-		for i, v := range denominator {
-			n.AppendChild(makeOperator())
-			if i < len(options) {
-				n.AppendChild(makeSuperscript(pitz.ParseTex(v, context), pitz.ParseTex(options[i], context)))
-			} else {
-				n.AppendChild(pitz.ParseTex(v, context))
-			}
-		}
-		if len(numerator) > 0 {
-			n.AppendChild(pitz.ParseTex(numerator, context))
-		}
-	} else if shorthand {
-		for i, v := range denominator {
-			if i < len(options) {
-				n.AppendChild(makeSubSup(makeOperator(), pitz.ParseTex(v, context), pitz.ParseTex(options[i], context)))
-			} else {
-				n.AppendChild(makeSubscript(makeOperator(), pitz.ParseTex(v, context)))
-			}
-		}
-		if len(numerator) > 0 {
-			n.AppendChild(pitz.ParseTex(numerator, context))
-		}
-	} else {
-		num := NewMMLNode("mrow")
-		if len(order) > 0 {
-			num.AppendChild(makeSuperscript(makeOperator(), pitz.ParseTex(order, context)), pitz.ParseTex(numerator, context))
-		} else {
-			num.AppendChild(makeOperator(), pitz.ParseTex(numerator, context))
-		}
-		den := NewMMLNode("mrow")
-		for i, v := range denominator {
-			den.AppendChild(makeOperator())
-			if i < len(options) {
-				den.AppendChild(makeSuperscript(pitz.ParseTex(v, context), pitz.ParseTex(options[i], context)))
-			} else {
-				den.AppendChild(pitz.ParseTex(v, context))
-			}
-		}
-		if slashfrac {
-			n.Tag = "mrow"
-			slash := NewMMLNode("mo", "/")
-			slash.SetAttr("form", "infix")
-			n.AppendChild(num, slash, den)
-		} else {
-			n = doFraction(Token{}, num, den)
-		}
-	}
-
-	return n, idx
-}
+//func (pitz *Pitziil) doDerivative(name string, star bool, context parseContext, tokens []Token, index int) (*MMLNode, int) {
+//	var opts []Token
+//	arguments := make([][]Token, 0)
+//	var expr []Token
+//	var kind ExprKind
+//	var idx int
+//	var slashfrac, shorthand bool
+//	expr, idx, kind = GetNextExpr(tokens, index)
+//	switch kind {
+//	case expr_options:
+//		opts = expr
+//	case expr_group:
+//		arguments = append(arguments, expr)
+//	default:
+//		n := NewMMLNode("merror", name)
+//		n.SetAttr("title", fmt.Sprintf("%s expects an argument", name))
+//		return n, idx
+//	}
+//	n := NewMMLNode()
+//	keepConsuming := true
+//	temp := idx
+//	for keepConsuming && len(arguments) < 2 {
+//		expr, temp, kind = GetNextExpr(tokens, idx+1)
+//		switch kind {
+//		case expr_group:
+//			arguments = append(arguments, expr)
+//		case expr_single_tok:
+//			if len(arguments) < 1 {
+//				n := NewMMLNode("merror", name)
+//				n.SetAttr("title", fmt.Sprintf("%s expects an argument", name))
+//				return n, idx
+//			} else if len(arguments) > 1 {
+//				keepConsuming = false
+//			} else if len(expr) == 0 {
+//				keepConsuming = false
+//			} else {
+//				switch expr[0].Value {
+//				case "/":
+//					slashfrac = true
+//					n = NewMMLNode("mrow")
+//				case "!":
+//					shorthand = true
+//					n = NewMMLNode("mrow")
+//				default:
+//					keepConsuming = false
+//				}
+//			}
+//		default:
+//			keepConsuming = false
+//		}
+//		if keepConsuming {
+//			idx = temp
+//		}
+//	}
+//	if len(arguments) == 0 {
+//		n := NewMMLNode("merror", name)
+//		n.SetAttr("title", fmt.Sprintf("%s expects an argument", name))
+//		return n, idx
+//	}
+//	var inf string
+//	jacobian := false
+//	switch name[0] {
+//	case 'd':
+//		inf = "d"
+//		slashfrac = slashfrac || star
+//	case 'o':
+//		inf = "d"
+//	case 'p':
+//		inf = "𝜕" // U+1D715 MATHEMATICAL ITALIC PARTIAL DIFFERENTIAL
+//	case 'j':
+//		inf = "𝜕" // U+1D715 MATHEMATICAL ITALIC PARTIAL DIFFERENTIAL
+//		jacobian = true
+//	case 'm':
+//		inf = "D"
+//	case 'a':
+//		inf = "Δ"
+//	case 'f':
+//		inf = "δ"
+//	}
+//	_ = jacobian //TODO: handle jacobian
+//	isComma := func(t Token) bool { return t.Value == "," }
+//	var denominator [][]Token
+//	var numerator []Token
+//	switch len(arguments) {
+//	case 1:
+//		denominator = splitByFunc(arguments[0], isComma)
+//	case 2:
+//		numerator = arguments[0]
+//		denominator = splitByFunc(arguments[1], isComma)
+//	}
+//	options := splitByFunc(opts, isComma)
+//	makeOperator := func() *MMLNode {
+//		op := NewMMLNode("mo", inf)
+//		op.SetAttr("form", "prefix")
+//		op.SetAttr("rspace", "0.05556em")
+//		op.SetAttr("lspace", "0.11111em")
+//		return op
+//	}
+//	order := make([]Token, 0, 2*len(options))
+//	temp = 0
+//	onlyNumbers := true
+//	for _, opt := range options {
+//		for _, t := range opt {
+//			switch t.Kind {
+//			case tokNumber:
+//				val, _ := strconv.ParseInt(t.Value, 10, 32)
+//				temp += int(val)
+//			case tokCommand, tokLetter:
+//				onlyNumbers = false
+//				order = append(order, t, Token{Kind: tokChar, Value: "+"})
+//			}
+//		}
+//	}
+//	temp += len(denominator) - len(options)
+//	if onlyNumbers && temp > 1 {
+//		order = append(order, Token{Kind: tokNumber, Value: strconv.Itoa(temp)})
+//	} else if temp > 0 && len(order) > 1 {
+//		order = append(order, Token{Kind: tokNumber, Value: strconv.Itoa(temp)})
+//	} else if len(order) > 1 {
+//		order = order[:len(order)-1]
+//	}
+//	if slashfrac && shorthand {
+//		for i, v := range denominator {
+//			n.AppendChild(makeOperator())
+//			if i < len(options) {
+//				n.AppendChild(makeSuperscript(pitz.ParseTex(v, context), pitz.ParseTex(options[i], context)))
+//			} else {
+//				n.AppendChild(pitz.ParseTex(v, context))
+//			}
+//		}
+//		if len(numerator) > 0 {
+//			n.AppendChild(pitz.ParseTex(numerator, context))
+//		}
+//	} else if shorthand {
+//		for i, v := range denominator {
+//			if i < len(options) {
+//				n.AppendChild(makeSubSup(makeOperator(), pitz.ParseTex(v, context), pitz.ParseTex(options[i], context)))
+//			} else {
+//				n.AppendChild(makeSubscript(makeOperator(), pitz.ParseTex(v, context)))
+//			}
+//		}
+//		if len(numerator) > 0 {
+//			n.AppendChild(pitz.ParseTex(numerator, context))
+//		}
+//	} else {
+//		num := NewMMLNode("mrow")
+//		if len(order) > 0 {
+//			num.AppendChild(makeSuperscript(makeOperator(), pitz.ParseTex(order, context)), pitz.ParseTex(numerator, context))
+//		} else {
+//			num.AppendChild(makeOperator(), pitz.ParseTex(numerator, context))
+//		}
+//		den := NewMMLNode("mrow")
+//		for i, v := range denominator {
+//			den.AppendChild(makeOperator())
+//			if i < len(options) {
+//				den.AppendChild(makeSuperscript(pitz.ParseTex(v, context), pitz.ParseTex(options[i], context)))
+//			} else {
+//				den.AppendChild(pitz.ParseTex(v, context))
+//			}
+//		}
+//		if slashfrac {
+//			n.Tag = "mrow"
+//			slash := NewMMLNode("mo", "/")
+//			slash.SetAttr("form", "infix")
+//			n.AppendChild(num, slash, den)
+//		} else {
+//			n = doFraction(Token{}, num, den)
+//		}
+//	}
+//
+//	return n, idx
+//}
 
 func makeSubSup(base, sub, sup *MMLNode) *MMLNode {
 	s := NewMMLNode("msubsup")
@@ -804,50 +829,51 @@ func makeSubscript(base, radical *MMLNode) *MMLNode {
 	return s
 }
 
-func (pitz *Pitziil) prescript(super, sub, base []Token, context parseContext) *MMLNode {
+func (pitz *Pitziil) prescript(super, sub, base Expression, context parseContext) *MMLNode {
 	multi := NewMMLNode("mmultiscripts")
-	multi.AppendChild(pitz.ParseTex(base, context))
+	multi.AppendChild(pitz.ParseTex(ExpressionQueue(base.toks), context))
 	multi.AppendChild(NewMMLNode("none"), NewMMLNode("none"), NewMMLNode("mprescripts"))
-	temp := pitz.ParseTex(sub, context)
+	temp := pitz.ParseTex(ExpressionQueue(sub.toks), context)
 	if temp != nil {
 		multi.AppendChild(temp)
 	}
-	temp = pitz.ParseTex(super, context)
+	temp = pitz.ParseTex(ExpressionQueue(super.toks), context)
 	if temp != nil {
 		multi.AppendChild(temp)
 	}
 	return multi
 }
 
-func (pitz *Pitziil) sideset(left, right, base []Token, context parseContext) *MMLNode {
+func (pitz *Pitziil) sideset(left, right, base Expression, context parseContext) *MMLNode {
 	multi := NewMMLNode("mmultiscripts")
 	multi.Properties |= propLimitsunderover
-	multi.AppendChild(pitz.ParseTex(base, context))
-	getScripts := func(side []Token) []*MMLNode {
-		i := 0
+	multi.AppendChild(pitz.ParseTex(ExpressionQueue(base.toks), context))
+	getScripts := func(side Expression) []*MMLNode {
 		subscripts := make([]*MMLNode, 0)
 		superscripts := make([]*MMLNode, 0)
 		var last string
-		var expr []Token
-		for i < len(side) {
-			t := side[i]
+		q := ExpressionQueue(side.toks)
+		for !q.Empty() {
+			temp, _ := q.PopFront()
+			if len(temp.toks) != 1 {
+				continue
+			}
+			t := temp.toks[0]
 			switch t.Value {
 			case "^":
 				if last == t.Value {
 					subscripts = append(subscripts, NewMMLNode("none"))
 				}
-				expr, i, _ = GetNextExpr(side, i+1)
-				superscripts = append(superscripts, pitz.ParseTex(expr, context))
+				expr, _ := q.PopFront()
+				superscripts = append(superscripts, pitz.ParseTex(ExpressionQueue(expr.toks), context))
 				last = t.Value
 			case "_":
 				if last == t.Value {
 					superscripts = append(superscripts, NewMMLNode("none"))
 				}
-				expr, i, _ = GetNextExpr(side, i+1)
-				subscripts = append(subscripts, pitz.ParseTex(expr, context))
+				expr, _ := q.PopFront()
+				subscripts = append(subscripts, pitz.ParseTex(ExpressionQueue(expr.toks), context))
 				last = t.Value
-			default:
-				i += 1
 			}
 		}
 		if len(superscripts) == 0 {
@@ -869,12 +895,12 @@ func (pitz *Pitziil) sideset(left, right, base []Token, context parseContext) *M
 	return multi
 }
 
-func doUnderOverBrace(tok Token, annotation *MMLNode) *MMLNode {
+func doUnderOverBrace(name string, annotation *MMLNode) *MMLNode {
 	n := NewMMLNode()
 	brace := NewMMLNode("mo")
 	brace.SetTrue("stretchy")
 	n.Properties |= propLimitsunderover
-	switch tok.Value {
+	switch name {
 	case "overbrace":
 		n.Tag = "mover"
 		brace.Text = "&OverBrace;"
@@ -886,13 +912,13 @@ func doUnderOverBrace(tok Token, annotation *MMLNode) *MMLNode {
 	return n
 }
 
-func doFraction(tok Token, numerator, denominator *MMLNode) *MMLNode {
+func doFraction(tok string, numerator, denominator *MMLNode) *MMLNode {
 	// for a binomial coefficient, we need to wrap it in parentheses, so the "fraction" must
 	// be a child of parent, and parent must be an mrow.
 	wrapper := NewMMLNode("mrow")
 	frac := NewMMLNode("mfrac")
 	frac.AppendChild(numerator, denominator)
-	switch tok.Value {
+	switch tok {
 	case "", "frac":
 		return frac
 	case "cfrac", "dfrac":

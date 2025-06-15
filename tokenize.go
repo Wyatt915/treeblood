@@ -73,47 +73,6 @@ type Token struct {
 	Value       string
 }
 
-type stack[T any] struct {
-	data []T
-	top  int
-}
-
-func newStack[T any]() *stack[T] {
-	return &stack[T]{
-		data: make([]T, 0),
-		top:  -1,
-	}
-}
-
-func (s *stack[T]) Push(val T) {
-	s.top++
-	if len(s.data) <= s.top { // Check if we need to grow the slice
-		newSize := len(s.data) * 2
-		if newSize == 0 {
-			newSize = 1 // Start with a minimum capacity if the stack is empty
-		}
-		newData := make([]T, newSize)
-		copy(newData, s.data) // Copy old elements to new slice
-		s.data = newData
-	}
-	s.data[s.top] = val
-}
-
-func (s *stack[T]) Peek() (val T) {
-	val = s.data[s.top]
-	return
-}
-
-func (s *stack[T]) Pop() (val T) {
-	val = s.data[s.top]
-	s.top--
-	return
-}
-
-func (s *stack[T]) empty() bool {
-	return s.top < 0
-}
-
 func GetToken(tex []rune, start int) (Token, int) {
 	var state LexerState
 	var kind TokenKind
@@ -260,10 +219,12 @@ func GetToken(tex []rune, start int) (Token, int) {
 type ExprKind int
 
 const (
-	EXPR_SINGLE_TOK ExprKind = iota
-	EXPR_OPTIONS
-	EXPR_FENCED
-	EXPR_GROUP
+	expr_single_tok ExprKind = 1 << iota
+	expr_options
+	expr_fenced
+	expr_group
+	expr_environment
+	expr_whitespace
 )
 
 // Get the next single token or expression enclosed in brackets. Return the index immediately after the end of the
@@ -275,8 +236,9 @@ const (
 //	     ╰───────── idx (initial position)
 func GetNextExpr(tokens []Token, idx int) ([]Token, int, ExprKind) {
 	var result []Token
-	kind := EXPR_SINGLE_TOK
-	for idx < len(tokens) && tokens[idx].Kind&(tokComment) > 0 {
+	kind := expr_single_tok
+	// an expression may contain whitespace, but never start with whitespace
+	for idx < len(tokens) && tokens[idx].Kind&(tokComment|tokWhitespace) > 0 {
 		idx++
 	}
 	if idx >= len(tokens) {
@@ -285,11 +247,11 @@ func GetNextExpr(tokens []Token, idx int) ([]Token, int, ExprKind) {
 	if tokens[idx].MatchOffset > 0 {
 		switch tokens[idx].Value {
 		case "{":
-			kind = EXPR_GROUP
+			kind = expr_group
 		case "[":
-			kind = EXPR_OPTIONS
+			kind = expr_options
 		default:
-			kind = EXPR_FENCED
+			kind = expr_fenced
 		}
 		end := idx + tokens[idx].MatchOffset
 		result = tokens[idx+1 : end]
@@ -298,6 +260,58 @@ func GetNextExpr(tokens []Token, idx int) ([]Token, int, ExprKind) {
 		result = []Token{tokens[idx]}
 	}
 	return result, idx, kind
+}
+
+type Expression struct {
+	toks []Token
+	kind ExprKind
+}
+
+func isExprWhitespace(e Expression) bool {
+	return (e.kind & expr_whitespace) > 0
+}
+
+func ExpressionQueue(tokens []Token) *queue[Expression] {
+	q := newQueue[Expression]()
+	idx := 0
+	var kind ExprKind
+	for idx < len(tokens) {
+		if tokens[idx].Kind&tokComment > 0 {
+			idx++
+			continue
+		}
+		if tokens[idx].MatchOffset > 0 {
+			end := idx + tokens[idx].MatchOffset
+			if tokens[idx].Value == "{" {
+				kind = expr_group
+				q.PushBack(Expression{toks: tokens[idx+1 : end], kind: kind})
+			} else if tokens[idx].Value == "[" {
+				kind = expr_options
+				q.PushBack(Expression{toks: tokens[idx : idx+1], kind: kind})
+				q.PushBack(Expression{toks: tokens[idx+1 : end], kind: kind})
+				q.PushBack(Expression{toks: tokens[end : end+1], kind: kind})
+			} else if tokens[idx].Kind&(tokOpen|tokEnv) == tokOpen|tokEnv {
+				kind = expr_environment
+				q.PushBack(Expression{toks: tokens[idx : idx+1], kind: kind})
+				q.PushBack(Expression{toks: tokens[idx+1 : end], kind: kind})
+				q.PushBack(Expression{toks: tokens[end : end+1], kind: kind})
+			} else {
+				kind = expr_fenced
+				q.PushBack(Expression{toks: tokens[idx : idx+1], kind: kind})
+				q.PushBack(Expression{toks: tokens[idx+1 : end], kind: kind})
+				q.PushBack(Expression{toks: tokens[end : end+1], kind: kind})
+			}
+			idx = end
+		} else {
+			kind = expr_single_tok
+			if tokens[idx].Kind&tokWhitespace > 0 {
+				kind |= expr_whitespace
+			}
+			q.PushBack(Expression{toks: []Token{tokens[idx]}, kind: kind})
+		}
+		idx++
+	}
+	return q
 }
 
 func Tokenize(str string) ([]Token, error) {

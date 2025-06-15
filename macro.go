@@ -48,6 +48,7 @@ type Macro struct {
 	Definition    []Token
 	OptionDefault []Token
 	Argcount      int
+	Dynamic       bool // true for macros defined with \def or \newcommand
 }
 
 // get the order in which to expand the macros for flattening
@@ -96,7 +97,7 @@ func resolve_dependency_graph(macros map[string][]Token) []string {
 	return result
 }
 
-func ExpandSingleMacro(m Macro, args [][]Token) ([]Token, error) {
+func ExpandSingleMacro(m Macro, args []Expression) ([]Token, error) {
 	def := m.Definition
 	result := make([]Token, 0, len(def)*2) // twice the original capacity is probably fine?
 	for i, t := range def {
@@ -106,7 +107,7 @@ func ExpandSingleMacro(m Macro, args [][]Token) ([]Token, error) {
 				return nil, err
 			}
 			n-- //Macros start being indexed at 1
-			result = append(result, args[n]...)
+			result = append(result, args[n].toks...)
 		} else {
 			result = append(result, t)
 			result[i].MatchOffset = 0
@@ -165,19 +166,22 @@ func PrepareMacros(macros map[string]string) map[string]Macro {
 
 func ExpandMacros(toks []Token, macros map[string]Macro) ([]Token, error) {
 	has_unexpanded_macros := true
-	var result []Token
+	var result, temp []Token
 	var err error
+	var kind ExprKind
 	for has_unexpanded_macros {
 		has_unexpanded_macros = false
 		result = make([]Token, 0, 2*len(toks))
 		i := 0
 		for i < len(toks) {
 			t := toks[i]
-			if def, ok := macros[t.Value]; ok && t.Kind&tokCommand > 0 {
+			if def, ok := macros[t.Value]; ok && t.Kind&tokCommand > 0 && !def.Dynamic {
+
 				has_unexpanded_macros = true
-				args := make([][]Token, macros[t.Value].Argcount)
+				args := make([]Expression, macros[t.Value].Argcount)
 				for n := range macros[t.Value].Argcount {
-					args[n], i, _ = GetNextExpr(toks, i+1)
+					temp, i, kind = GetNextExpr(toks, i+1)
+					args[n] = Expression{toks: temp, kind: kind}
 				}
 				temp, err := ExpandSingleMacro(def, args)
 				if err != nil {
