@@ -388,6 +388,11 @@ func (node *MMLNode) doPostProcess() {
 		node.postProcessSpace()
 		node.postProcessChars()
 	}
+	begin := 0
+	for node.Children[begin] == nil {
+		begin++
+	}
+	node.Children = node.Children[begin:]
 }
 
 func (node *MMLNode) postProcessLimitSwitch() {
@@ -577,6 +582,9 @@ func (node *MMLNode) postProcessInfix() {
 	for i := 1; i < len(node.Children); i++ {
 		a := node.Children[i-1]
 		b := node.Children[i]
+		if b == nil {
+			continue
+		}
 		if b.Properties&propInfixOver > 0 {
 			node.Children[i-1] = doFraction("frac", a, b)
 		} else if b.Properties&propInfixChoose > 0 {
