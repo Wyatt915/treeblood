@@ -251,13 +251,8 @@ func makeTexLogo(isLaTeXLogo bool) *MMLNode {
 // ProcessCommand sets the value of n and returns the next index of tokens to be processed.
 func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Expression]) *MMLNode {
 	var nextExpr Expression
-	star := strings.HasSuffix(tok.Value, "*")
-	var name string
-	if star {
-		name = strings.TrimRight(tok.Value, "*")
-	} else {
-		name = tok.Value
-	}
+	star := tok.Kind&tokStarSuffix > 0
+	name := tok.Value
 	// dv and family take a variable number of arguments so try them first
 	switch name {
 	//case "dv", "adv", "odv", "mdv", "fdv", "jdv", "pdv":

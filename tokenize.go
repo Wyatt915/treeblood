@@ -9,11 +9,11 @@ import (
 	"unicode"
 )
 
-type TokenKind int
-type LexerState int
+type tokenKind int
+type lexerState int
 
 const (
-	lxBegin LexerState = iota
+	lxBegin lexerState = iota
 	lxEnd
 	lxContinue
 	lxSpace
@@ -25,7 +25,7 @@ const (
 	lxMacroArg
 )
 const (
-	tokNull TokenKind = 1 << iota
+	tokNull tokenKind = 1 << iota
 	tokWhitespace
 	tokComment
 	tokCommand
@@ -47,6 +47,7 @@ const (
 	tokBigness3
 	tokBigness4
 	tokInfix
+	tokStarSuffix
 )
 
 var (
@@ -68,14 +69,14 @@ func init() {
 }
 
 type Token struct {
-	Kind        TokenKind
+	Kind        tokenKind
 	MatchOffset int // offset from current index to matching paren, brace, etc.
 	Value       string
 }
 
 func GetToken(tex []rune, start int) (Token, int) {
-	var state LexerState
-	var kind TokenKind
+	var state lexerState
+	var kind tokenKind
 	// A capacity of 24 is reasonable. Most commands, numbers, etc are not more than 24 chars in length, and setting
 	// this capacity grants a huge speedup by avoiding extra allocations.
 	result := make([]rune, 0, 24)
@@ -204,7 +205,8 @@ func GetToken(tex []rune, start int) (Token, int) {
 			switch {
 			case r == '*': // the asterisk should only occur at the end of a command.
 				state = lxEnd
-				result = append(result, r)
+				kind |= tokStarSuffix
+				//result = append(result, r)
 			case !unicode.IsLetter(r):
 				val := string(result)
 				return Token{Kind: kind, Value: val}, idx
@@ -398,7 +400,7 @@ func errorContext(t Token, context string) string {
 //	environments
 //
 // \end{env}
-func matchBracesCritical(tokens []Token, kind TokenKind) error {
+func matchBracesCritical(tokens []Token, kind tokenKind) error {
 	s := newStack[int]()
 	contextLength := 16
 	for i, t := range tokens {
@@ -481,7 +483,7 @@ func fixFences(toks []Token) []Token {
 	out := make([]Token, 0, len(toks))
 	var i int
 	var temp Token
-	bigLevel := func(s string) TokenKind {
+	bigLevel := func(s string) tokenKind {
 		switch s {
 		case "big":
 			return tokBigness1
