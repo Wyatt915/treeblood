@@ -389,7 +389,7 @@ func (node *MMLNode) doPostProcess() {
 		node.postProcessChars()
 	}
 	begin := 0
-	for node.Children[begin] == nil {
+	for node.Children[begin] == nil && begin < len(node.Children) {
 		begin++
 	}
 	node.Children = node.Children[begin:]
