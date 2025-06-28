@@ -325,8 +325,8 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Ex
 		}
 		switchExpressions := newQueue[Expression]()
 		exp, err := q.PeekFront()
-		for err == nil && cellEnd(exp) {
-			switchExpressions.PushFront(exp)
+		for err == nil && !cellEnd(exp) {
+			switchExpressions.PushBack(exp)
 			q.PopFront()
 			exp, err = q.PeekFront()
 		}
@@ -341,6 +341,10 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Ex
 				pitz.ParseTex(switchExpressions, context|sw, n)
 				return n
 			default:
+				for !switchExpressions.Empty() {
+					ex, _ := switchExpressions.PopBack()
+					q.PushFront(ex)
+				}
 				return NewMMLNode("merror", name).SetAttr("title", fmt.Sprintf("%s expects an argument", name))
 			}
 		}
