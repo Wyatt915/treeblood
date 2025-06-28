@@ -2,14 +2,77 @@ package treeblood_test
 
 import (
 	"bytes"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/wyatt915/treeblood"
 )
+
+type Node struct {
+	XMLName  xml.Name
+	Attrs    []xml.Attr `xml:",any,attr"`
+	Children []Node     `xml:",any"`
+	Text     string     `xml:",chardata"`
+}
+
+func compareXML(a, b string) error {
+	var x, y Node
+	firstDecoder := xml.NewDecoder(strings.NewReader(a))
+	firstDecoder.Strict = false
+	firstDecoder.Entity = xml.HTMLEntity
+	secondDecoder := xml.NewDecoder(strings.NewReader(b))
+	secondDecoder.Strict = false
+	secondDecoder.Entity = xml.HTMLEntity
+	if err := firstDecoder.Decode(&x); err != nil {
+		return err
+	}
+	if err := secondDecoder.Decode(&y); err != nil {
+		return err
+	}
+	var dft func(Node, Node) error
+	dft = func(n1, n2 Node) error {
+		if n1.XMLName.Local != n2.XMLName.Local {
+			return fmt.Errorf("Name mismatch: '%s' vs '%s'", n1.XMLName.Local, n2.XMLName.Local)
+		}
+		if len(n1.Attrs) != len(n2.Attrs) {
+			return fmt.Errorf("Different number of attributes")
+		}
+		attrs1 := make(map[string]string)
+		attrs2 := make(map[string]string)
+		for _, at := range n1.Attrs {
+			attrs1[at.Name.Local] = at.Value
+		}
+		for _, at := range n2.Attrs {
+			attrs2[at.Name.Local] = at.Value
+			if other, ok := attrs1[at.Name.Local]; !ok || other != at.Value {
+				return fmt.Errorf("attribute mismatch")
+			}
+		}
+		for name, value := range attrs1 {
+			if other, ok := attrs2[name]; !ok || other != value {
+				return fmt.Errorf("attribute mismatch")
+			}
+		}
+		if len(n1.Children) != len(n2.Children) {
+			return fmt.Errorf("different number of children")
+		}
+		for i := range len(n1.Children) {
+			if err := dft(n1.Children[i], n2.Children[i]); err != nil {
+				return err
+			}
+		}
+		if n1.Text != n2.Text {
+			return fmt.Errorf("text mismatch: '%s' vs '%s'", n1.Text, n2.Text)
+		}
+		return nil
+	}
+	return dft(x, y)
+}
 
 func TestScripts(t *testing.T) {
 	f, err := os.Create("scripts_test.html")
@@ -1828,18 +1891,26 @@ func TestIntmathSet(t *testing.T) {
 	doc := treeblood.NewPitziil()
 	begin := time.Now()
 	var characters int
+	inputs := make([]string, 0)
 	for _, tt := range tests {
+		inputs = append(inputs, tt.in)
 		name := fmt.Sprintf("test %d", tt.a)
 		characters += len(tt.in)
 		res, err := doc.SemanticsOnly(tt.in)
 		if err != nil {
 			t.Errorf("%s failed: %s", name, err)
-		} else if res != tt.out {
-			t.Errorf("%s produced incorrect output:\n%s", name, res)
+		} else if err = compareXML(res, tt.out); err != nil {
+			t.Errorf("%s produced incorrect output: %s\n", name, err.Error())
 		}
 	}
 	elapsed := time.Since(begin)
 	fmt.Printf("%d characters in %s. (%.4f characters/ms)\n", characters, elapsed, float32(1000*characters)/float32(elapsed.Microseconds()))
+	f, err := os.Create("intmath_tests.html")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer f.Close()
+	writeHTML(f, `<a href="https://www.intmath.com/cg5/katex-mathjax-comparison.php">Intmath</a>`, inputs, nil)
 }
 
 func readTestFile(name string) []string {

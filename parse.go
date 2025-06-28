@@ -288,7 +288,7 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 		promotedProperties = 0
 		siblings = append(siblings, child)
 	}
-	if len(parent) > 0 {
+	if len(parent) > 0 && parent[0] != nil {
 		node = parent[0]
 		//if len(siblings) > 1 {
 		node.Children = append(node.Children, siblings...)
@@ -388,6 +388,11 @@ func (node *MMLNode) doPostProcess() {
 		node.postProcessSpace()
 		node.postProcessChars()
 	}
+	begin := 0
+	for node.Children[begin] == nil && begin < len(node.Children) {
+		begin++
+	}
+	node.Children = node.Children[begin:]
 }
 
 func (node *MMLNode) postProcessLimitSwitch() {
@@ -489,6 +494,12 @@ func (node *MMLNode) postProcessChars() {
 		switch n.Text {
 		case "-":
 			node.Children[i].Text = "−"
+		case "<":
+			node.Children[i].Text = "&lt;"
+		case ">":
+			node.Children[i].Text = "&gt;"
+		case "&":
+			node.Children[i].Text = "&amp;"
 		case "'", "’", "ʹ":
 			combinePrimes(i)
 		}
@@ -577,6 +588,9 @@ func (node *MMLNode) postProcessInfix() {
 	for i := 1; i < len(node.Children); i++ {
 		a := node.Children[i-1]
 		b := node.Children[i]
+		if b == nil {
+			continue
+		}
 		if b.Properties&propInfixOver > 0 {
 			node.Children[i-1] = doFraction("frac", a, b)
 		} else if b.Properties&propInfixChoose > 0 {

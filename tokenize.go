@@ -10,10 +10,10 @@ import (
 )
 
 type TokenKind int
-type LexerState int
+type lexerState int
 
 const (
-	lxBegin LexerState = iota
+	lxBegin lexerState = iota
 	lxEnd
 	lxContinue
 	lxSpace
@@ -47,6 +47,7 @@ const (
 	tokBigness3
 	tokBigness4
 	tokInfix
+	tokStarSuffix
 )
 
 var (
@@ -74,7 +75,7 @@ type Token struct {
 }
 
 func GetToken(tex []rune, start int) (Token, int) {
-	var state LexerState
+	var state lexerState
 	var kind TokenKind
 	// A capacity of 24 is reasonable. Most commands, numbers, etc are not more than 24 chars in length, and setting
 	// this capacity grants a huge speedup by avoiding extra allocations.
@@ -204,7 +205,8 @@ func GetToken(tex []rune, start int) (Token, int) {
 			switch {
 			case r == '*': // the asterisk should only occur at the end of a command.
 				state = lxEnd
-				result = append(result, r)
+				kind |= tokStarSuffix
+				//result = append(result, r)
 			case !unicode.IsLetter(r):
 				val := string(result)
 				return Token{Kind: kind, Value: val}, idx

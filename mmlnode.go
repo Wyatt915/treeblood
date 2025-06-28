@@ -2,7 +2,6 @@ package treeblood
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 )
 
@@ -122,33 +121,27 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 	if len(n.Tag) > 0 {
 		tag = n.Tag
 	} else {
-		//switch n.Tok.Kind {
-		//case tokNumber:
-		//	tag = "mn"
-		//case tokLetter:
-		//	tag = "mi"
-		//default:
-		//	tag = "mo"
-		//	if len(n.Children) > 0 {
-		//		tag = "mrow"
-		//	}
-		//}
 		logger.Println("WARN: Unknown tag. Ignoring.")
 		return
 	}
-	w.WriteString(strings.Repeat(" ", 2*indent))
+	var padding string
+	if indent >= 0 {
+		padding = strings.Repeat(" ", 2*indent)
+		w.WriteString(padding)
+	}
 	w.WriteRune('<')
 	w.WriteString(tag)
-	var keys []string
-	if len(n.Attrib) > 0 {
-		keys = make([]string, 0, len(n.Attrib))
-		for key := range n.Attrib {
-			keys = append(keys, key)
-		}
-		sort.Strings(keys)
-	}
-	for _, key := range keys {
-		val := n.Attrib[key]
+	//var keys []string
+	//if len(n.Attrib) > 0 {
+	//	keys = make([]string, 0, len(n.Attrib))
+	//	for key := range n.Attrib {
+	//		keys = append(keys, key)
+	//	}
+	//	sort.Strings(keys)
+	//}
+	//for _, key := range keys {
+	//	val := n.Attrib[key]
+	for key, val := range n.Attrib {
 		w.WriteRune(' ')
 		w.WriteString(key)
 		w.WriteString(`="`)
@@ -170,14 +163,18 @@ func (n *MMLNode) Write(w *strings.Builder, indent int) {
 		if len(n.Children) == 0 {
 			w.WriteString(n.Text)
 		} else {
-			w.WriteRune('\n')
+			nextIndent := indent
+			if indent >= 0 {
+				w.WriteRune('\n')
+				nextIndent++
+			}
 			for _, child := range n.Children {
-				child.Write(w, indent+1)
-				if child != nil && child.Properties&propNonprint == 0 {
+				child.Write(w, nextIndent)
+				if child != nil && child.Properties&propNonprint == 0 && indent >= 0 {
 					w.WriteRune('\n')
 				}
 			}
-			w.WriteString(strings.Repeat(" ", 2*indent))
+			w.WriteString(padding)
 		}
 	}
 	w.WriteString("</")

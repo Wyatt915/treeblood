@@ -41,10 +41,9 @@ var (
 		"not":           1,
 		"sqrt":          1,
 		"text":          1,
-		"u":             1,
 	}
 
-	// Special properties of any operators accessed via a \command
+	// Special properties of any identifiers accessed via a \command
 	command_identifiers = map[string]NodeProperties{
 		"arccos":   0,
 		"arcsin":   0,
@@ -111,10 +110,12 @@ var (
 		"huge":              9 << ctxSizeOffset,
 		"Huge":              10 << ctxSizeOffset,
 	}
+	// TODO: should these be combining unicode characters?
 	accents = map[string]rune{
 		"acute":          0x00b4,
 		"bar":            0x0305,
 		"breve":          0x0306,
+		"u":              0x0306,
 		"check":          0x030c,
 		"dot":            0x02d9,
 		"ddot":           0x0308,
@@ -251,13 +252,8 @@ func makeTexLogo(isLaTeXLogo bool) *MMLNode {
 // ProcessCommand sets the value of n and returns the next index of tokens to be processed.
 func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Expression]) *MMLNode {
 	var nextExpr Expression
-	star := strings.HasSuffix(tok.Value, "*")
-	var name string
-	if star {
-		name = strings.TrimRight(tok.Value, "*")
-	} else {
-		name = tok.Value
-	}
+	star := tok.Kind&tokStarSuffix > 0
+	name := tok.Value
 	// dv and family take a variable number of arguments so try them first
 	switch name {
 	//case "dv", "adv", "odv", "mdv", "fdv", "jdv", "pdv":
@@ -301,7 +297,11 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Ex
 	}
 	if v, ok := math_variants[name]; ok {
 		nextExpr, _ := q.PopFrontWhile(isExprWhitespace)
-		return pitz.ParseTex(ExpressionQueue(nextExpr.toks), context|v)
+		var wrapper *MMLNode
+		if name == "mathrm" {
+			wrapper = NewMMLNode("mpadded").SetAttr("lspace", "0")
+		}
+		return pitz.ParseTex(ExpressionQueue(nextExpr.toks), context|v, wrapper)
 	}
 	if _, ok := space_widths[name]; ok {
 		n := NewMMLNode("mspace")
@@ -326,8 +326,8 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Ex
 		}
 		switchExpressions := newQueue[Expression]()
 		exp, err := q.PeekFront()
-		for err == nil && cellEnd(exp) {
-			switchExpressions.PushFront(exp)
+		for err == nil && !cellEnd(exp) {
+			switchExpressions.PushBack(exp)
 			q.PopFront()
 			exp, err = q.PeekFront()
 		}
@@ -342,6 +342,10 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Ex
 				pitz.ParseTex(switchExpressions, context|sw, n)
 				return n
 			default:
+				for !switchExpressions.Empty() {
+					ex, _ := switchExpressions.PopBack()
+					q.PushFront(ex)
+				}
 				return NewMMLNode("merror", name).SetAttr("title", fmt.Sprintf("%s expects an argument", name))
 			}
 		}
