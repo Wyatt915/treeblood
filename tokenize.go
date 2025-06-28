@@ -9,7 +9,7 @@ import (
 	"unicode"
 )
 
-type tokenKind int
+type TokenKind int
 type lexerState int
 
 const (
@@ -25,7 +25,7 @@ const (
 	lxMacroArg
 )
 const (
-	tokNull tokenKind = 1 << iota
+	tokNull TokenKind = 1 << iota
 	tokWhitespace
 	tokComment
 	tokCommand
@@ -69,14 +69,14 @@ func init() {
 }
 
 type Token struct {
-	Kind        tokenKind
+	Kind        TokenKind
 	MatchOffset int // offset from current index to matching paren, brace, etc.
 	Value       string
 }
 
 func GetToken(tex []rune, start int) (Token, int) {
 	var state lexerState
-	var kind tokenKind
+	var kind TokenKind
 	// A capacity of 24 is reasonable. Most commands, numbers, etc are not more than 24 chars in length, and setting
 	// this capacity grants a huge speedup by avoiding extra allocations.
 	result := make([]rune, 0, 24)
@@ -400,7 +400,7 @@ func errorContext(t Token, context string) string {
 //	environments
 //
 // \end{env}
-func matchBracesCritical(tokens []Token, kind tokenKind) error {
+func matchBracesCritical(tokens []Token, kind TokenKind) error {
 	s := newStack[int]()
 	contextLength := 16
 	for i, t := range tokens {
@@ -483,7 +483,7 @@ func fixFences(toks []Token) []Token {
 	out := make([]Token, 0, len(toks))
 	var i int
 	var temp Token
-	bigLevel := func(s string) tokenKind {
+	bigLevel := func(s string) TokenKind {
 		switch s {
 		case "big":
 			return tokBigness1
