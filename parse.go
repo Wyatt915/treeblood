@@ -288,7 +288,7 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 		promotedProperties = 0
 		siblings = append(siblings, child)
 	}
-	if len(parent) > 0 {
+	if len(parent) > 0 && parent[0] != nil {
 		node = parent[0]
 		//if len(siblings) > 1 {
 		node.Children = append(node.Children, siblings...)

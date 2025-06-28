@@ -296,7 +296,11 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Ex
 	}
 	if v, ok := math_variants[name]; ok {
 		nextExpr, _ := q.PopFrontWhile(isExprWhitespace)
-		return pitz.ParseTex(ExpressionQueue(nextExpr.toks), context|v)
+		var wrapper *MMLNode
+		if name == "mathrm" {
+			wrapper = NewMMLNode("mpadded").SetAttr("lspace", "0")
+		}
+		return pitz.ParseTex(ExpressionQueue(nextExpr.toks), context|v, wrapper)
 	}
 	if _, ok := space_widths[name]; ok {
 		n := NewMMLNode("mspace")
