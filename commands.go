@@ -41,10 +41,9 @@ var (
 		"not":           1,
 		"sqrt":          1,
 		"text":          1,
-		"u":             1,
 	}
 
-	// Special properties of any operators accessed via a \command
+	// Special properties of any identifiers accessed via a \command
 	command_identifiers = map[string]NodeProperties{
 		"arccos":   0,
 		"arcsin":   0,
@@ -111,10 +110,12 @@ var (
 		"huge":              9 << ctxSizeOffset,
 		"Huge":              10 << ctxSizeOffset,
 	}
+	// TODO: should these be combining unicode characters?
 	accents = map[string]rune{
 		"acute":          0x00b4,
 		"bar":            0x0305,
 		"breve":          0x0306,
+		"u":              0x0306,
 		"check":          0x030c,
 		"dot":            0x02d9,
 		"ddot":           0x0308,
