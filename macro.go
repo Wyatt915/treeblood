@@ -121,7 +121,7 @@ func PrepareMacros(macros map[string]string) map[string]Macro {
 	info := make(map[string]Macro)
 	argcounts := make(map[string]int)
 	for macro, def := range macros {
-		toks, err := Tokenize(def)
+		toks, err := tokenize(def)
 		if err != nil {
 			logger.Println(err.Error())
 			continue
@@ -194,7 +194,7 @@ func ExpandMacros(toks []Token, macros map[string]Macro) ([]Token, error) {
 			}
 			i++
 		}
-		toks, err = PostProcessTokens(result)
+		toks, err = postProcessTokens(result)
 	}
 	return toks, err
 }

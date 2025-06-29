@@ -210,7 +210,7 @@ func TexToMML(tex string, macros map[string]string, block, displaystyle bool) (r
 			err = fmt.Errorf("TreeBlood encountered an unexpected error while processing\n%s\n", tex)
 		}
 	}()
-	tokens, err := Tokenize(tex)
+	tokens, err := tokenize(tex)
 	if err != nil {
 		return "", err
 	}
@@ -333,7 +333,7 @@ func (pitz *Pitziil) render(tex string, displaystyle bool) (result string, err e
 		}
 		pitz.currentIsDisplay = false
 	}()
-	tokens, err := Tokenize(tex)
+	tokens, err := tokenize(tex)
 	if err != nil {
 		return "", err
 	}
@@ -409,7 +409,7 @@ func (pitz *Pitziil) TextStyle(tex string) (string, error) {
 
 // only produce the MathML that would be within the <semantics> tag. I.e. the root level <mrow>.
 func (pitz *Pitziil) SemanticsOnly(tex string) (string, error) {
-	tokens, err := Tokenize(tex)
+	tokens, err := tokenize(tex)
 	defer func() {
 		if r := recover(); r != nil {
 			//ast = makeMMLError()

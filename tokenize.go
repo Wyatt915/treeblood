@@ -74,7 +74,7 @@ type Token struct {
 	Value       string
 }
 
-func GetToken(tex []rune, start int) (Token, int) {
+func getToken(tex []rune, start int) (Token, int) {
 	var state lexerState
 	var kind TokenKind
 	// A capacity of 24 is reasonable. Most commands, numbers, etc are not more than 24 chars in length, and setting
@@ -316,20 +316,20 @@ func ExpressionQueue(tokens []Token) *queue[Expression] {
 	return q
 }
 
-func Tokenize(str string) ([]Token, error) {
+func tokenize(str string) ([]Token, error) {
 	tex := []rune(strings.Clone(str))
 	var tok Token
 	tokens := make([]Token, 0)
 	idx := 0
 	for idx < len(tex) {
-		tok, idx = GetToken(tex, idx)
+		tok, idx = getToken(tex, idx)
 		switch tok.Value {
 		case "over", "choose", "atop":
 			tok.Kind |= tokInfix
 		}
 		tokens = append(tokens, tok)
 	}
-	return PostProcessTokens(tokens)
+	return postProcessTokens(tokens)
 }
 
 func StringifyTokens(toks []Token) string {
@@ -558,7 +558,7 @@ func fixFences(toks []Token) []Token {
 	return out
 }
 
-func PostProcessTokens(toks []Token) ([]Token, error) {
+func postProcessTokens(toks []Token) ([]Token, error) {
 	toks = fixFences(toks)
 	err := matchBracesCritical(toks, tokCurly)
 	if err != nil {

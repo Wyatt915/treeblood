@@ -286,7 +286,7 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Ex
 			logger.Println(err.Error())
 			return n
 		}
-		temp, err = PostProcessTokens(temp)
+		temp, err = postProcessTokens(temp)
 		if err != nil {
 			n := NewMMLNode("merror", name)
 			n.SetAttr("title", "Error expanding macro")
