@@ -385,6 +385,8 @@ func (pitz *Pitziil) wrapInMathTag(mrow *MMLNode, tex string) *MMLNode {
 			root := semantics.AppendNew("mrow")
 			root.AppendChild(mrow)
 			root.doPostProcess()
+		} else if mrow == nil {
+			semantics.AppendNew("none")
 		} else {
 			semantics.AppendChild(mrow)
 			semantics.doPostProcess()

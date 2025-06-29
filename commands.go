@@ -458,7 +458,7 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 		n = pitz.ParseTex(ExpressionQueue(arguments[1].toks), context)
 		n.SetAttr("mathcolor", StringifyTokens(arguments[0].toks))
 	case "mathop":
-		n = NewMMLNode("mi", StringifyTokens(arguments[0].toks)).SetAttr("rspace", "0")
+		n = NewMMLNode("mo", StringifyTokens(arguments[0].toks)).SetAttr("rspace", "0")
 		n.Properties |= propLimitsunderover | propMovablelimits
 	case "pmod":
 		n = NewMMLNode("mrow")
@@ -604,10 +604,13 @@ func (pitz *Pitziil) newCommand(macroCommand string, context parseContext, q *qu
 			definition = expr
 			keepConsuming = false
 		case expr_options:
-			expr, _ = q.PopFront()
+			expr, err = q.PopFront()
+			if err != nil {
+				errNode = makeMerror(err.Error())
+				return
+			}
 			switch count {
 			case 0:
-				var err error
 				argcount, err = strconv.Atoi(expr.toks[0].Value)
 				if err != nil {
 					errNode = makeMerror("newcommand expects an argument of exactly one \\command")
@@ -616,10 +619,16 @@ func (pitz *Pitziil) newCommand(macroCommand string, context parseContext, q *qu
 				optDefault = expr
 			default:
 				errNode = makeMerror("newcommand expects an argument of exactly one \\command")
+				return
 			}
-			expr, _ = q.PopFront() //discard ']'
+			_, err = q.PopFront() //discard ']'
+			if err != nil {
+				errNode = makeMerror(err.Error())
+				return
+			}
 		default:
 			errNode = makeMerror("newcommand expects an argument of exactly one \\command")
+			return
 		}
 	}
 	for _, t := range definition.toks {
