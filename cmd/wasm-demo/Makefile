@@ -1,20 +1,28 @@
-COMPILER=go
 EXEC=treeblood.wasm
-LDFLAGS=-X "main.VERSION=TreeBlood $(shell git describe --always --long)" -X "main.COMPILER=$(shell $(COMPILER) version)"
-ifeq ($(COMPILER), tinygo)
-GOROOT := $(shell $(COMPILER) env TINYGOROOT)
-OPTS=-no-debug
-WASM_EXEC=$(GOROOT)/targets/wasm_exec.js
-else
-GOROOT := $(shell $(COMPILER) env GOROOT)
-LDFLAGS+=-s -w 
-OPTS=
-WASM_EXEC=$(GOROOT)/lib/wasm/wasm_exec.js
-endif
 
-all: build
+.PHONY: all clean go tinygo build FORCE
 
-.PHONY: build
+all: go
+
+go: COMPILER=go
+go: GOROOT=$(shell go env GOROOT)
+go: OPTS=
+go: WASM_EXEC=$(GOROOT)/lib/wasm/wasm_exec.js
+go: LDFLAGS=\
+	-X "main.VERSION=TreeBlood $(shell git describe --always --long)" \
+	-X "main.COMPILER=$(shell go version)" \
+	-s -w
+go: build
+
+tinygo: COMPILER=tinygo
+tinygo: GOROOT=$(shell tinygo env TINYGOROOT)
+tinygo: OPTS=-no-debug
+tinygo: WASM_EXEC=$(GOROOT)/targets/wasm_exec.js
+tinygo: LDFLAGS=\
+	-X "main.VERSION=TreeBlood $(shell git describe --always --long)" \
+	-X "main.COMPILER=$(shell tinygo version)"
+tinygo: build
+
 wasm_exec.js: FORCE
 	cp $(WASM_EXEC) .
 
@@ -27,3 +35,4 @@ build: wasm_exec.js
 
 clean:
 	rm *.wasm *.js
+
