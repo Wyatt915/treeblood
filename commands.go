@@ -24,6 +24,7 @@ var (
 		"overset":       2,
 		"underset":      2,
 		"class":         2,
+		"raisebox":      2,
 		"cancel":        1,
 		"bcancel":       1,
 		"xcancel":       1,
@@ -451,6 +452,9 @@ func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star 
 	}
 	var n *MMLNode
 	switch name {
+	case "raisebox":
+		n = NewMMLNode("mpadded").SetAttr("voffset", StringifyTokens(arguments[0].toks))
+		pitz.ParseTex(ExpressionQueue(arguments[1].toks), context, n)
 	case "class":
 		n = pitz.ParseTex(ExpressionQueue(expr.toks), context)
 		n.SetAttr("class", StringifyTokens(arguments[0].toks))
