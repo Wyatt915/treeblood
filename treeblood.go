@@ -196,12 +196,12 @@ func TexToMML(tex string, macros map[string]string, block, displaystyle bool) (r
 		if r := recover(); r != nil {
 			ast = makeMMLError()
 			if block {
-				ast.Attrib["display"] = "block"
+				ast.SetAttr("display", "block")
 			} else {
-				ast.Attrib["display"] = "inline"
+				ast.SetAttr("display", "inline")
 			}
 			if displaystyle {
-				ast.Attrib["displaystyle"] = "true"
+				ast.SetTrue("displaystyle")
 			}
 			fmt.Println(r)
 			fmt.Println(tex)
@@ -220,22 +220,35 @@ func TexToMML(tex string, macros map[string]string, block, displaystyle bool) (r
 			return "", err
 		}
 	}
-	annotation := NewMMLNode("annotation", strings.ReplaceAll(tex, "<", "&lt;"))
-	annotation.Attrib["encoding"] = "application/x-tex"
 	pitz := NewPitziil()
-	ast = pitz.ParseTex(ExpressionQueue(tokens), ctxRoot)
-	ast.Attrib["xmlns"] = "http://www.w3.org/1998/Math/MathML"
+	ast = wrapInMathTag(pitz.ParseTex(ExpressionQueue(tokens), ctxRoot), tex)
 	if block {
-		ast.Attrib["display"] = "block"
+		ast.SetAttr("display", "block")
 	} else {
-		ast.Attrib["display"] = "inline"
+		ast.SetAttr("display", "inline")
 	}
 	if displaystyle {
-		ast.Attrib["displaystyle"] = "true"
+		ast.SetTrue("displaystyle")
 	}
-	ast.Children[0].Children = append(ast.Children[0].Children, annotation)
 	ast.Write(&builder, 1)
 	return builder.String(), err
+}
+func wrapInMathTag(mrow *MMLNode, tex string) *MMLNode {
+	node := NewMMLNode("math")
+	node.SetAttr("style", "font-feature-settings: 'dtls' off;").SetAttr("xmlns", "http://www.w3.org/1998/Math/MathML")
+	semantics := node.AppendNew("semantics")
+	if mrow != nil && mrow.Tag != "mrow" {
+		root := semantics.AppendNew("mrow")
+		root.AppendChild(mrow)
+		root.doPostProcess()
+	} else {
+		semantics.AppendChild(mrow)
+		semantics.doPostProcess()
+	}
+	annotation := NewMMLNode("annotation", strings.ReplaceAll(tex, "<", "&lt;"))
+	annotation.SetAttr("encoding", "application/x-tex")
+	semantics.AppendChild(annotation)
+	return node
 }
 
 // DisplayStyle renders a tex string as display-style MathML.
@@ -401,12 +414,12 @@ func (pitz *Pitziil) SemanticsOnly(tex string) (string, error) {
 		if r := recover(); r != nil {
 			//ast = makeMMLError()
 			//if block {
-			//	ast.Attrib["display"] = "block"
+			//	ast.SetAttr("display", "block")
 			//} else {
-			//	ast.Attrib["display"] = "inline"
+			//	ast.SetAttr("display", "inline")
 			//}
 			//if displaystyle {
-			//	ast.Attrib["displaystyle"] = "true"
+			//	ast.SetTrue("displaystyle")
 			//}
 			//fmt.Println(r)
 			//fmt.Println(tex)
