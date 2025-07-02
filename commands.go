@@ -119,6 +119,7 @@ func init() {
 		"sideset":     {F: cmd_sideset, argc: 3, optc: 0},
 		"textcolor":   {F: cmd_textcolor, argc: 2, optc: 0},
 		"frac":        {F: cmd_frac, argc: 2, optc: 0},
+		"cfrac":       {F: cmd_frac, argc: 2, optc: 0},
 		"binom":       {F: cmd_frac, argc: 2, optc: 0},
 		"tbinom":      {F: cmd_frac, argc: 2, optc: 0},
 		"dfrac":       {F: cmd_frac, argc: 2, optc: 0},

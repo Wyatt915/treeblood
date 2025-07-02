@@ -246,7 +246,8 @@ func GetNextExpr(tokens []Token, idx int) ([]Token, int, ExprKind) {
 	if idx >= len(tokens) {
 		return nil, idx, kind
 	}
-	if tokens[idx].MatchOffset > 0 {
+	if tokens[idx].MatchOffset > 0 && tokens[idx].Kind&tokEscaped == 0 {
+
 		switch tokens[idx].Value {
 		case "{":
 			kind = expr_group
@@ -282,7 +283,7 @@ func ExpressionQueue(tokens []Token) *queue[Expression] {
 			idx++
 			continue
 		}
-		if tokens[idx].MatchOffset > 0 {
+		if tokens[idx].MatchOffset > 0 && tokens[idx].Kind&tokEscaped == 0 {
 			end := idx + tokens[idx].MatchOffset
 			if tokens[idx].Value == "{" {
 				kind = expr_group
