@@ -21,7 +21,7 @@ func setEnvironmentContext(envBegin Token, context parseContext) parseContext {
 		return context | ctxTable
 	case "array", "subarray":
 		return context | ctxTable | ctxEnvHasArg
-	case "table", "align", "cases":
+	case "table", "align", "aligned", "cases":
 		return context | ctxTable
 	}
 	return context
