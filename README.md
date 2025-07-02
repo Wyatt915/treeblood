@@ -166,6 +166,12 @@ This means that one should not expect to create pixel-perfect kerning, height ad
 text manipulation with TreeBlood. All of those minor adjustments will be completely useless unless you expect all your
 readers to have exactly the same fonts, web browser, and operating system on machines with identical monitors.
 
+### Environments
+Again, since TreeBlood is not a full typesetting system, differences in the handling of certain environments are to be
+expected.
+  * `align`, `align*`, and `aligned` are treated as identical
+  * environments do not alter equation numbering in any way.
+
 ## Resources
 [Mappings for LaTeX, Unicode, and MathML](https://www.w3.org/Math/characters/unicode.xml)
 [TeX commands available in mathJax](https://www.onemathematicalcat.org/MathJaxDocumentation/TeXSyntax.htm)
