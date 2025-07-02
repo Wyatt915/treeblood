@@ -139,10 +139,12 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 				child.Properties = propRowSep
 				expr, _ = q.PopFront()
 				if expr.kind == expr_options {
+					expr, _ = q.PopFront() // discard '['
 					dummy := NewMMLNode("rowspacing")
 					dummy.Properties = propNonprint
 					dummy.SetAttr("rowspacing", StringifyTokens(expr.toks))
 					siblings = append(siblings, dummy)
+					q.PopFront() // discard ']'
 				}
 				siblings = append(siblings, child)
 				continue
@@ -585,6 +587,31 @@ func (node *MMLNode) postProcessScripts() {
 }
 
 func (node *MMLNode) postProcessInfix() {
+	doFraction := func(name string, numerator *MMLNode, denominator *MMLNode) *MMLNode {
+		// for a binomial coefficient, we need to wrap it in parentheses, so the "fraction" must
+		// be a child of parent, and parent must be an mrow.
+		wrapper := NewMMLNode("mrow")
+		frac := NewMMLNode("mfrac")
+		frac.AppendChild(numerator, denominator)
+		switch name {
+		case "", "frac":
+			return frac
+		case "cfrac", "dfrac":
+			frac.SetTrue("displaystyle")
+			return frac
+		case "tfrac":
+			frac.SetFalse("displaystyle")
+			return frac
+		case "binom":
+			frac.SetAttr("linethickness", "0")
+			wrapper.AppendChild(strechyOP("("), frac, strechyOP(")"))
+		case "tbinom":
+			wrapper.SetFalse("displaystyle")
+			frac.SetAttr("linethickness", "0")
+			wrapper.AppendChild(strechyOP("("), frac, strechyOP(")"))
+		}
+		return wrapper
+	}
 	for i := 1; i < len(node.Children); i++ {
 		a := node.Children[i-1]
 		b := node.Children[i]
