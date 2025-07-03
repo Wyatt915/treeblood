@@ -137,14 +137,16 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 			case "\\", "cr":
 				child = NewMMLNode()
 				child.Properties = propRowSep
-				expr, _ = q.PopFront()
-				if expr.kind == expr_options {
-					expr, _ = q.PopFront() // discard '['
+				option, _ := q.PopFront()
+				if option.kind == expr_options {
+					option, _ = q.PopFront() // discard '['
 					dummy := NewMMLNode("rowspacing")
 					dummy.Properties = propNonprint
-					dummy.SetAttr("rowspacing", StringifyTokens(expr.toks))
+					dummy.SetAttr("rowspacing", StringifyTokens(option.toks))
 					siblings = append(siblings, dummy)
 					q.PopFront() // discard ']'
+				} else {
+					q.PushFront(option)
 				}
 				siblings = append(siblings, child)
 				continue

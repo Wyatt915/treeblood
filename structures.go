@@ -96,8 +96,8 @@ func (q *queue[T]) growIfFull() {
 
 func (q *queue[T]) PushFront(item T) {
 	q.growIfFull()
-	q.data[q.head] = item
 	q.head = q.prev(q.head)
+	q.data[q.head] = item
 	q.sz++
 }
 
