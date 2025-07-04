@@ -58,8 +58,8 @@ var (
 		"liminf":     NewMMLNode("mi", "lim inf").SetProps(propMovablelimits | propLimitsunderover),
 		"varinjlim":  NewMMLNode("munder").SetProps(propMovablelimits|propLimitsunderover).AppendChild(NewMMLNode("mi", "lim"), NewMMLNode("mo", "→").SetTrue("stretchy")),
 		"varprojlim": NewMMLNode("munder").SetProps(propMovablelimits|propLimitsunderover).AppendChild(NewMMLNode("mi", "lim"), NewMMLNode("mo", "←").SetTrue("stretchy")),
-		"varliminf":  NewMMLNode("mi", "lim").SetProps(propMovablelimits|propLimitsunderover).SetCssProp("padding", "0 0 0.1em 0").SetCssProp("border-bottom", "0.065em solid"),
-		"varlimsup":  NewMMLNode("mi", "lim").SetProps(propMovablelimits|propLimitsunderover).SetCssProp("padding", "0.1em 0 0 0").SetCssProp("border-top", "0.065em solid"),
+		"varliminf":  NewMMLNode("mpadded").SetProps(propMovablelimits | propLimitsunderover).AppendChild(NewMMLNode("mi", "lim").SetCssProp("padding", "0 0 0.1em 0").SetCssProp("border-bottom", "0.065em solid")),
+		"varlimsup":  NewMMLNode("mpadded").SetProps(propMovablelimits | propLimitsunderover).AppendChild(NewMMLNode("mi", "lim").SetCssProp("padding", "0.1em 0 0 0").SetCssProp("border-top", "0.065em solid")),
 	}
 
 	math_variants = map[string]parseContext{
