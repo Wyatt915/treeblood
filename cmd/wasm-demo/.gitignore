@@ -1,3 +1,4 @@
 *.wasm
 *.js
 !index.html
+log
