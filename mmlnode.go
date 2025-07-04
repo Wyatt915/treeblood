@@ -71,6 +71,21 @@ func (n *MMLNode) SetAttr(name, value string) *MMLNode {
 	return n
 }
 
+func (n *MMLNode) SetProps(p NodeProperties) *MMLNode {
+	n.Properties = p
+	return n
+}
+
+func (n *MMLNode) AddProps(p NodeProperties) *MMLNode {
+	n.Properties |= p
+	return n
+}
+
+func (n *MMLNode) SetCssProp(key, val string) *MMLNode {
+	n.CSS[key] = val
+	return n
+}
+
 // If a property corresponds to an attribute in the final XML representation, set it here.
 func (n *MMLNode) setAttribsFromProperties() {
 	if n.Properties&propLargeop > 0 {
@@ -85,8 +100,9 @@ func (n *MMLNode) setAttribsFromProperties() {
 }
 
 // AppendChild appends the child (or children) provided to the children of n.
-func (n *MMLNode) AppendChild(child ...*MMLNode) {
+func (n *MMLNode) AppendChild(child ...*MMLNode) *MMLNode {
 	n.Children = append(n.Children, child...)
+	return n
 }
 
 // AppendNew creates a new MMLNode and appends it to the children of n. The newly created MMLNode is returned.

@@ -24,23 +24,42 @@ var (
 		"cos":      0,
 		"cosh":     0,
 		"cot":      0,
+		"coth":     0,
 		"csc":      0,
-		"det":      0,
+		"deg":      0,
+		"dim":      0,
+		"exp":      0,
 		"hom":      0,
-		"inf":      0,
-		"lim":      propMovablelimits | propLimitsunderover,
-		"limits":   propLimits | propNonprint,
-		"nolimits": propNolimits | propNonprint,
+		"ker":      0,
 		"ln":       0,
+		"lg":       0,
 		"log":      0,
-		"max":      0,
-		"min":      0,
 		"sec":      0,
 		"sin":      0,
 		"sinh":     0,
-		"sup":      0,
 		"tan":      0,
 		"tanh":     0,
+		"det":      propMovablelimits | propLimitsunderover,
+		"gcd":      propMovablelimits | propLimitsunderover,
+		"inf":      propMovablelimits | propLimitsunderover,
+		"lim":      propMovablelimits | propLimitsunderover,
+		"max":      propMovablelimits | propLimitsunderover,
+		"min":      propMovablelimits | propLimitsunderover,
+		"Pr":       propMovablelimits | propLimitsunderover,
+		"sup":      propMovablelimits | propLimitsunderover,
+		"limits":   propLimits | propNonprint,
+		"nolimits": propNolimits | propNonprint,
+	}
+
+	precompiled_commands = map[string]*MMLNode{
+		"projlim":    NewMMLNode("mi", "proj lim").SetProps(propMovablelimits | propLimitsunderover),
+		"injlim":     NewMMLNode("mi", "inj lim").SetProps(propMovablelimits | propLimitsunderover),
+		"limsup":     NewMMLNode("mi", "lim sup").SetProps(propMovablelimits | propLimitsunderover),
+		"liminf":     NewMMLNode("mi", "lim inf").SetProps(propMovablelimits | propLimitsunderover),
+		"varinjlim":  NewMMLNode("munder").SetProps(propMovablelimits|propLimitsunderover).AppendChild(NewMMLNode("mi", "lim"), NewMMLNode("mo", "→").SetTrue("stretchy")),
+		"varprojlim": NewMMLNode("munder").SetProps(propMovablelimits|propLimitsunderover).AppendChild(NewMMLNode("mi", "lim"), NewMMLNode("mo", "←").SetTrue("stretchy")),
+		"varliminf":  NewMMLNode("mi", "lim").SetProps(propMovablelimits|propLimitsunderover).SetCssProp("padding", "0 0 0.1em 0").SetCssProp("border-bottom", "0.065em solid"),
+		"varlimsup":  NewMMLNode("mi", "lim").SetProps(propMovablelimits|propLimitsunderover).SetCssProp("padding", "0.1em 0 0 0").SetCssProp("border-top", "0.065em solid"),
 	}
 
 	math_variants = map[string]parseContext{
@@ -271,6 +290,12 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Ex
 		return makeTexLogo(true)
 	case "TeX":
 		return makeTexLogo(false)
+	}
+	if node, ok := precompiled_commands[tok.Value]; ok {
+		// we must wrap this node in a new mrow since all instances point to the same memory location. Thius way, we can
+		// perform modifcations on the newly created mrow without affecting all other instances of the precompiled
+		// command.
+		return NewMMLNode("mrow").AppendChild(node).SetProps(node.Properties)
 	}
 	if pitz.needMacroExpansion[name] {
 		macro := pitz.macros[name]
