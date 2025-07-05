@@ -97,7 +97,6 @@ func TestAll(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	DELETETHIS := make(map[string][]TexTest)
 	for testname, tests := range AllTests {
 		subtest := func(tt *testing.T) {
 			doc := treeblood.NewPitziil()
@@ -107,8 +106,6 @@ func TestAll(t *testing.T) {
 				if err != nil {
 					tt.Errorf("Subtest %s failed on #%d", testname, i)
 					//fmt.Printf("Subtest %s failed on #%d", testname, i)
-				} else {
-					DELETETHIS[testname] = append(DELETETHIS[testname], TexTest{test.Tex, res})
 				}
 				if err = compareXML(res, test.MML); err != nil {
 					tt.Errorf("%s produced incorrect output (%s):\n%s\n", testname, err.Error(), test.Tex)
@@ -118,13 +115,6 @@ func TestAll(t *testing.T) {
 		}
 		t.Run(testname, subtest)
 	}
-	cases, _ := yaml.Marshal(DELETETHIS)
-	f, err := os.Create("clean.yaml")
-	if err != nil {
-		panic(err.Error())
-	}
-	defer f.Close()
-	f.Write(cases)
 }
 
 // Same set from https://www.intmath.com/cg5/katex-mathjax-comparison.php
