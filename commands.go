@@ -291,12 +291,6 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Ex
 	case "TeX":
 		return makeTexLogo(false)
 	}
-	if node, ok := precompiled_commands[tok.Value]; ok {
-		// we must wrap this node in a new mrow since all instances point to the same memory location. Thius way, we can
-		// perform modifcations on the newly created mrow without affecting all other instances of the precompiled
-		// command.
-		return NewMMLNode("mrow").AppendChild(node).SetProps(node.Properties)
-	}
 	if pitz.needMacroExpansion[name] {
 		macro := pitz.macros[name]
 		argc := macro.Argcount
@@ -326,6 +320,12 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Ex
 			return n
 		}
 		return pitz.ParseTex(ExpressionQueue(temp), context)
+	}
+	if node, ok := precompiled_commands[tok.Value]; ok {
+		// we must wrap this node in a new mrow since all instances point to the same memory location. Thius way, we can
+		// perform modifcations on the newly created mrow without affecting all other instances of the precompiled
+		// command.
+		return NewMMLNode("mrow").AppendChild(node).SetProps(node.Properties)
 	}
 	if v, ok := math_variants[name]; ok {
 		nextExpr, _ := q.PopFrontWhile(isExprWhitespace)
