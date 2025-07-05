@@ -273,12 +273,13 @@ type Pitziil struct {
 	macros               map[string]Macro // Global macros for the document
 	EQCount              int              // used for numbering display equations
 	DoNumbering          bool             // Whether or not to number equations in a document
-	currentExpr          []Token          // the expression currently being evaluated
-	currentIsDisplay     bool             // true if the current expression is being rendered in displaystyle
-	cursor               int              // the index of the token currently being evaluated
-	needMacroExpansion   map[string]bool  // used if any \newcommand definitions are encountered.
-	depth                int              // recursive parse depth
-	unknownCommandsAsOps bool             // treat unknown \commands as operators
+	PrintOneLine         bool
+	currentExpr          []Token         // the expression currently being evaluated
+	currentIsDisplay     bool            // true if the current expression is being rendered in displaystyle
+	cursor               int             // the index of the token currently being evaluated
+	needMacroExpansion   map[string]bool // used if any \newcommand definitions are encountered.
+	depth                int             // recursive parse depth
+	unknownCommandsAsOps bool            // treat unknown \commands as operators
 }
 
 // NewDocument creates a Pitziil to be used for a single web page or other standalone document.
@@ -314,6 +315,10 @@ func (pitz *Pitziil) AddMacros(macros ...map[string]string) *Pitziil {
 func (pitz *Pitziil) render(tex string, displaystyle bool) (result string, err error) {
 	var ast *MMLNode
 	var builder strings.Builder
+	var indent int
+	if pitz.PrintOneLine {
+		indent = -1
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			ast = makeMMLError()
@@ -327,7 +332,7 @@ func (pitz *Pitziil) render(tex string, displaystyle bool) (result string, err e
 			}
 			fmt.Println(r)
 			fmt.Println(tex)
-			ast.Write(&builder, 0)
+			ast.Write(&builder, indent)
 			result = builder.String()
 			err = fmt.Errorf("TreeBlood encountered an unexpected error")
 		}
@@ -354,7 +359,7 @@ func (pitz *Pitziil) render(tex string, displaystyle bool) (result string, err e
 		ast.SetAttr("class", "math-textstyle")
 	}
 	builder.WriteRune('\n')
-	ast.Write(&builder, 0)
+	ast.Write(&builder, indent)
 	builder.WriteRune('\n')
 	return builder.String(), err
 }
@@ -441,6 +446,10 @@ func (pitz *Pitziil) SemanticsOnly(tex string) (string, error) {
 	}
 	ast := pitz.ParseTex(ExpressionQueue(tokens), ctxRoot)
 	var builder strings.Builder
-	ast.Write(&builder, 0)
+	var indent int
+	if pitz.PrintOneLine {
+		indent = -1
+	}
+	ast.Write(&builder, indent)
 	return builder.String(), err
 }

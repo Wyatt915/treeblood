@@ -1,0 +1,533 @@
+arrays:
+    - tex: A_{m,n} =   \begin{pmatrix}   a_{1,1} & a_{1,2} & \cdots & a_{1,n} \\   a_{2,1} & a_{2,2} & \cdots & a_{2,n} \\   \vdots  & \vdots  & \ddots & \vdots  \\   a_{m,1} & a_{m,2} & \cdots & a_{m,n}   \end{pmatrix}
+      mml: |-
+        <mrow>
+          <msub>
+            <mi>A</mi>
+            <mrow>
+              <mi>m</mi>
+              <mo>,</mo>
+              <mi>n</mi>
+            </mrow>
+          </msub>
+          <mo>=</mo>
+          <mrow>
+            <mo strechy="true" fence="true">(</mo>
+            <mtable columnalign="center" rowalign="center">
+              <mtr>
+                <mtd style="text-align:center;">
+                  <msub>
+                    <mi>a</mi>
+                    <mrow>
+                      <mn>1</mn>
+                      <mo>,</mo>
+                      <mn>1</mn>
+                    </mrow>
+                  </msub>
+                </mtd>
+                <mtd style="text-align:center;">
+                  <msub>
+                    <mi>a</mi>
+                    <mrow>
+                      <mn>1</mn>
+                      <mo>,</mo>
+                      <mn>2</mn>
+                    </mrow>
+                  </msub>
+                </mtd>
+                <mtd style="text-align:center;">
+                  <mi>⋯</mi>
+                </mtd>
+                <mtd style="text-align:center;">
+                  <msub>
+                    <mi>a</mi>
+                    <mrow>
+                      <mn>1</mn>
+                      <mo>,</mo>
+                      <mi>n</mi>
+                    </mrow>
+                  </msub>
+                </mtd>
+              </mtr>
+              <mtr>
+                <mtd style="text-align:center;">
+                  <msub>
+                    <mi>a</mi>
+                    <mrow>
+                      <mn>2</mn>
+                      <mo>,</mo>
+                      <mn>1</mn>
+                    </mrow>
+                  </msub>
+                </mtd>
+                <mtd style="text-align:center;">
+                  <msub>
+                    <mi>a</mi>
+                    <mrow>
+                      <mn>2</mn>
+                      <mo>,</mo>
+                      <mn>2</mn>
+                    </mrow>
+                  </msub>
+                </mtd>
+                <mtd style="text-align:center;">
+                  <mi>⋯</mi>
+                </mtd>
+                <mtd style="text-align:center;">
+                  <msub>
+                    <mi>a</mi>
+                    <mrow>
+                      <mn>2</mn>
+                      <mo>,</mo>
+                      <mi>n</mi>
+                    </mrow>
+                  </msub>
+                </mtd>
+              </mtr>
+              <mtr>
+                <mtd style="text-align:center;">
+                  <mi>⋮</mi>
+                </mtd>
+                <mtd style="text-align:center;">
+                  <mi>⋮</mi>
+                </mtd>
+                <mtd style="text-align:center;">
+                  <mi>⋱</mi>
+                </mtd>
+                <mtd style="text-align:center;">
+                  <mi>⋮</mi>
+                </mtd>
+              </mtr>
+              <mtr>
+                <mtd style="text-align:center;">
+                  <msub>
+                    <mi>a</mi>
+                    <mrow>
+                      <mi>m</mi>
+                      <mo>,</mo>
+                      <mn>1</mn>
+                    </mrow>
+                  </msub>
+                </mtd>
+                <mtd style="text-align:center;">
+                  <msub>
+                    <mi>a</mi>
+                    <mrow>
+                      <mi>m</mi>
+                      <mo>,</mo>
+                      <mn>2</mn>
+                    </mrow>
+                  </msub>
+                </mtd>
+                <mtd style="text-align:center;">
+                  <mi>⋯</mi>
+                </mtd>
+                <mtd style="text-align:center;">
+                  <msub>
+                    <mi>a</mi>
+                    <mrow>
+                      <mi>m</mi>
+                      <mo>,</mo>
+                      <mi>n</mi>
+                    </mrow>
+                  </msub>
+                </mtd>
+              </mtr>
+            </mtable>
+            <mo strechy="true" fence="true">)</mo>
+          </mrow>
+        </mrow>
+    - tex: \begin{pmatrix} \begin{matrix} \begin{bmatrix} a_1 & a_2 & a_3 & a_4 \\ a_5 & a_6 & a_7 & a_8 \end{bmatrix} \\ 0 & \begin{Vmatrix} c_1 & c_2 \\ c_3 & c_4 \end{Vmatrix} \end{matrix} & \begin{Bmatrix} b_1 \\ b_2 \\ b_3 \\ b_4 \end{Bmatrix} \end{pmatrix}
+      mml: <mrow><mo strechy="true" fence="true">(</mo><mtable columnalign="center" rowalign="center"><mtr><mtd style="text-align:center;"><mtable rowalign="center" columnalign="center"><mtr><mtd><mrow><mo strechy="true" fence="true">[</mo><mtable columnalign="center" rowalign="center"><mtr><mtd style="text-align:center;"><msub><mi>a</mi><mn>1</mn></msub></mtd><mtd style="text-align:center;"><msub><mi>a</mi><mn>2</mn></msub></mtd><mtd style="text-align:center;"><msub><mi>a</mi><mn>3</mn></msub></mtd><mtd style="text-align:center;"><msub><mi>a</mi><mn>4</mn></msub></mtd></mtr><mtr><mtd style="text-align:center;"><msub><mi>a</mi><mn>5</mn></msub></mtd><mtd style="text-align:center;"><msub><mi>a</mi><mn>6</mn></msub></mtd><mtd style="text-align:center;"><msub><mi>a</mi><mn>7</mn></msub></mtd><mtd style="text-align:center;"><msub><mi>a</mi><mn>8</mn></msub></mtd></mtr></mtable><mo strechy="true" fence="true">]</mo></mrow></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mrow><mo strechy="true" fence="true">‖</mo><mtable columnalign="center" rowalign="center"><mtr><mtd style="text-align:center;"><msub><mi>c</mi><mn>1</mn></msub></mtd><mtd style="text-align:center;"><msub><mi>c</mi><mn>2</mn></msub></mtd></mtr><mtr><mtd style="text-align:center;"><msub><mi>c</mi><mn>3</mn></msub></mtd><mtd style="text-align:center;"><msub><mi>c</mi><mn>4</mn></msub></mtd></mtr></mtable><mo strechy="true" fence="true">‖</mo></mrow></mtd></mtr></mtable></mtd><mtd style="text-align:center;"><mrow><mo strechy="true" fence="true">{</mo><mtable columnalign="center" rowalign="center"><mtr><mtd style="text-align:center;"><msub><mi>b</mi><mn>1</mn></msub></mtd></mtr><mtr><mtd style="text-align:center;"><msub><mi>b</mi><mn>2</mn></msub></mtd></mtr><mtr><mtd style="text-align:center;"><msub><mi>b</mi><mn>3</mn></msub></mtd></mtr><mtr><mtd style="text-align:center;"><msub><mi>b</mi><mn>4</mn></msub></mtd></mtr></mtable><mo strechy="true" fence="true">}</mo></mrow></mtd></mtr></mtable><mo strechy="true" fence="true">)</mo></mrow>
+    - tex: "f'(x) = \\begin{cases}\n    \\lim_{c \\to x} \\dfrac{f(c) - f(x)}{c-x} & \\text{(A)} \\\\ \n    \\lim_{h \\to 0} \\frac{f(x+h) - f(x)}{h} & \\text{(B)} \\\\ \n    \\lim_{t \\to 1} \\frac{f(tx) - f(x)}{tx - x} & \\text{(C)}\n\\end{cases}"
+      mml: <mrow><mi>f</mi><mo>′</mo><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mrow><mo strechy="true" fence="true">{</mo><mtable columnalign="left" rowalign="center"><mtr><mtd style="text-align:left;padding-left:0em;padding-right:1em;"><munder><mi lspace="0.11111em" movablelimits="true">lim</mi><mrow><mi>c</mi><mo>→</mo><mi>x</mi></mrow></munder><mfrac displaystyle="true"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>c</mi><mo stretchy="false">)</mo><mo>−</mo><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><mrow><mi>c</mi><mo>−</mo><mi>x</mi></mrow></mfrac></mtd><mtd style="text-align:left;padding-left:0em;padding-right:1em;"><mtext>(A)</mtext></mtd></mtr><mtr><mtd style="padding-right:1em;text-align:left;padding-left:0em;"><munder><mi lspace="0.11111em" movablelimits="true">lim</mi><mrow><mi>h</mi><mo>→</mo><mn>0</mn></mrow></munder><mfrac><mrow><mi>f</mi><mo stretchy="false">(</mo><mrow><mi>x</mi><mo>+</mo><mi>h</mi></mrow><mo stretchy="false">)</mo><mo>−</mo><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><mi>h</mi></mfrac></mtd><mtd style="padding-left:0em;padding-right:1em;text-align:left;"><mtext>(B)</mtext></mtd></mtr><mtr><mtd style="text-align:left;padding-left:0em;padding-right:1em;"><munder><mi movablelimits="true" lspace="0.11111em">lim</mi><mrow><mi>t</mi><mo>→</mo><mn>1</mn></mrow></munder><mfrac><mrow><mi>f</mi><mo stretchy="false">(</mo><mrow><mi>t</mi><mi>x</mi></mrow><mo stretchy="false">)</mo><mo>−</mo><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><mrow><mi>t</mi><mi>x</mi><mo>−</mo><mi>x</mi></mrow></mfrac></mtd><mtd style="padding-right:1em;text-align:left;padding-left:0em;"><mtext>(C)</mtext></mtd></mtr></mtable></mrow></mrow>
+    - tex: |-
+        \begin{align}
+        \mathrm{Volume} & =\iiint_S\! \rho^2 \sin\theta \,\mathrm{d}\rho \,\mathrm{d}\theta \,\mathrm{d}\phi \\
+        & =\int_0^{2 \pi }\! \mathrm{d}\phi \,\int_0^{ \pi }\! \sin\theta \,\mathrm{d}\theta \,\int_0^R\! \rho^2 \mathrm{d}\rho \\
+        & =\phi |_0^{2\pi}\ (-\cos\theta) |_0^{ \pi }\ \dfrac 1 3 \rho^3 |_0^R \\
+        & =2\pi \times 2 \times \frac 1 3 R^3 \\
+        & =\frac 4 3 \pi R^3
+        \end{align}
+      mml: <mrow><mtable displaystyle="true" columnalign="center" rowalign="center"><mtr><mtd columnalign="right" style="padding-left:1em;padding-right:0em;text-align:right;"><mpadded lspace="0"><mi mathvariant="normal">V</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">e</mi></mpadded></mtd><mtd columnalign="left" style="text-align:left;padding-left:0em;padding-right:1em;"><mo>=</mo><msub><mo largeop="true" movablelimits="true">∭</mo><mi>S</mi></msub><mspace width="-0.17em"></mspace><msup><mi>ρ</mi><mn>2</mn></msup><mi lspace="0.11111em">sin</mi><mi>θ</mi><mspace width="0.17em"></mspace><mpadded lspace="0"><mi mathvariant="normal">d</mi></mpadded><mi>ρ</mi><mspace width="0.17em"></mspace><mpadded lspace="0"><mi mathvariant="normal">d</mi></mpadded><mi>θ</mi><mspace width="0.17em"></mspace><mpadded lspace="0"><mi mathvariant="normal">d</mi></mpadded><mi>ϕ</mi></mtd></mtr><mtr><mtd columnalign="right" style="text-align:right;padding-left:1em;padding-right:0em;"></mtd><mtd columnalign="left" style="text-align:left;padding-left:0em;padding-right:1em;"><mo>=</mo><msubsup><mo largeop="true" movablelimits="true">∫</mo><mn>0</mn><mrow><mn>2</mn><mi>π</mi></mrow></msubsup><mspace width="-0.17em"></mspace><mpadded lspace="0"><mi mathvariant="normal">d</mi></mpadded><mi>ϕ</mi><mspace width="0.17em"></mspace><msubsup><mo largeop="true" movablelimits="true">∫</mo><mn>0</mn><mi>π</mi></msubsup><mspace width="-0.17em"></mspace><mi lspace="0.11111em">sin</mi><mi>θ</mi><mspace width="0.17em"></mspace><mpadded lspace="0"><mi mathvariant="normal">d</mi></mpadded><mi>θ</mi><mspace width="0.17em"></mspace><msubsup><mo movablelimits="true" largeop="true">∫</mo><mn>0</mn><mi>R</mi></msubsup><mspace width="-0.17em"></mspace><msup><mi>ρ</mi><mn>2</mn></msup><mpadded lspace="0"><mi mathvariant="normal">d</mi></mpadded><mi>ρ</mi></mtd></mtr><mtr><mtd columnalign="right" style="text-align:right;padding-left:1em;padding-right:0em;"></mtd><mtd columnalign="left" style="padding-right:1em;text-align:left;padding-left:0em;"><mo>=</mo><mi>ϕ</mi><msubsup><mo fence="true" stretchy="true" symmetric="true">|</mo><mn>0</mn><mrow><mn>2</mn><mi>π</mi></mrow></msubsup><mspace width="0.50em"></mspace><mo stretchy="false">(</mo><mrow><mo>−</mo><mi lspace="0.11111em">cos</mi><mi>θ</mi></mrow><mo stretchy="false">)</mo><msubsup><mo stretchy="true" symmetric="true" fence="true">|</mo><mn>0</mn><mi>π</mi></msubsup><mspace width="0.50em"></mspace><mfrac displaystyle="true"><mn>1</mn><mn>3</mn></mfrac><msup><mi>ρ</mi><mn>3</mn></msup><msubsup><mo fence="true" stretchy="true" symmetric="true">|</mo><mn>0</mn><mi>R</mi></msubsup></mtd></mtr><mtr><mtd columnalign="right" style="padding-left:1em;padding-right:0em;text-align:right;"></mtd><mtd columnalign="left" style="text-align:left;padding-left:0em;padding-right:1em;"><mo>=</mo><mn>2</mn><mi>π</mi><mo>×</mo><mn>2</mn><mo>×</mo><mfrac><mn>1</mn><mn>3</mn></mfrac><msup><mi>R</mi><mn>3</mn></msup></mtd></mtr><mtr><mtd columnalign="right" style="text-align:right;padding-left:1em;padding-right:0em;"></mtd><mtd columnalign="left" style="padding-right:1em;text-align:left;padding-left:0em;"><mo>=</mo><mfrac><mn>4</mn><mn>3</mn></mfrac><mi>π</mi><msup><mi>R</mi><mn>3</mn></msup></mtd></mtr></mtable></mrow>
+    - tex: |-
+        \begin{array}{ccccccccccc}
+                                &                 & \mathrm{cov}({\mathcal L})     & \longrightarrow &\mathrm{non}({\mathcal K}) & \longrightarrow & \mathrm{cof}({\mathcal K}) & \longrightarrow &\mathrm{cof}({\mathcal L})     & \longrightarrow & 2^{\aleph_0} \\
+                                &                 & \multirow{3}{*}{\uparrow}      &                 &\uparrow                   &                 & \uparrow                   &                 &\multirow{3}{*}{\uparrow}       &                 & \\
+                                &                 &                                &                 &{\mathfrak b}              & \longrightarrow & {\mathfrak d}              &                 &                               &                 & \\
+                                &                 &                                &                 &\uparrow                   &                 & \uparrow                   &                 &                               &                 & \\
+        \aleph_1                & \longrightarrow & \mathrm{add}({\mathcal L})     & \longrightarrow &\mathrm{add}({\mathcal K}) & \longrightarrow & \mathrm{cov}({\mathcal K}) & \longrightarrow &\mathrm{non}({\mathcal L})     &                 &
+        \end{array}
+      mml: "<mtable rowalign=\"center\" columnalign=\"center center center center center center center center center center center\" columnlines=\"none none none none none none none none none none\"><mtr><mtd style=\"text-align:center;\"></mtd><mtd style=\"text-align:center;\"></mtd><mtd style=\"text-align:center;\"><mpadded lspace=\"0\"><mi mathvariant=\"normal\">c</mi><mi mathvariant=\"normal\">o</mi><mi mathvariant=\"normal\">v</mi></mpadded><mo stretchy=\"false\">(</mo><mi class=\"mathcal\">ℒ︀</mi><mo stretchy=\"false\">)</mo></mtd><mtd style=\"text-align:center;\"><mo stretchy=\"true\">⟶</mo></mtd><mtd style=\"text-align:center;\"><mpadded lspace=\"0\"><mi mathvariant=\"normal\">n</mi><mi mathvariant=\"normal\">o</mi><mi mathvariant=\"normal\">n</mi></mpadded><mo stretchy=\"false\">(</mo><mi class=\"mathcal\">\U0001D4A6︀</mi><mo stretchy=\"false\">)</mo></mtd><mtd style=\"text-align:center;\"><mo stretchy=\"true\">⟶</mo></mtd><mtd style=\"text-align:center;\"><mpadded lspace=\"0\"><mi mathvariant=\"normal\">c</mi><mi mathvariant=\"normal\">o</mi><mi mathvariant=\"normal\">f</mi></mpadded><mo stretchy=\"false\">(</mo><mi class=\"mathcal\">\U0001D4A6︀</mi><mo stretchy=\"false\">)</mo></mtd><mtd style=\"text-align:center;\"><mo stretchy=\"true\">⟶</mo></mtd><mtd style=\"text-align:center;\"><mpadded lspace=\"0\"><mi mathvariant=\"normal\">c</mi><mi mathvariant=\"normal\">o</mi><mi mathvariant=\"normal\">f</mi></mpadded><mo stretchy=\"false\">(</mo><mi class=\"mathcal\">ℒ︀</mi><mo stretchy=\"false\">)</mo></mtd><mtd style=\"text-align:center;\"><mo stretchy=\"true\">⟶</mo></mtd><mtd style=\"text-align:center;\"><msup><mn>2</mn><mrow><msub><mi>ℵ</mi><mn>0</mn></msub></mrow></msup></mtd></mtr><mtr><mtd style=\"text-align:center;\"></mtd><mtd style=\"text-align:center;\"></mtd><mtd rowspan=\"3\" style=\"text-align:center;\"><mo stretchy=\"true\" minsize=\"4.0em\">↑</mo></mtd><mtd style=\"text-align:center;\"></mtd><mtd style=\"text-align:center;\"><mo stretchy=\"true\">↑</mo></mtd><mtd style=\"text-align:center;\"></mtd><mtd style=\"text-align:center;\"><mo stretchy=\"true\">↑</mo></mtd><mtd style=\"text-align:center;\"></mtd><mtd rowspan=\"3\" style=\"text-align:center;\"><mo minsize=\"4.0em\" stretchy=\"true\">↑</mo></mtd><mtd style=\"text-align:center;\"></mtd></mtr><mtr><mtd style=\"text-align:center;\"></mtd><mtd style=\"text-align:center;\"></mtd><mtd style=\"text-align:center;\"></mtd><mtd style=\"text-align:center;\"><mi>\U0001D51F</mi></mtd><mtd style=\"text-align:center;\"><mo stretchy=\"true\">⟶</mo></mtd><mtd style=\"text-align:center;\"><mi>\U0001D521</mi></mtd><mtd style=\"text-align:center;\"></mtd><mtd style=\"text-align:center;\"></mtd></mtr><mtr><mtd style=\"text-align:center;\"></mtd><mtd style=\"text-align:center;\"></mtd><mtd style=\"text-align:center;\"></mtd><mtd style=\"text-align:center;\"><mo stretchy=\"true\">↑</mo></mtd><mtd style=\"text-align:center;\"></mtd><mtd style=\"text-align:center;\"><mo stretchy=\"true\">↑</mo></mtd><mtd style=\"text-align:center;\"></mtd><mtd style=\"text-align:center;\"></mtd></mtr><mtr><mtd style=\"text-align:center;\"><msub><mi>ℵ</mi><mn>1</mn></msub></mtd><mtd style=\"text-align:center;\"><mo stretchy=\"true\">⟶</mo></mtd><mtd style=\"text-align:center;\"><mpadded lspace=\"0\"><mi mathvariant=\"normal\">a</mi><mi mathvariant=\"normal\">d</mi><mi mathvariant=\"normal\">d</mi></mpadded><mo stretchy=\"false\">(</mo><mi class=\"mathcal\">ℒ︀</mi><mo stretchy=\"false\">)</mo></mtd><mtd style=\"text-align:center;\"><mo stretchy=\"true\">⟶</mo></mtd><mtd style=\"text-align:center;\"><mpadded lspace=\"0\"><mi mathvariant=\"normal\">a</mi><mi mathvariant=\"normal\">d</mi><mi mathvariant=\"normal\">d</mi></mpadded><mo stretchy=\"false\">(</mo><mi class=\"mathcal\">\U0001D4A6︀</mi><mo stretchy=\"false\">)</mo></mtd><mtd style=\"text-align:center;\"><mo stretchy=\"true\">⟶</mo></mtd><mtd style=\"text-align:center;\"><mpadded lspace=\"0\"><mi mathvariant=\"normal\">c</mi><mi mathvariant=\"normal\">o</mi><mi mathvariant=\"normal\">v</mi></mpadded><mo stretchy=\"false\">(</mo><mi class=\"mathcal\">\U0001D4A6︀</mi><mo stretchy=\"false\">)</mo></mtd><mtd style=\"text-align:center;\"><mo stretchy=\"true\">⟶</mo></mtd><mtd style=\"text-align:center;\"><mpadded lspace=\"0\"><mi mathvariant=\"normal\">n</mi><mi mathvariant=\"normal\">o</mi><mi mathvariant=\"normal\">n</mi></mpadded><mo stretchy=\"false\">(</mo><mi class=\"mathcal\">ℒ︀</mi><mo stretchy=\"false\">)</mo></mtd><mtd style=\"text-align:center;\"></mtd></mtr></mtable>"
+    - tex: "\\begin{array}{}\n    \\multicolumn{3}{}{\\rightarrow} & & & \\multirow{3}{}{\\downarrow} \\\\ \n    \\multirow{3}{}{\\uparrow}&\\multirow{2}{}{\\multicolumn{2}{l}{\\huge\\circlearrowright}}&& \\\\\n    &&& \\\\\n    & \\multicolumn{3}{}{\\leftarrow}&&\n\\end{array}"
+      mml: <mtable columnalign="center" rowalign="center"><mtr><mtd columnspan="3"><mover><mo stretchy="true">→</mo><mspace width="5.0em"></mspace></mover></mtd><mtd rowspan="3"><mo stretchy="true" minsize="4.0em">↓</mo></mtd></mtr><mtr><mtd rowspan="3"><mo stretchy="true" minsize="4.0em">↑</mo></mtd><mtd rowspan="2" columnspan="2"><mstyle mathsize="207.4%"><mi>↻</mi></mstyle></mtd></mtr><mtr><mtd></mtd></mtr><mtr><mtd columnspan="3"><mover><mo stretchy="true">←</mo><mspace width="5.0em"></mspace></mover></mtd></mtr></mtable>
+    - tex: |-
+        \begin{array}{c}
+        {\large \text{Generalized Product Rule:}} \\
+        \displaystyle \dv{x} \left[\prod_{i=1}^k f_i(x)\right] = \sum_{j=1}^k\left(f^\prime_j(x)\prod_\substack{i=1\\i\not=j}^kf_i(x)\right)
+        \end{array}
+      mml: <mtable columnalign="center" rowalign="center"><mtr><mtd style="text-align:center;"><mstyle mathsize="120.0%"><mtext>Generalized&nbsp;Product&nbsp;Rule:</mtext></mstyle></mtd></mtr><mtr><mtd style="text-align:center;"><mstyle displaystyle="true" scriptlevel="0"><merror>dv</merror><mi>x</mi><mrow><mo fence="true" stretchy="true">[</mo><mrow><mrow><munderover><mo largeop="true" movablelimits="true">∏</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>k</mi></munderover><msub><mi>f</mi><mi>i</mi></msub><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><mo fence="true" stretchy="true">]</mo><mo>=</mo><munderover><mo largeop="true" movablelimits="true">∑</mo><mrow><mi>j</mi><mo>=</mo><mn>1</mn></mrow><mi>k</mi></munderover><mrow><mo fence="true" stretchy="true">(</mo><mrow><mrow><msubsup><mi>f</mi><mi>j</mi><mi>′</mi></msubsup><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><munderover><mo largeop="true" movablelimits="true">∏</mo><mtable columnalign="center" rowalign="center" rowspacing="0" displaystyle="false"><mtr><mtd><mi>i</mi><mo>=</mo><mn>1</mn></mtd></mtr><mtr><mtd><mi>i</mi><mo>≠</mo><mi>j</mi></mtd></mtr></mtable><mi>k</mi></munderover><msub><mi>f</mi><mi>i</mi></msub><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><mo fence="true" stretchy="true">)</mo></mrow></mrow></mrow></mrow></mstyle></mtd></mtr></mtable>
+bad inputs:
+    - tex: '{(a}'
+      mml: |-
+        <mrow>
+          <mo stretchy="false">(</mo>
+          <mi>a</mi>
+        </mrow>
+    - tex: |
+        {x\not}
+      mml: <mrow><mi>x</mi><merror title="not requires one or more arguments">not</merror></mrow>
+basic:
+    - tex: |-
+        %this is a comment
+        0123456789
+      mml: <mn>0123456789</mn>
+    - tex: \forall A \, \exists P \, \forall B \, [B \in P \Leftrightarrow \forall C \, (C \in B \Rightarrow C \in A)]
+      mml: <mrow><mi>∀</mi><mi>A</mi><mspace width="0.17em"></mspace><mi>∃</mi><mi>P</mi><mspace width="0.17em"></mspace><mi>∀</mi><mi>B</mi><mspace width="0.17em"></mspace><mo stretchy="false">[</mo><mrow><mi>B</mi><mo>∈</mo><mi>P</mi><mo>⇔</mo><mi>∀</mi><mi>C</mi><mspace width="0.17em"></mspace><mo stretchy="false">(</mo><mrow><mi>C</mi><mo>∈</mo><mi>B</mi><mo>⇒</mo><mi>C</mi><mo>∈</mo><mi>A</mi></mrow><mo stretchy="false">)</mo></mrow><mo stretchy="false">]</mo></mrow>
+    - tex: a' b'' c''' d'''' e''''' f'''''' g''''''' h'''''''' i''''''''' j''''''''''
+      mml: <mrow><mi>a</mi><mo>′</mo><mi>b</mi><mo>″</mo><mi>c</mi><mo>‴</mo><mi>d</mi><mo>⁗</mo><mi>e</mi><mo>⁗</mo><mo>′</mo><mi>f</mi><mo>⁗</mo><mo>″</mo><mi>g</mi><mo>⁗</mo><mo>‴</mo><mi>h</mi><mo>⁗</mo><mo>⁗</mo><mi>i</mi><mo>⁗</mo><mo>⁗</mo><mo>′</mo><mi>j</mi><mo>⁗</mo><mo>⁗</mo><mo>″</mo></mrow>
+    - tex: '\forall n \in \mathbb{N} \exists \; x \; \in \mathbb{R} \; : \; n^x \not\in \mathbb{Q}'
+      mml: <mrow><mi>∀</mi><mi>n</mi><mo>∈</mo><mi>ℕ</mi><mi>∃</mi><mspace width="0.28em"></mspace><mi>x</mi><mspace width="0.28em"></mspace><mo>∈</mo><mi>ℝ</mi><mspace width="0.28em"></mspace><mo>:</mo><mspace width="0.28em"></mspace><msup><mi>n</mi><mi>x</mi></msup><mo>∉</mo><mi>ℚ</mi></mrow>
+    - tex: 'c = \overbrace {     \underbrace{\;\;\;\;\; a \;\;\;\;}_\text{real}     +     \underbrace{\;\;\;\;\; b\mathrm{i} \;\;\;\;}_\text{imaginary} }^\text{complex number} '
+      mml: <mrow><mi>c</mi><mo>=</mo><mover><mover><mrow><munder><munder><mrow><mspace width="1.39em"></mspace><mi>a</mi><mspace width="1.11em"></mspace></mrow><mo stretchy="true">&UnderBrace;</mo></munder><mtext>real</mtext></munder><mo>+</mo><munder><munder><mrow><mspace width="1.39em"></mspace><mi>b</mi><mpadded lspace="0"><mi mathvariant="normal">i</mi></mpadded><mspace width="1.11em"></mspace></mrow><mo stretchy="true">&UnderBrace;</mo></munder><mtext>imaginary</mtext></munder></mrow><mo stretchy="true">&OverBrace;</mo></mover><mtext>complex&nbsp;number</mtext></mover></mrow>
+    - tex: \mathrm{\nabla} \cdot \vec {v} = \frac{\partial v_x}{\partial x} + \frac{\partial v_y}{\partial y} + \frac{\partial v_z}{\partial z}
+      mml: '<mrow><mpadded lspace="0"><mi mathvariant="normal">∇</mi></mpadded><mo>⋅</mo><mover accent="true"><mi style="font-feature-settings: ''dtls'' on;">v</mi><mo stretchy="true">⃗</mo></mover><mo>=</mo><mfrac><mrow><mi>∂</mi><msub><mi>v</mi><mi>x</mi></msub></mrow><mrow><mi>∂</mi><mi>x</mi></mrow></mfrac><mo>+</mo><mfrac><mrow><mi>∂</mi><msub><mi>v</mi><mi>y</mi></msub></mrow><mrow><mi>∂</mi><mi>y</mi></mrow></mfrac><mo>+</mo><mfrac><mrow><mi>∂</mi><msub><mi>v</mi><mi>z</mi></msub></mrow><mrow><mi>∂</mi><mi>z</mi></mrow></mfrac></mrow>'
+    - tex: \left\langle\psi\left|\mathcal{T}\left\{\frac{\delta}{\delta\phi}F[\phi]\right\}\right|\psi\right\rangle = -\mathrm{i}\left\langle\psi\left|\mathcal{T}\left\{F[\phi]\frac{\delta}{\delta\phi}S[\phi]\right\}\right|\psi\right\rangle
+      mml: "<mrow><mo>⟨</mo><mrow><mrow><mi>ψ</mi><mrow><mo fence=\"true\" stretchy=\"true\">|</mo><mrow><mrow><mi class=\"mathcal\">\U0001D4AF︀</mi><mo stretchy=\"true\">{</mo><mfrac><mi>δ</mi><mrow><mi>δ</mi><mi>ϕ</mi></mrow></mfrac><mi>F</mi><mo stretchy=\"false\">[</mo><mi>ϕ</mi><mo stretchy=\"false\">]</mo><mo stretchy=\"true\">}</mo></mrow><mo fence=\"true\" stretchy=\"true\" symmetric=\"true\">|</mo><mi>ψ</mi></mrow></mrow></mrow><mo>⟩</mo><mo>=</mo><mo>−</mo><mpadded lspace=\"0\"><mi mathvariant=\"normal\">i</mi></mpadded><mrow><mo>⟨</mo><mrow><mrow><mi>ψ</mi><mrow><mo fence=\"true\" stretchy=\"true\">|</mo><mrow><mrow><mi class=\"mathcal\">\U0001D4AF︀</mi><mo stretchy=\"true\">{</mo><mi>F</mi><mo stretchy=\"false\">[</mo><mi>ϕ</mi><mo stretchy=\"false\">]</mo><mfrac><mi>δ</mi><mrow><mi>δ</mi><mi>ϕ</mi></mrow></mfrac><mi>S</mi><mo stretchy=\"false\">[</mo><mi>ϕ</mi><mo stretchy=\"false\">]</mo><mo stretchy=\"true\">}</mo></mrow><mo fence=\"true\" stretchy=\"true\" symmetric=\"true\">|</mo><mi>ψ</mi></mrow></mrow></mrow><mo>⟩</mo></mrow></mrow></mrow></mrow>"
+    - tex: \mathscr{L} \text{ vs. } \mathcal{L}
+      mml: <mrow><mi class="mathscr">ℒ︁</mi><mtext>&nbsp;vs.&nbsp;</mtext><mi class="mathcal">ℒ︀</mi></mrow>
+    - tex: \binom{n}{k/2} = \frac{n!}{n!(n-k/2)!}
+      mml: <mrow><mrow><mo fence="true" strechy="true">(</mo><mfrac linethickness="0"><mi>n</mi><mrow><mi>k</mi><mo>/</mo><mn>2</mn></mrow></mfrac><mo strechy="true" fence="true">)</mo></mrow><mo>=</mo><mfrac><mrow><mi>n</mi><mo>!</mo></mrow><mrow><mi>n</mi><mo>!</mo><mo stretchy="false">(</mo><mrow><mi>n</mi><mo>−</mo><mi>k</mi><mo>/</mo><mn>2</mn></mrow><mo stretchy="false">)</mo><mo>!</mo></mrow></mfrac></mrow>
+    - tex: a \not{=} b \quad \not{\alpha}=\not{b} \quad \not{abc}
+      mml: <mrow><mi>a</mi><mo>≠</mo><mi>b</mi><mspace width="1.00em"></mspace><mi>α̸</mi><mo>=</mo><mi>b̸</mi><mspace width="1.00em"></mspace><menclose notation="updiagonalstrike"><mi>a</mi><mi>b</mi><mi>c</mi></menclose></mrow>
+    - tex: \frac{\sqrt{1 + \sqrt[3]{2 + \sqrt[5]{3 + \sqrt[7]{4 + \sqrt[11]{5 + \sqrt[13]{6 + \sqrt[17]{7 + \sqrt[19]{A}}}}}}}}}{\mathrm{e}^\pi} = x'''
+      mml: <mrow><mfrac><msqrt><mrow><mn>1</mn><mo>+</mo><mroot><mrow><mn>2</mn><mo>+</mo><mroot><mrow><mn>3</mn><mo>+</mo><mroot><mrow><mn>4</mn><mo>+</mo><mroot><mrow><mn>5</mn><mo>+</mo><mroot><mrow><mn>6</mn><mo>+</mo><mroot><mrow><mn>7</mn><mo>+</mo><mroot><mi>A</mi><mn>19</mn></mroot></mrow><mn>17</mn></mroot></mrow><mn>13</mn></mroot></mrow><mn>11</mn></mroot></mrow><mn>7</mn></mroot></mrow><mn>5</mn></mroot></mrow><mn>3</mn></mroot></mrow></msqrt><mrow><msup><mpadded lspace="0"><mi mathvariant="normal">e</mi></mpadded><mi>π</mi></msup></mrow></mfrac><mo>=</mo><mi>x</mi><mo>‴</mo></mrow>
+    - tex: |
+        \varphi=1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1 + \frac{1}{1+\cdots}}}}}=\sqrt{1+\sqrt{1+\sqrt{1+\sqrt{1+\sqrt{1+\sqrt{1+\sqrt{1+\sqrt{1+\cdots}}}}}}}}
+      mml: <mrow><mi>φ</mi><mo>=</mo><mn>1</mn><mo>+</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><mi>⋯</mi></mrow></mfrac></mrow></mfrac></mrow></mfrac></mrow></mfrac></mrow></mfrac><mo>=</mo><msqrt><mrow><mn>1</mn><mo>+</mo><msqrt><mrow><mn>1</mn><mo>+</mo><msqrt><mrow><mn>1</mn><mo>+</mo><msqrt><mrow><mn>1</mn><mo>+</mo><msqrt><mrow><mn>1</mn><mo>+</mo><msqrt><mrow><mn>1</mn><mo>+</mo><msqrt><mrow><mn>1</mn><mo>+</mo><msqrt><mrow><mn>1</mn><mo>+</mo><mi>⋯</mi></mrow></msqrt></mrow></msqrt></mrow></msqrt></mrow></msqrt></mrow></msqrt></mrow></msqrt></mrow></msqrt></mrow></msqrt></mrow>
+derivatives:
+    - tex: \dv{y}{x} \dv y x
+      mml: |-
+        <mrow>
+          <merror>dv</merror>
+          <mi>y</mi>
+          <mi>x</mi>
+          <merror>dv</merror>
+          <mi>y</mi>
+          <mi>x</mi>
+        </mrow>
+    - tex: \dv{t} \quad \dv*{y}{x}
+      mml: <mrow><merror>dv</merror><mi>t</mi><mspace width="1.00em"></mspace><merror>dv</merror><mi>y</mi><mi>x</mi></mrow>
+    - tex: \adv{t}
+      mml: <mrow><merror>adv</merror><mi>t</mi></mrow>
+    - tex: \pdv{t}
+      mml: <mrow><merror>pdv</merror><mi>t</mi></mrow>
+    - tex: \mdv{t}
+      mml: <mrow><merror>mdv</merror><mi>t</mi></mrow>
+    - tex: \fdv{t}
+      mml: <mrow><merror>fdv</merror><mi>t</mi></mrow>
+    - tex: \dv{f}{x} \quad \dv{f}/{x} \quad \dv{f}!{x} \quad \dv{f}!/{x}
+      mml: <mrow><merror>dv</merror><mi>f</mi><mi>x</mi><mspace width="1.00em"></mspace><merror>dv</merror><mi>f</mi><mo>/</mo><mi>x</mi><mspace width="1.00em"></mspace><merror>dv</merror><mi>f</mi><mo>!</mo><mi>x</mi><mspace width="1.00em"></mspace><merror>dv</merror><mi>f</mi><mo>!</mo><mo>/</mo><mi>x</mi></mrow>
+    - tex: \pdv{x,y,z} \quad \pdv[\alpha]{x,y,z} \quad \pdv[\alpha, \beta]{x,y,z} \quad \pdv[\alpha,\beta,\gamma]{x,y,z}
+      mml: <mrow><merror>pdv</merror><mrow><mi>x</mi><mo>,</mo><mi>y</mi><mo>,</mo><mi>z</mi></mrow><mspace width="1.00em"></mspace><merror>pdv</merror><mo stretchy="false">[</mo><mi>α</mi><mo stretchy="false">]</mo><mrow><mi>x</mi><mo>,</mo><mi>y</mi><mo>,</mo><mi>z</mi></mrow><mspace width="1.00em"></mspace><merror>pdv</merror><mo stretchy="false">[</mo><mrow><mi>α</mi><mo>,</mo><mi>β</mi></mrow><mo stretchy="false">]</mo><mrow><mi>x</mi><mo>,</mo><mi>y</mi><mo>,</mo><mi>z</mi></mrow><mspace width="1.00em"></mspace><merror>pdv</merror><mo stretchy="false">[</mo><mrow><mi>α</mi><mo>,</mo><mi>β</mi><mo>,</mo><mi>γ</mi></mrow><mo stretchy="false">]</mo><mrow><mi>x</mi><mo>,</mo><mi>y</mi><mo>,</mo><mi>z</mi></mrow></mrow>
+    - tex: \pdv[2,3]{f}{x, y, z} \quad \pdv[2,3]{f}/{x, y, z} \quad \pdv[2,3]{f}!{x, y, z} \quad \pdv[2,3]{f}!/{x, y, z}
+      mml: <mrow><merror>pdv</merror><mo stretchy="false">[</mo><mrow><mn>2</mn><mo>,</mo><mn>3</mn></mrow><mo stretchy="false">]</mo><mi>f</mi><mrow><mi>x</mi><mo>,</mo><mi>y</mi><mo>,</mo><mi>z</mi></mrow><mspace width="1.00em"></mspace><merror>pdv</merror><mo stretchy="false">[</mo><mrow><mn>2</mn><mo>,</mo><mn>3</mn></mrow><mo stretchy="false">]</mo><mi>f</mi><mo>/</mo><mrow><mi>x</mi><mo>,</mo><mi>y</mi><mo>,</mo><mi>z</mi></mrow><mspace width="1.00em"></mspace><merror>pdv</merror><mo stretchy="false">[</mo><mrow><mn>2</mn><mo>,</mo><mn>3</mn></mrow><mo stretchy="false">]</mo><mi>f</mi><mo>!</mo><mrow><mi>x</mi><mo>,</mo><mi>y</mi><mo>,</mo><mi>z</mi></mrow><mspace width="1.00em"></mspace><merror>pdv</merror><mo stretchy="false">[</mo><mrow><mn>2</mn><mo>,</mo><mn>3</mn></mrow><mo stretchy="false">]</mo><mi>f</mi><mo>!</mo><mo>/</mo><mrow><mi>x</mi><mo>,</mo><mi>y</mi><mo>,</mo><mi>z</mi></mrow></mrow>
+    - tex: |
+        \begin{align}
+        \dv[2]{y}{x}&=\frac{\dv{t}\left[\dv{y}{x}\right]}{\dv{x}{t}} \\
+                    &=\frac{\dv{t}\left[\frac{\dv*{y}{t}}{\dv*{x}{t}}\right]}{\dv{x}{t}} \\
+                    &=\frac{\left(\frac{\dv{x}{t}\dv[2]{y}{t} - \dv{y}{t}\dv[2]{x}{t}}{\left(\dv{x}{t}\right)^2}\right)}{\dv*{x}{t}} \\
+                    &=\frac{\dv{x}{t}\dv[2]{y}{t} - \dv{y}{t}\dv[2]{x}{t}}{\left(\dv{x}{t}\right)^3}
+        \end{align}
+      mml: <mrow><mtable columnalign="center" rowalign="center" displaystyle="true"><mtr><mtd columnalign="right" style="text-align:right;padding-left:1em;padding-right:0em;"><merror>dv</merror><mo stretchy="false">[</mo><mn>2</mn><mo stretchy="false">]</mo><mi>y</mi><mi>x</mi></mtd><mtd columnalign="left" style="text-align:left;padding-left:0em;padding-right:1em;"><mo>=</mo><mfrac><mrow><merror>dv</merror><mi>t</mi><mrow><mo fence="true" stretchy="true">[</mo><mrow><mrow><merror>dv</merror><mi>y</mi><mi>x</mi></mrow><mo fence="true" stretchy="true">]</mo></mrow></mrow></mrow><mrow><merror>dv</merror><mi>x</mi><mi>t</mi></mrow></mfrac></mtd></mtr><mtr><mtd columnalign="right" style="text-align:right;padding-left:1em;padding-right:0em;"></mtd><mtd columnalign="left" style="text-align:left;padding-left:0em;padding-right:1em;"><mo>=</mo><mfrac><mrow><merror>dv</merror><mi>t</mi><mrow><mo fence="true" stretchy="true">[</mo><mrow><mfrac><mrow><merror>dv</merror><mi>y</mi><mi>t</mi></mrow><mrow><merror>dv</merror><mi>x</mi><mi>t</mi></mrow></mfrac><mo stretchy="true" fence="true">]</mo></mrow></mrow></mrow><mrow><merror>dv</merror><mi>x</mi><mi>t</mi></mrow></mfrac></mtd></mtr><mtr><mtd columnalign="right" style="text-align:right;padding-left:1em;padding-right:0em;"></mtd><mtd columnalign="left" style="padding-left:0em;padding-right:1em;text-align:left;"><mo>=</mo><mfrac><mrow><mo fence="true" stretchy="true">(</mo><mrow><mfrac><mrow><merror>dv</merror><mi>x</mi><mi>t</mi><merror>dv</merror><mo stretchy="false">[</mo><mn>2</mn><mo stretchy="false">]</mo><mi>y</mi><mi>t</mi><mo>−</mo><merror>dv</merror><mi>y</mi><mi>t</mi><merror>dv</merror><mo stretchy="false">[</mo><mn>2</mn><mo stretchy="false">]</mo><mi>x</mi><mi>t</mi></mrow><mrow><mo stretchy="true" fence="true">(</mo><mrow><mrow><merror>dv</merror><mi>x</mi><mi>t</mi></mrow><msup><mo fence="true" stretchy="true">)</mo><mn>2</mn></msup></mrow></mrow></mfrac><mo fence="true" stretchy="true">)</mo></mrow></mrow><mrow><merror>dv</merror><mi>x</mi><mi>t</mi></mrow></mfrac></mtd></mtr><mtr><mtd columnalign="right" style="text-align:right;padding-left:1em;padding-right:0em;"></mtd><mtd columnalign="left" style="text-align:left;padding-left:0em;padding-right:1em;"><mo>=</mo><mfrac><mrow><merror>dv</merror><mi>x</mi><mi>t</mi><merror>dv</merror><mo stretchy="false">[</mo><mn>2</mn><mo stretchy="false">]</mo><mi>y</mi><mi>t</mi><mo>−</mo><merror>dv</merror><mi>y</mi><mi>t</mi><merror>dv</merror><mo stretchy="false">[</mo><mn>2</mn><mo stretchy="false">]</mo><mi>x</mi><mi>t</mi></mrow><mrow><mo fence="true" stretchy="true">(</mo><mrow><mrow><merror>dv</merror><mi>x</mi><mi>t</mi></mrow><msup><mo fence="true" stretchy="true">)</mo><mn>3</mn></msup></mrow></mrow></mfrac></mtd></mtr></mtable></mrow>
+intmath:
+    - tex: \frac{1}{\Bigl(\sqrt{\phi \sqrt{5}}-\phi\Bigr) e^{\frac25 \pi}} \equiv 1+\frac{e^{-2\pi}} {1+\frac{e^{-4\pi}} {1+\frac{e^{-6\pi}} {1+\frac{e^{-8\pi}} {1+\cdots} } } }
+      mml: |-
+        <mrow>
+          <mfrac>
+            <mn>1</mn>
+            <mrow>
+              <mo stretchy="false" scriptlevel="-2">(</mo>
+              <mrow>
+                <msqrt>
+                  <mrow>
+                    <mi>ϕ</mi>
+                    <msqrt>
+                      <mn>5</mn>
+                    </msqrt>
+                  </mrow>
+                </msqrt>
+                <mo>−</mo>
+                <mi>ϕ</mi>
+              </mrow>
+              <mo stretchy="false" scriptlevel="-2">)</mo>
+              <msup>
+                <mi>e</mi>
+                <mfrac>
+                  <mn>25</mn>
+                  <mi>π</mi>
+                </mfrac>
+              </msup>
+            </mrow>
+          </mfrac>
+          <mo>≡</mo>
+          <mn>1</mn>
+          <mo>+</mo>
+          <mfrac>
+            <mrow>
+              <msup>
+                <mi>e</mi>
+                <mrow>
+                  <mo>−</mo>
+                  <mn>2</mn>
+                  <mi>π</mi>
+                </mrow>
+              </msup>
+            </mrow>
+            <mrow>
+              <mn>1</mn>
+              <mo>+</mo>
+              <mfrac>
+                <mrow>
+                  <msup>
+                    <mi>e</mi>
+                    <mrow>
+                      <mo>−</mo>
+                      <mn>4</mn>
+                      <mi>π</mi>
+                    </mrow>
+                  </msup>
+                </mrow>
+                <mrow>
+                  <mn>1</mn>
+                  <mo>+</mo>
+                  <mfrac>
+                    <mrow>
+                      <msup>
+                        <mi>e</mi>
+                        <mrow>
+                          <mo>−</mo>
+                          <mn>6</mn>
+                          <mi>π</mi>
+                        </mrow>
+                      </msup>
+                    </mrow>
+                    <mrow>
+                      <mn>1</mn>
+                      <mo>+</mo>
+                      <mfrac>
+                        <mrow>
+                          <msup>
+                            <mi>e</mi>
+                            <mrow>
+                              <mo>−</mo>
+                              <mn>8</mn>
+                              <mi>π</mi>
+                            </mrow>
+                          </msup>
+                        </mrow>
+                        <mrow>
+                          <mn>1</mn>
+                          <mo>+</mo>
+                          <mi>⋯</mi>
+                        </mrow>
+                      </mfrac>
+                    </mrow>
+                  </mfrac>
+                </mrow>
+              </mfrac>
+            </mrow>
+          </mfrac>
+        </mrow>
+    - tex: \left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)
+      mml: <mrow><mo fence="true" stretchy="true">(</mo><mrow><mrow><munderover><mo largeop="true" movablelimits="true">∑</mo><mrow><mi>k</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msub><mi>a</mi><mi>k</mi></msub><msub><mi>b</mi><mi>k</mi></msub></mrow><msup><mo fence="true" stretchy="true">)</mo><mn>2</mn></msup><mo>≤</mo><mrow><mo fence="true" stretchy="true">(</mo><mrow><mrow><munderover><mo largeop="true" movablelimits="true">∑</mo><mrow><mi>k</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msubsup><mi>a</mi><mi>k</mi><mn>2</mn></msubsup></mrow><mo fence="true" stretchy="true">)</mo><mrow><mo fence="true" stretchy="true">(</mo><mrow><mrow><munderover><mo largeop="true" movablelimits="true">∑</mo><mrow><mi>k</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msubsup><mi>b</mi><mi>k</mi><mn>2</mn></msubsup></mrow><mo fence="true" stretchy="true">)</mo></mrow></mrow></mrow></mrow></mrow></mrow>
+    - tex: \displaystyle\sum_{i=1}^{k+1}i
+      mml: <mstyle displaystyle="true" scriptlevel="0"><munderover><mo movablelimits="true" largeop="true">∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><mi>k</mi><mo>+</mo><mn>1</mn></mrow></munderover><mi>i</mi></mstyle>
+    - tex: \displaystyle= \left(\sum_{i=1}^{k}i\right) +(k+1)
+      mml: <mstyle displaystyle="true" scriptlevel="0"><mo>=</mo><mrow><mo fence="true" stretchy="true">(</mo><mrow><mrow><munderover><mo movablelimits="true" largeop="true">∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>k</mi></munderover><mi>i</mi></mrow><mo fence="true" stretchy="true">)</mo><mo>+</mo><mo stretchy="false">(</mo><mrow><mi>k</mi><mo>+</mo><mn>1</mn></mrow><mo stretchy="false">)</mo></mrow></mrow></mstyle>
+    - tex: \displaystyle= \frac{k(k+1)}{2}+k+1
+      mml: <mstyle displaystyle="true" scriptlevel="0"><mo>=</mo><mfrac><mrow><mi>k</mi><mo stretchy="false">(</mo><mrow><mi>k</mi><mo>+</mo><mn>1</mn></mrow><mo stretchy="false">)</mo></mrow><mn>2</mn></mfrac><mo>+</mo><mi>k</mi><mo>+</mo><mn>1</mn></mstyle>
+    - tex: \displaystyle= \frac{k(k+1)+2(k+1)}{2}
+      mml: <mstyle displaystyle="true" scriptlevel="0"><mo>=</mo><mfrac><mrow><mi>k</mi><mo stretchy="false">(</mo><mrow><mi>k</mi><mo>+</mo><mn>1</mn></mrow><mo stretchy="false">)</mo><mo>+</mo><mn>2</mn><mo stretchy="false">(</mo><mrow><mi>k</mi><mo>+</mo><mn>1</mn></mrow><mo stretchy="false">)</mo></mrow><mn>2</mn></mfrac></mstyle>
+    - tex: \displaystyle= \frac{(k+1)(k+2)}{2}
+      mml: <mstyle displaystyle="true" scriptlevel="0"><mo>=</mo><mfrac><mrow><mo stretchy="false">(</mo><mrow><mi>k</mi><mo>+</mo><mn>1</mn></mrow><mo stretchy="false">)</mo><mo stretchy="false">(</mo><mrow><mi>k</mi><mo>+</mo><mn>2</mn></mrow><mo stretchy="false">)</mo></mrow><mn>2</mn></mfrac></mstyle>
+    - tex: \displaystyle= \frac{(k+1)((k+1)+1)}{2}
+      mml: <mstyle scriptlevel="0" displaystyle="true"><mo>=</mo><mfrac><mrow><mo stretchy="false">(</mo><mrow><mi>k</mi><mo>+</mo><mn>1</mn></mrow><mo stretchy="false">)</mo><mo stretchy="false">(</mo><mrow><mo stretchy="false">(</mo><mrow><mi>k</mi><mo>+</mo><mn>1</mn></mrow><mo stretchy="false">)</mo><mo>+</mo><mn>1</mn></mrow><mo stretchy="false">)</mo></mrow><mn>2</mn></mfrac></mstyle>
+    - tex: \displaystyle\text{ for }\lvert q\rvert < 1.
+      mml: <mstyle displaystyle="true" scriptlevel="0"><mtext>&nbsp;for&nbsp;</mtext><mo stretchy="true">|</mo><mi>q</mi><mo stretchy="true">|</mo><mo>&lt;</mo><mn>1.</mn></mstyle>
+    - tex: = \displaystyle \prod_{j=0}^{\infty}\frac{1}{(1-q^{5j+2})(1-q^{5j+3})},
+      mml: <mrow><mo>=</mo><mstyle scriptlevel="0" displaystyle="true"><munderover><mo largeop="true" movablelimits="true">∏</mo><mrow><mi>j</mi><mo>=</mo><mn>0</mn></mrow><mi>∞</mi></munderover><mfrac><mn>1</mn><mrow><mo stretchy="false">(</mo><mrow><mn>1</mn><mo>−</mo><msup><mi>q</mi><mrow><mn>5</mn><mi>j</mi><mo>+</mo><mn>2</mn></mrow></msup></mrow><mo stretchy="false">)</mo><mo stretchy="false">(</mo><mrow><mn>1</mn><mo>−</mo><msup><mi>q</mi><mrow><mn>5</mn><mi>j</mi><mo>+</mo><mn>3</mn></mrow></msup></mrow><mo stretchy="false">)</mo></mrow></mfrac><mo>,</mo></mstyle></mrow>
+    - tex: \displaystyle\n1 + \frac{q^2}{(1-q)}+\frac{q^6}{(1-q)(1-q^2)}+\cdots
+      mml: <mstyle displaystyle="true" scriptlevel="0"><merror>n</merror><mn>1</mn><mo>+</mo><mfrac><mrow><msup><mi>q</mi><mn>2</mn></msup></mrow><mrow><mo stretchy="false">(</mo><mrow><mn>1</mn><mo>−</mo><mi>q</mi></mrow><mo stretchy="false">)</mo></mrow></mfrac><mo>+</mo><mfrac><mrow><msup><mi>q</mi><mn>6</mn></msup></mrow><mrow><mo stretchy="false">(</mo><mrow><mn>1</mn><mo>−</mo><mi>q</mi></mrow><mo stretchy="false">)</mo><mo stretchy="false">(</mo><mrow><mn>1</mn><mo>−</mo><msup><mi>q</mi><mn>2</mn></msup></mrow><mo stretchy="false">)</mo></mrow></mfrac><mo>+</mo><mi>⋯</mi></mstyle>
+    - tex: k_{n+1} = n^2 + k_n^2 - k_{n-1}
+      mml: <mrow><msub><mi>k</mi><mrow><mi>n</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>=</mo><msup><mi>n</mi><mn>2</mn></msup><mo>+</mo><msubsup><mi>k</mi><mi>n</mi><mn>2</mn></msubsup><mo>−</mo><msub><mi>k</mi><mrow><mi>n</mi><mo>−</mo><mn>1</mn></mrow></msub></mrow>
+    - tex: \Gamma\ \Delta\ \Theta\ \Lambda\ \Xi\ \Pi\ \Sigma\ \Upsilon\ \Phi\ \Psi\ \Omega
+      mml: <mrow><mi mathvariant="normal">Γ</mi><mspace width="0.50em"></mspace><mi mathvariant="normal">Δ</mi><mspace width="0.50em"></mspace><mi mathvariant="normal">Θ</mi><mspace width="0.50em"></mspace><mi mathvariant="normal">Λ</mi><mspace width="0.50em"></mspace><mi mathvariant="normal">Ξ</mi><mspace width="0.50em"></mspace><mi mathvariant="normal">Π</mi><mspace width="0.50em"></mspace><mi mathvariant="normal">Σ</mi><mspace width="0.50em"></mspace><mi mathvariant="normal">Υ</mi><mspace width="0.50em"></mspace><mi mathvariant="normal">Φ</mi><mspace width="0.50em"></mspace><mi mathvariant="normal">Ψ</mi><mspace width="0.50em"></mspace><mi mathvariant="normal">Ω</mi></mrow>
+    - tex: \omicron\ \pi\ \rho\ \sigma\ \tau\ \upsilon\ \phi\ \chi\ \psi\ \omega\ \varepsilon\ \vartheta\ \varpi\ \varrho\ \varsigma\ \varphi
+      mml: <mrow><mi>ο</mi><mspace width="0.50em"></mspace><mi>π</mi><mspace width="0.50em"></mspace><mi>ρ</mi><mspace width="0.50em"></mspace><mi>σ</mi><mspace width="0.50em"></mspace><mi>τ</mi><mspace width="0.50em"></mspace><mi>υ</mi><mspace width="0.50em"></mspace><mi>ϕ</mi><mspace width="0.50em"></mspace><mi>χ</mi><mspace width="0.50em"></mspace><mi>ψ</mi><mspace width="0.50em"></mspace><mi>ω</mi><mspace width="0.50em"></mspace><mi>ε</mi><mspace width="0.50em"></mspace><mi>ϑ</mi><mspace width="0.50em"></mspace><mi>ϖ</mi><mspace width="0.50em"></mspace><mi>ϱ</mi><mspace width="0.50em"></mspace><mi>ς</mi><mspace width="0.50em"></mspace><mi>φ</mi></mrow>
+    - tex: \alpha\ \beta\ \gamma\ \delta\ \epsilon\ \zeta\ \eta\ \theta\ \iota\ \kappa\ \lambda\ \mu\ \nu\ \xi
+      mml: <mrow><mi>α</mi><mspace width="0.50em"></mspace><mi>β</mi><mspace width="0.50em"></mspace><mi>γ</mi><mspace width="0.50em"></mspace><mi>δ</mi><mspace width="0.50em"></mspace><mi>ϵ</mi><mspace width="0.50em"></mspace><mi>ζ</mi><mspace width="0.50em"></mspace><mi>η</mi><mspace width="0.50em"></mspace><mi>θ</mi><mspace width="0.50em"></mspace><mi>ι</mi><mspace width="0.50em"></mspace><mi>κ</mi><mspace width="0.50em"></mspace><mi>λ</mi><mspace width="0.50em"></mspace><mi>μ</mi><mspace width="0.50em"></mspace><mi>ν</mi><mspace width="0.50em"></mspace><mi>ξ</mi></mrow>
+    - tex: \gets\ \to\ \leftarrow\ \rightarrow\ \uparrow\ \Uparrow\ \downarrow\ \Downarrow\ \updownarrow\ \Updownarrow
+      mml: <mrow><mo>←</mo><mspace width="0.50em"></mspace><mo>→</mo><mspace width="0.50em"></mspace><mo>←</mo><mspace width="0.50em"></mspace><mo>→</mo><mspace width="0.50em"></mspace><mo>↑</mo><mspace width="0.50em"></mspace><mo>⇑</mo><mspace width="0.50em"></mspace><mo>↓</mo><mspace width="0.50em"></mspace><mo>⇓</mo><mspace width="0.50em"></mspace><mo>↕</mo><mspace width="0.50em"></mspace><mo>⇕</mo></mrow>
+    - tex: \Leftarrow\ \Rightarrow\ \leftrightarrow\ \Leftrightarrow\ \mapsto\ \hookleftarrow
+      mml: <mrow><mo>⇐</mo><mspace width="0.50em"></mspace><mo>⇒</mo><mspace width="0.50em"></mspace><mo>↔</mo><mspace width="0.50em"></mspace><mo>⇔</mo><mspace width="0.50em"></mspace><mo>↦</mo><mspace width="0.50em"></mspace><mo>↩</mo></mrow>
+    - tex: \leftharpoonup\ \leftharpoondown\ \rightleftharpoons\ \longleftarrow\ \Longleftarrow\ \longrightarrow
+      mml: <mrow><mo>↼</mo><mspace width="0.50em"></mspace><mo>↽</mo><mspace width="0.50em"></mspace><mo>⇌</mo><mspace width="0.50em"></mspace><mo>⟵</mo><mspace width="0.50em"></mspace><mo>⟸</mo><mspace width="0.50em"></mspace><mo>⟶</mo></mrow>
+    - tex: \Longrightarrow\ \longleftrightarrow\ \Longleftrightarrow\ \longmapsto\ \hookrightarrow\ \rightharpoonup
+      mml: <mrow><mo>⟹</mo><mspace width="0.50em"></mspace><mo>⟷</mo><mspace width="0.50em"></mspace><mo>⟺</mo><mspace width="0.50em"></mspace><mo>⟼</mo><mspace width="0.50em"></mspace><mo>↪</mo><mspace width="0.50em"></mspace><mo>⇀</mo></mrow>
+    - tex: \rightharpoondown\ \leadsto\ \nearrow\ \searrow\ \swarrow\ \nwarrow
+      mml: <mrow><mo>⇁</mo><mspace width="0.50em"></mspace><mo>⇝</mo><mspace width="0.50em"></mspace><mo>↗</mo><mspace width="0.50em"></mspace><mo>↘</mo><mspace width="0.50em"></mspace><mo>↙</mo><mspace width="0.50em"></mspace><mo>↖</mo></mrow>
+    - tex: \surd\ \barwedge\ \veebar\ \odot\ \oplus\ \otimes\ \oslash\ \circledcirc\ \boxdot\ \bigtriangleup
+      mml: <mrow><mi>√</mi><mspace width="0.50em"></mspace><mi>⌅</mi><mspace width="0.50em"></mspace><mo>⊻</mo><mspace width="0.50em"></mspace><mo>⊙</mo><mspace width="0.50em"></mspace><mo>⊕</mo><mspace width="0.50em"></mspace><mo>⊗</mo><mspace width="0.50em"></mspace><mo>⊘</mo><mspace width="0.50em"></mspace><mo>⊚</mo><mspace width="0.50em"></mspace><mo>⊡</mo><mspace width="0.50em"></mspace><mi>△</mi></mrow>
+    - tex: \bigtriangledown\ \dagger\ \diamond\ \star\ \triangleleft\ \triangleright\ \angle\ \infty\ \prime\ \triangle
+      mml: <mrow><mi>▽</mi><mspace width="0.50em"></mspace><mi>†</mi><mspace width="0.50em"></mspace><mo>⋄</mo><mspace width="0.50em"></mspace><mo>⋆</mo><mspace width="0.50em"></mspace><mi>◃</mi><mspace width="0.50em"></mspace><mi>▹</mi><mspace width="0.50em"></mspace><mi>∠</mi><mspace width="0.50em"></mspace><mi>∞</mi><mspace width="0.50em"></mspace><mi>′</mi><mspace width="0.50em"></mspace><mi>△</mi></mrow>
+    - tex: \int u \frac{dv}{dx}\,dx=uv-\int \frac{du}{dx}v\,dx
+      mml: <mrow><mo largeop="true" movablelimits="true">∫</mo><mi>u</mi><mfrac><mrow><mi>d</mi><mi>v</mi></mrow><mrow><mi>d</mi><mi>x</mi></mrow></mfrac><mspace width="0.17em"></mspace><mi>d</mi><mi>x</mi><mo>=</mo><mi>u</mi><mi>v</mi><mo>−</mo><mo largeop="true" movablelimits="true">∫</mo><mfrac><mrow><mi>d</mi><mi>u</mi></mrow><mrow><mi>d</mi><mi>x</mi></mrow></mfrac><mi>v</mi><mspace width="0.17em"></mspace><mi>d</mi><mi>x</mi></mrow>
+    - tex: f(x) = \int_{-\infty}^\infty \hat f(\xi)\,e^{2 \pi i \xi x}
+      mml: '<mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><msubsup><mo largeop="true" movablelimits="true">∫</mo><mrow><mo>−</mo><mi>∞</mi></mrow><mi>∞</mi></msubsup><mover accent="true"><mi style="font-feature-settings: ''dtls'' on;">f</mi><mo stretchy="true">̂</mo></mover><mo stretchy="false">(</mo><mi>ξ</mi><mo stretchy="false">)</mo><mspace width="0.17em"></mspace><msup><mi>e</mi><mrow><mn>2</mn><mi>π</mi><mi>i</mi><mi>ξ</mi><mi>x</mi></mrow></msup></mrow>'
+    - tex: \oint \vec{F} \cdot d\vec{s}=0
+      mml: '<mrow><mo largeop="true" movablelimits="true">∮</mo><mover accent="true"><mi style="font-feature-settings: ''dtls'' on;">F</mi><mo stretchy="true">⃗</mo></mover><mo>⋅</mo><mi>d</mi><mover accent="true"><mi style="font-feature-settings: ''dtls'' on;">s</mi><mo stretchy="true">⃗</mo></mover><mo>=</mo><mn>0</mn></mrow>'
+    - tex: \begin{aligned}\dot{x} & = \sigma(y-x) \\ \dot{y} & = \rho x - y - xz \\ \dot{z} & = -\beta z + xy\end{aligned}
+      mml: '<mtable columnalign="center" rowalign="center"><mtr><mtd><mover accent="true"><mi style="font-feature-settings: ''dtls'' on;">x</mi><mo stretchy="true">˙</mo></mover></mtd><mtd><mo>=</mo><mi>σ</mi><mo stretchy="false">(</mo><mrow><mi>y</mi><mo>−</mo><mi>x</mi></mrow><mo stretchy="false">)</mo></mtd></mtr><mtr><mtd><mover accent="true"><mi style="font-feature-settings: ''dtls'' on;">y</mi><mo stretchy="true">˙</mo></mover></mtd><mtd><mo>=</mo><mi>ρ</mi><mi>x</mi><mo>−</mo><mi>y</mi><mo>−</mo><mi>x</mi><mi>z</mi></mtd></mtr><mtr><mtd><mover accent="true"><mi style="font-feature-settings: ''dtls'' on;">z</mi><mo stretchy="true">˙</mo></mover></mtd><mtd><mo>=</mo><mo>−</mo><mi>β</mi><mi>z</mi><mo>+</mo><mi>x</mi><mi>y</mi></mtd></mtr></mtable>'
+    - tex: \mathbf{V}_1 \times \mathbf{V}_2 = \begin{vmatrix}\mathbf{i} & \mathbf{j} & \mathbf{k} \\\frac{\partial X}{\partial u} & \frac{\partial Y}{\partial u} & 0 \\\frac{\partial X}{\partial v} & \frac{\partial Y}{\partial v} & 0\end{vmatrix}
+      mml: "<mrow><msub><mi>\U0001D415</mi><mn>1</mn></msub><mo>×</mo><msub><mi>\U0001D415</mi><mn>2</mn></msub><mo>=</mo><mrow><mo strechy=\"true\" fence=\"true\">|</mo><mtable columnalign=\"center\" rowalign=\"center\"><mtr><mtd style=\"text-align:center;\"><mi>\U0001D422</mi></mtd><mtd style=\"text-align:center;\"><mi>\U0001D423</mi></mtd><mtd style=\"text-align:center;\"><mi>\U0001D424</mi></mtd></mtr><mtr><mtd style=\"text-align:center;\"><mfrac><mrow><mi>∂</mi><mi>X</mi></mrow><mrow><mi>∂</mi><mi>u</mi></mrow></mfrac></mtd><mtd style=\"text-align:center;\"><mfrac><mrow><mi>∂</mi><mi>Y</mi></mrow><mrow><mi>∂</mi><mi>u</mi></mrow></mfrac></mtd><mtd style=\"text-align:center;\"><mn>0</mn></mtd></mtr><mtr><mtd style=\"text-align:center;\"><mfrac><mrow><mi>∂</mi><mi>X</mi></mrow><mrow><mi>∂</mi><mi>v</mi></mrow></mfrac></mtd><mtd style=\"text-align:center;\"><mfrac><mrow><mi>∂</mi><mi>Y</mi></mrow><mrow><mi>∂</mi><mi>v</mi></mrow></mfrac></mtd><mtd style=\"text-align:center;\"><mn>0</mn></mtd></mtr></mtable><mo strechy=\"true\" fence=\"true\">|</mo></mrow></mrow>"
+    - tex: \mathbf{V}_1 \times \mathbf{V}_2 = \begin{vmatrix}\mathbf{i} & \mathbf{j} & \mathbf{k} \\\frac{\partial X}{\partial u} & \frac{\partial Y}{\partial u} & 0 \\\frac{\partial X}{\partial v} & \frac{\partial Y}{\partial v} & 0\end{vmatrix}
+      mml: "<mrow><msub><mi>\U0001D415</mi><mn>1</mn></msub><mo>×</mo><msub><mi>\U0001D415</mi><mn>2</mn></msub><mo>=</mo><mrow><mo strechy=\"true\" fence=\"true\">|</mo><mtable rowalign=\"center\" columnalign=\"center\"><mtr><mtd style=\"text-align:center;\"><mi>\U0001D422</mi></mtd><mtd style=\"text-align:center;\"><mi>\U0001D423</mi></mtd><mtd style=\"text-align:center;\"><mi>\U0001D424</mi></mtd></mtr><mtr><mtd style=\"text-align:center;\"><mfrac><mrow><mi>∂</mi><mi>X</mi></mrow><mrow><mi>∂</mi><mi>u</mi></mrow></mfrac></mtd><mtd style=\"text-align:center;\"><mfrac><mrow><mi>∂</mi><mi>Y</mi></mrow><mrow><mi>∂</mi><mi>u</mi></mrow></mfrac></mtd><mtd style=\"text-align:center;\"><mn>0</mn></mtd></mtr><mtr><mtd style=\"text-align:center;\"><mfrac><mrow><mi>∂</mi><mi>X</mi></mrow><mrow><mi>∂</mi><mi>v</mi></mrow></mfrac></mtd><mtd style=\"text-align:center;\"><mfrac><mrow><mi>∂</mi><mi>Y</mi></mrow><mrow><mi>∂</mi><mi>v</mi></mrow></mfrac></mtd><mtd style=\"text-align:center;\"><mn>0</mn></mtd></mtr></mtable><mo strechy=\"true\" fence=\"true\">|</mo></mrow></mrow>"
+    - tex: \hat{x}\ \vec{x}\ \ddot{x}
+      mml: '<mrow><mover accent="true"><mi style="font-feature-settings: ''dtls'' on;">x</mi><mo stretchy="true">̂</mo></mover><mspace width="0.50em"></mspace><mover accent="true"><mi style="font-feature-settings: ''dtls'' on;">x</mi><mo stretchy="true">⃗</mo></mover><mspace width="0.50em"></mspace><mover accent="true"><mi style="font-feature-settings: ''dtls'' on;">x</mi><mo stretchy="true">̈</mo></mover></mrow>'
+    - tex: \left(\frac{x^2}{y^3}\right)
+      mml: <mrow><mo fence="true" stretchy="true">(</mo><mrow><mfrac><mrow><msup><mi>x</mi><mn>2</mn></msup></mrow><mrow><msup><mi>y</mi><mn>3</mn></msup></mrow></mfrac><mo fence="true" stretchy="true">)</mo></mrow></mrow>
+    - tex: \left.\frac{x^3}{3}\right|_0^1
+      mml: <mrow><mrow><mfrac><mrow><msup><mi>x</mi><mn>3</mn></msup></mrow><mn>3</mn></mfrac><msubsup><mo fence="true" stretchy="true" symmetric="true">|</mo><mn>0</mn><mn>1</mn></msubsup></mrow></mrow>
+    - tex: f(n) = \begin{cases} \frac{n}{2}, & \text{if } n\text{ is even} \\ 3n+1, & \text{if } n\text{ is odd} \end{cases}
+      mml: <mrow><mi>f</mi><mo stretchy="false">(</mo><mi>n</mi><mo stretchy="false">)</mo><mo>=</mo><mrow><mo strechy="true" fence="true">{</mo><mtable columnalign="left" rowalign="center"><mtr><mtd style="text-align:left;padding-left:0em;padding-right:1em;"><mfrac><mi>n</mi><mn>2</mn></mfrac><mo>,</mo></mtd><mtd style="text-align:left;padding-left:0em;padding-right:1em;"><mtext>if&nbsp;</mtext><mi>n</mi><mtext>&nbsp;is&nbsp;even</mtext></mtd></mtr><mtr><mtd style="text-align:left;padding-left:0em;padding-right:1em;"><mn>3</mn><mi>n</mi><mo>+</mo><mn>1</mn><mo>,</mo></mtd><mtd style="text-align:left;padding-left:0em;padding-right:1em;"><mtext>if&nbsp;</mtext><mi>n</mi><mtext>&nbsp;is&nbsp;odd</mtext></mtd></mtr></mtable></mrow></mrow>
+    - tex: \begin{aligned}\nabla \times \vec{\mathbf{B}} -\, \frac1c\, \frac{\partial\vec{\mathbf{E}}}{\partial t} & = \frac{4\pi}{c}\vec{\mathbf{j}} \\ \nabla \cdot \vec{\mathbf{E}} & = 4 \pi \rho \\\nabla \times \vec{\mathbf{E}}\, +\, \frac1c\, \frac{\partial\vec{\mathbf{B}}}{\partial t} & = \vec{\mathbf{0}} \\\nabla \cdot \vec{\mathbf{B}} & = 0 \end{aligned}
+      mml: "<mtable columnalign=\"center\" rowalign=\"center\"><mtr><mtd><mi mathvariant=\"normal\">∇</mi><mo>×</mo><mover accent=\"true\"><mi style=\"font-feature-settings: 'dtls' on;\">\U0001D401</mi><mo stretchy=\"true\">⃗</mo></mover><mo>−</mo><mspace width=\"0.17em\"></mspace><mfrac><mn>1</mn><mi>c</mi></mfrac><mspace width=\"0.17em\"></mspace><mfrac><mrow><mi>∂</mi><mover accent=\"true\"><mi style=\"font-feature-settings: 'dtls' on;\">\U0001D404</mi><mo stretchy=\"true\">⃗</mo></mover></mrow><mrow><mi>∂</mi><mi>t</mi></mrow></mfrac></mtd><mtd><mo>=</mo><mfrac><mrow><mn>4</mn><mi>π</mi></mrow><mi>c</mi></mfrac><mover accent=\"true\"><mi style=\"font-feature-settings: 'dtls' on;\">\U0001D423</mi><mo stretchy=\"true\">⃗</mo></mover></mtd></mtr><mtr><mtd><mi mathvariant=\"normal\">∇</mi><mo>⋅</mo><mover accent=\"true\"><mi style=\"font-feature-settings: 'dtls' on;\">\U0001D404</mi><mo stretchy=\"true\">⃗</mo></mover></mtd><mtd><mo>=</mo><mn>4</mn><mi>π</mi><mi>ρ</mi></mtd></mtr><mtr><mtd><mi mathvariant=\"normal\">∇</mi><mo>×</mo><mover accent=\"true\"><mi style=\"font-feature-settings: 'dtls' on;\">\U0001D404</mi><mo stretchy=\"true\">⃗</mo></mover><mspace width=\"0.17em\"></mspace><mo>+</mo><mspace width=\"0.17em\"></mspace><mfrac><mn>1</mn><mi>c</mi></mfrac><mspace width=\"0.17em\"></mspace><mfrac><mrow><mi>∂</mi><mover accent=\"true\"><mi style=\"font-feature-settings: 'dtls' on;\">\U0001D401</mi><mo stretchy=\"true\">⃗</mo></mover></mrow><mrow><mi>∂</mi><mi>t</mi></mrow></mfrac></mtd><mtd><mo>=</mo><mover accent=\"true\"><mn>\U0001D7CE</mn><mo stretchy=\"true\">⃗</mo></mover></mtd></mtr><mtr><mtd><mi mathvariant=\"normal\">∇</mi><mo>⋅</mo><mover accent=\"true\"><mi style=\"font-feature-settings: 'dtls' on;\">\U0001D401</mi><mo stretchy=\"true\">⃗</mo></mover></mtd><mtd><mo>=</mo><mn>0</mn></mtd></mtr></mtable>"
+    - tex: \begin{aligned}\nabla \times \vec{\mathbf{B}} -\, \frac1c\, \frac{\partial\vec{\mathbf{E}}}{\partial t} & = \frac{4\pi}{c}\vec{\mathbf{j}} \\[1em] \nabla \cdot \vec{\mathbf{E}} & = 4 \pi \rho \\[0.5em]\nabla \times \vec{\mathbf{E}}\, +\, \frac1c\, \frac{\partial\vec{\mathbf{B}}}{\partial t} & = \vec{\mathbf{0}} \\[1em]\nabla \cdot \vec{\mathbf{B}} & = 0 \end{aligned}
+      mml: "<mtable columnalign=\"center\" rowspacing=\"1em 0.5em 1em 1.0ex\" rowalign=\"center\"><mtr><mtd><mi mathvariant=\"normal\">∇</mi><mo>×</mo><mover accent=\"true\"><mi style=\"font-feature-settings: 'dtls' on;\">\U0001D401</mi><mo stretchy=\"true\">⃗</mo></mover><mo>−</mo><mspace width=\"0.17em\"></mspace><mfrac><mn>1</mn><mi>c</mi></mfrac><mspace width=\"0.17em\"></mspace><mfrac><mrow><mi>∂</mi><mover accent=\"true\"><mi style=\"font-feature-settings: 'dtls' on;\">\U0001D404</mi><mo stretchy=\"true\">⃗</mo></mover></mrow><mrow><mi>∂</mi><mi>t</mi></mrow></mfrac></mtd><mtd><mo>=</mo><mfrac><mrow><mn>4</mn><mi>π</mi></mrow><mi>c</mi></mfrac><mover accent=\"true\"><mi style=\"font-feature-settings: 'dtls' on;\">\U0001D423</mi><mo stretchy=\"true\">⃗</mo></mover></mtd></mtr><mtr><mtd><mi mathvariant=\"normal\">∇</mi><mo>⋅</mo><mover accent=\"true\"><mi style=\"font-feature-settings: 'dtls' on;\">\U0001D404</mi><mo stretchy=\"true\">⃗</mo></mover></mtd><mtd><mo>=</mo><mn>4</mn><mi>π</mi><mi>ρ</mi></mtd></mtr><mtr><mtd><mi mathvariant=\"normal\">∇</mi><mo>×</mo><mover accent=\"true\"><mi style=\"font-feature-settings: 'dtls' on;\">\U0001D404</mi><mo stretchy=\"true\">⃗</mo></mover><mspace width=\"0.17em\"></mspace><mo>+</mo><mspace width=\"0.17em\"></mspace><mfrac><mn>1</mn><mi>c</mi></mfrac><mspace width=\"0.17em\"></mspace><mfrac><mrow><mi>∂</mi><mover accent=\"true\"><mi style=\"font-feature-settings: 'dtls' on;\">\U0001D401</mi><mo stretchy=\"true\">⃗</mo></mover></mrow><mrow><mi>∂</mi><mi>t</mi></mrow></mfrac></mtd><mtd><mo>=</mo><mover accent=\"true\"><mn>\U0001D7CE</mn><mo stretchy=\"true\">⃗</mo></mover></mtd></mtr><mtr><mtd><mi mathvariant=\"normal\">∇</mi><mo>⋅</mo><mover accent=\"true\"><mi style=\"font-feature-settings: 'dtls' on;\">\U0001D401</mi><mo stretchy=\"true\">⃗</mo></mover></mtd><mtd><mo>=</mo><mn>0</mn></mtd></mtr></mtable>"
+    - tex: \frac{n!}{k!(n-k)!} = {^n}C_k
+      mml: <mrow><mfrac><mrow><mi>n</mi><mo>!</mo></mrow><mrow><mi>k</mi><mo>!</mo><mo stretchy="false">(</mo><mrow><mi>n</mi><mo>−</mo><mi>k</mi></mrow><mo stretchy="false">)</mo><mo>!</mo></mrow></mfrac><msup><mo>=</mo><mi>n</mi></msup><msub><mi>C</mi><mi>k</mi></msub></mrow>
+    - tex: n \choose k
+      mml: <mrow><mrow><mo fence="true" strechy="true">(</mo><mfrac linethickness="0"><mi>n</mi><mi>k</mi></mfrac><mo strechy="true" fence="true">)</mo></mrow></mrow>
+    - tex: \frac{\frac{1}{x}+\frac{1}{y}}{y-z}
+      mml: <mfrac><mrow><mfrac><mn>1</mn><mi>x</mi></mfrac><mo>+</mo><mfrac><mn>1</mn><mi>y</mi></mfrac></mrow><mrow><mi>y</mi><mo>−</mo><mi>z</mi></mrow></mfrac>
+    - tex: \sqrt[n]{1+x+x^2+x^3+\ldots}
+      mml: <mroot><mrow><mn>1</mn><mo>+</mo><mi>x</mi><mo>+</mo><msup><mi>x</mi><mn>2</mn></msup><mo>+</mo><msup><mi>x</mi><mn>3</mn></msup><mo>+</mo><mi>…</mi></mrow><mi>n</mi></mroot>
+    - tex: \begin{pmatrix}\na_{11} & a_{12} & a_{13}\\ \na_{21} & a_{22} & a_{23}\\ \na_{31} & a_{32} & a_{33}\end{pmatrix}
+      mml: <mrow><mo strechy="true" fence="true">(</mo><mtable columnalign="center" rowalign="center"><mtr><mtd style="text-align:center;"><msub><merror>na</merror><mn>11</mn></msub></mtd><mtd style="text-align:center;"><msub><mi>a</mi><mn>12</mn></msub></mtd><mtd style="text-align:center;"><msub><mi>a</mi><mn>13</mn></msub></mtd></mtr><mtr><mtd style="text-align:center;"><msub><merror>na</merror><mn>21</mn></msub></mtd><mtd style="text-align:center;"><msub><mi>a</mi><mn>22</mn></msub></mtd><mtd style="text-align:center;"><msub><mi>a</mi><mn>23</mn></msub></mtd></mtr><mtr><mtd style="text-align:center;"><msub><merror>na</merror><mn>31</mn></msub></mtd><mtd style="text-align:center;"><msub><mi>a</mi><mn>32</mn></msub></mtd><mtd style="text-align:center;"><msub><mi>a</mi><mn>33</mn></msub></mtd></mtr></mtable><mo strechy="true" fence="true">)</mo></mrow>
+    - tex: \begin{bmatrix} 0 & \cdots & 0 \\ \vdots & \ddots & \vdots \\ 0 & \cdots & 0 \end{bmatrix}
+      mml: <mrow><mo strechy="true" fence="true">[</mo><mtable rowalign="center" columnalign="center"><mtr><mtd style="text-align:center;"><mn>0</mn></mtd><mtd style="text-align:center;"><mi>⋯</mi></mtd><mtd style="text-align:center;"><mn>0</mn></mtd></mtr><mtr><mtd style="text-align:center;"><mi>⋮</mi></mtd><mtd style="text-align:center;"><mi>⋱</mi></mtd><mtd style="text-align:center;"><mi>⋮</mi></mtd></mtr><mtr><mtd style="text-align:center;"><mn>0</mn></mtd><mtd style="text-align:center;"><mi>⋯</mi></mtd><mtd style="text-align:center;"><mn>0</mn></mtd></mtr></mtable><mo strechy="true" fence="true">]</mo></mrow>
+    - tex: f(x) = \sqrt{1+x} \quad (x \ge -1)
+      mml: <mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><msqrt><mrow><mn>1</mn><mo>+</mo><mi>x</mi></mrow></msqrt><mspace width="1.00em"></mspace><mo stretchy="false">(</mo><mrow><mi>x</mi><mo>≥</mo><mo>−</mo><mn>1</mn></mrow><mo stretchy="false">)</mo></mrow>
+    - tex: f(x) \sim x^2 \quad (x\to\infty)
+      mml: <mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>∼</mo><msup><mi>x</mi><mn>2</mn></msup><mspace width="1.00em"></mspace><mo stretchy="false">(</mo><mrow><mi>x</mi><mo>→</mo><mi>∞</mi></mrow><mo stretchy="false">)</mo></mrow>
+    - tex: f(x) = \sqrt{1+x}, \quad x \ge -1
+      mml: <mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><msqrt><mrow><mn>1</mn><mo>+</mo><mi>x</mi></mrow></msqrt><mo>,</mo><mspace width="1.00em"></mspace><mi>x</mi><mo>≥</mo><mo>−</mo><mn>1</mn></mrow>
+    - tex: f(x) \sim x^2, \quad x\to\infty
+      mml: <mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>∼</mo><msup><mi>x</mi><mn>2</mn></msup><mo>,</mo><mspace width="1.00em"></mspace><mi>x</mi><mo>→</mo><mi>∞</mi></mrow>
+    - tex: \mathcal L_{\mathcal T}(\vec{\lambda}) = \sum_{(\mathbf{x},\mathbf{s})\in \mathcal T} \log P(\mathbf{s}\mid\mathbf{x}) - \sum_{i=1}^m \frac{\lambda_i^2}{2\sigma^2}
+      mml: "<mrow><msub><mi class=\"mathcal\">ℒ︀</mi><mi class=\"mathcal\">\U0001D4AF︀</mi></msub><mo stretchy=\"false\">(</mo><mover accent=\"true\"><mi style=\"font-feature-settings: 'dtls' on;\">λ</mi><mo stretchy=\"true\">⃗</mo></mover><mo stretchy=\"false\">)</mo><mo>=</mo><munder><mo largeop=\"true\" movablelimits=\"true\">∑</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mi>\U0001D431</mi><mo>,</mo><mi>\U0001D42C</mi></mrow><mo stretchy=\"false\">)</mo><mo>∈</mo><mi class=\"mathcal\">\U0001D4AF︀</mi></mrow></munder><mi lspace=\"0.11111em\">log</mi><mi>P</mi><mo stretchy=\"false\">(</mo><mrow><mi>\U0001D42C</mi><mo>∣</mo><mi>\U0001D431</mi></mrow><mo stretchy=\"false\">)</mo><mo>−</mo><munderover><mo largeop=\"true\" movablelimits=\"true\">∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>m</mi></munderover><mfrac><mrow><msubsup><mi>λ</mi><mi>i</mi><mn>2</mn></msubsup></mrow><mrow><mn>2</mn><msup><mi>σ</mi><mn>2</mn></msup></mrow></mfrac></mrow>"
+    - tex: S (\omega)=\frac{\alpha g^2}{\omega^5} \,\ne ^{[-0.74\bigl\{\frac{\omega U_\omega 19.5}{g}\bigr\}^{-4}]}
+      mml: <mrow><mi>S</mi><mo stretchy="false">(</mo><mi>ω</mi><mo stretchy="false">)</mo><mo>=</mo><mfrac><mrow><mi>α</mi><msup><mi>g</mi><mn>2</mn></msup></mrow><mrow><msup><mi>ω</mi><mn>5</mn></msup></mrow></mfrac><mspace width="0.17em"></mspace><msup><mo>≠</mo><mrow><mo stretchy="false">[</mo><mrow><mo>−</mo><mn>0.74</mn><mo scriptlevel="-1" stretchy="false">{</mo><mfrac><mrow><mi>ω</mi><msub><mi>U</mi><mi>ω</mi></msub><mn>19.5</mn></mrow><mi>g</mi></mfrac><msup><mo stretchy="false" scriptlevel="-1">}</mo><mrow><mo>−</mo><mn>4</mn></mrow></msup></mrow><mo stretchy="false">]</mo></mrow></msup></mrow>
+limits:
+    - tex: \sigma = \sqrt{\frac 1 n \sum_{i=1}^n (\mu - x_i)^2}
+      mml: |-
+        <mrow>
+          <mi>σ</mi>
+          <mo>=</mo>
+          <msqrt>
+            <mrow>
+              <mfrac>
+                <mn>1</mn>
+                <mi>n</mi>
+              </mfrac>
+              <munderover>
+                <mo largeop="true" movablelimits="true">∑</mo>
+                <mrow>
+                  <mi>i</mi>
+                  <mo>=</mo>
+                  <mn>1</mn>
+                </mrow>
+                <mi>n</mi>
+              </munderover>
+              <mo stretchy="false">(</mo>
+              <mrow>
+                <mi>μ</mi>
+                <mo>−</mo>
+                <msub>
+                  <mi>x</mi>
+                  <mi>i</mi>
+                </msub>
+              </mrow>
+              <msup>
+                <mo stretchy="false">)</mo>
+                <mn>2</mn>
+              </msup>
+            </mrow>
+          </msqrt>
+        </mrow>
+    - tex: \left.\int_a^b f(x) dx =  F(x) \right\mid_a^b
+      mml: <mrow><mrow><mrow><msubsup><mo largeop="true" movablelimits="true">∫</mo><mi>a</mi><mi>b</mi></msubsup><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mi>d</mi><mi>x</mi><mo>=</mo><mi>F</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><msubsup><mo>∣</mo><mi>a</mi><mi>b</mi></msubsup></mrow></mrow>
+    - tex: \lim_{b\to\infty}\int_0^{b}e^{-x^2} dx = \frac{\sqrt{\pi}}{2}
+      mml: <mrow><munder><mi lspace="0.11111em" movablelimits="true">lim</mi><mrow><mi>b</mi><mo>→</mo><mi>∞</mi></mrow></munder><msubsup><mo largeop="true" movablelimits="true">∫</mo><mn>0</mn><mi>b</mi></msubsup><msup><mi>e</mi><mrow><mo>−</mo><msup><mi>x</mi><mn>2</mn></msup></mrow></msup><mi>d</mi><mi>x</mi><mo>=</mo><mfrac><msqrt><mi>π</mi></msqrt><mn>2</mn></mfrac></mrow>
+    - tex: \int_{\int_a^b f(x) dx}^{\int_c^d g(x) dx}h(x)dx
+      mml: <mrow><msubsup><mo largeop="true" movablelimits="true">∫</mo><mrow><msubsup><mo largeop="true" movablelimits="true">∫</mo><mi>a</mi><mi>b</mi></msubsup><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mi>d</mi><mi>x</mi></mrow><mrow><msubsup><mo movablelimits="true" largeop="true">∫</mo><mi>c</mi><mi>d</mi></msubsup><mi>g</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mi>d</mi><mi>x</mi></mrow></msubsup><mi>h</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mi>d</mi><mi>x</mi></mrow>
+    - tex: \Gamma(t) = \int_0^{+\infty} x^{t-1}e^{-x}\dv*{x}!/ = \frac 1 t \prod_{n=1}^{\infty}\frac{(1+\frac 1 t)^t}{1+\frac 1 t} \sim\sqrt{\frac{2\pi}{t}}{\left(\frac t e \right)^t}
+      mml: <mrow><mi mathvariant="normal">Γ</mi><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>=</mo><msubsup><mo largeop="true" movablelimits="true">∫</mo><mn>0</mn><mrow><mo>+</mo><mi>∞</mi></mrow></msubsup><msup><mi>x</mi><mrow><mi>t</mi><mo>−</mo><mn>1</mn></mrow></msup><msup><mi>e</mi><mrow><mo>−</mo><mi>x</mi></mrow></msup><merror>dv</merror><mi>x</mi><mo>!</mo><mo>/</mo><mo>=</mo><mfrac><mn>1</mn><mi>t</mi></mfrac><munderover><mo largeop="true" movablelimits="true">∏</mo><mrow><mi>n</mi><mo>=</mo><mn>1</mn></mrow><mi>∞</mi></munderover><mfrac><mrow><mo stretchy="false">(</mo><mrow><mn>1</mn><mo>+</mo><mfrac><mn>1</mn><mi>t</mi></mfrac></mrow><msup><mo stretchy="false">)</mo><mi>t</mi></msup></mrow><mrow><mn>1</mn><mo>+</mo><mfrac><mn>1</mn><mi>t</mi></mfrac></mrow></mfrac><mo>∼</mo><msqrt><mfrac><mrow><mn>2</mn><mi>π</mi></mrow><mi>t</mi></mfrac></msqrt><mrow><mo stretchy="true" fence="true">(</mo><mrow><mfrac><mi>t</mi><mi>e</mi></mfrac><msup><mo fence="true" stretchy="true">)</mo><mi>t</mi></msup></mrow></mrow></mrow>
+    - tex: \int_0^1 x^x\,\mathrm{d}x = \sum_{n = 1}^\infty{(-1)^{n + 1}\,n^{-n}}
+      mml: <mrow><msubsup><mo largeop="true" movablelimits="true">∫</mo><mn>0</mn><mn>1</mn></msubsup><msup><mi>x</mi><mi>x</mi></msup><mspace width="0.17em"></mspace><mpadded lspace="0"><mi mathvariant="normal">d</mi></mpadded><mi>x</mi><mo>=</mo><munderover><mo largeop="true" movablelimits="true">∑</mo><mrow><mi>n</mi><mo>=</mo><mn>1</mn></mrow><mi>∞</mi></munderover><mrow><mo stretchy="false">(</mo><mrow><mo>−</mo><mn>1</mn></mrow><msup><mo stretchy="false">)</mo><mrow><mi>n</mi><mo>+</mo><mn>1</mn></mrow></msup><mspace width="0.17em"></mspace><msup><mi>n</mi><mrow><mo>−</mo><mi>n</mi></mrow></msup></mrow></mrow>
+    - tex: \sideset{_{{}_\alpha^\beta\mathfrak{A}_\delta^\gamma}^{{}_\epsilon^\zeta\mathfrak{B}_\theta^\eta}}{_{{}_\rho^\sigma\mathfrak{E}_\upsilon^\tau}^{{}_\nu^\xi\mathfrak{D}_\pi^o}}\prod_{{}_\phi^\chi\mathfrak{F}_\omega^\psi}^{{}_\iota^\kappa\mathfrak{C}_\mu^\lambda}
+      mml: "<mrow><munderover><mmultiscripts><mo largeop=\"true\" movablelimits=\"true\">∏</mo><mrow><msubsup><none></none><mi>ρ</mi><mi>σ</mi></msubsup><msubsup><mi>\U0001D508</mi><mi>υ</mi><mi>τ</mi></msubsup></mrow><mrow><msubsup><none></none><mi>ν</mi><mi>ξ</mi></msubsup><msubsup><mi>\U0001D507</mi><mi>π</mi><mi>o</mi></msubsup></mrow><mprescripts></mprescripts><mrow><msubsup><none></none><mi>α</mi><mi>β</mi></msubsup><msubsup><mi>\U0001D504</mi><mi>δ</mi><mi>γ</mi></msubsup></mrow><mrow><msubsup><none></none><mi>ϵ</mi><mi>ζ</mi></msubsup><msubsup><mi>\U0001D505</mi><mi>θ</mi><mi>η</mi></msubsup></mrow></mmultiscripts><mrow><msubsup><none></none><mi>ϕ</mi><mi>χ</mi></msubsup><msubsup><mi>\U0001D509</mi><mi>ω</mi><mi>ψ</mi></msubsup></mrow><mrow><msubsup><none></none><mi>ι</mi><mi>κ</mi></msubsup><msubsup><mi>ℭ</mi><mi>μ</mi><mi>λ</mi></msubsup></mrow></munderover></mrow>"
+    - tex: \sum_{\substack{1\lt i\lt 3 \\ 1\le j\lt 5}}a_{ij}=\prod^{\substack{1\lt i\lt 3 \\ 1\le j\lt 5}}b_{ij}
+      mml: <mrow><munder><mo largeop="true" movablelimits="true">∑</mo><mtable displaystyle="false" columnalign="center" rowalign="center" rowspacing="0"><mtr><mtd><mn>1</mn><mo>&lt;</mo><mi>i</mi><mo>&lt;</mo><mn>3</mn></mtd></mtr><mtr><mtd><mn>1</mn><mo>≤</mo><mi>j</mi><mo>&lt;</mo><mn>5</mn></mtd></mtr></mtable></munder><msub><mi>a</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>=</mo><mover><mo largeop="true" movablelimits="true">∏</mo><mtable columnalign="center" rowalign="center" rowspacing="0" displaystyle="false"><mtr><mtd><mn>1</mn><mo>&lt;</mo><mi>i</mi><mo>&lt;</mo><mn>3</mn></mtd></mtr><mtr><mtd><mn>1</mn><mo>≤</mo><mi>j</mi><mo>&lt;</mo><mn>5</mn></mtd></mtr></mtable></mover><msub><mi>b</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub></mrow>
+    - tex: \lim_{x\to a} \quad \int_a^b f(x) dx \quad \sum_{i=0}^n a_i
+      mml: <mrow><munder><mi lspace="0.11111em" movablelimits="true">lim</mi><mrow><mi>x</mi><mo>→</mo><mi>a</mi></mrow></munder><mspace width="1.00em"></mspace><msubsup><mo largeop="true" movablelimits="true">∫</mo><mi>a</mi><mi>b</mi></msubsup><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mi>d</mi><mi>x</mi><mspace width="1.00em"></mspace><munderover><mo largeop="true" movablelimits="true">∑</mo><mrow><mi>i</mi><mo>=</mo><mn>0</mn></mrow><mi>n</mi></munderover><msub><mi>a</mi><mi>i</mi></msub></mrow>
+    - tex: \lim\limits_{x\to a} \quad \int\limits_a^b f(x) dx \quad \sum\limits_{i=0}^n a_i
+      mml: <mrow><munder><mi lspace="0.11111em" movablelimits="false">lim</mi><mrow><mi>x</mi><mo>→</mo><mi>a</mi></mrow></munder><mspace width="1.00em"></mspace><munderover><mo largeop="true" movablelimits="false">∫</mo><mi>a</mi><mi>b</mi></munderover><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mi>d</mi><mi>x</mi><mspace width="1.00em"></mspace><munderover><mo largeop="true" movablelimits="false">∑</mo><mrow><mi>i</mi><mo>=</mo><mn>0</mn></mrow><mi>n</mi></munderover><msub><mi>a</mi><mi>i</mi></msub></mrow>
+    - tex: |
+        \lim\nolimits_{x\to a} \quad \int\nolimits_a^b f(x) dx \quad \sum\nolimits_{i=0}^n a_i
+      mml: <mrow><msub><mi lspace="0.11111em" movablelimits="true">lim</mi><mrow><mi>x</mi><mo>→</mo><mi>a</mi></mrow></msub><mspace width="1.00em"></mspace><msubsup><mo largeop="true" movablelimits="true">∫</mo><mi>a</mi><mi>b</mi></msubsup><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mi>d</mi><mi>x</mi><mspace width="1.00em"></mspace><msubsup><mo largeop="true" movablelimits="true">∑</mo><mrow><mi>i</mi><mo>=</mo><mn>0</mn></mrow><mi>n</mi></msubsup><msub><mi>a</mi><mi>i</mi></msub></mrow>
+scripts:
+    - tex: ^x
+      mml: <mi>x</mi>
+    - tex: _x
+      mml: <mi>x</mi>
+    - tex: x^y
+      mml: <mrow><msup><mi>x</mi><mi>y</mi></msup></mrow>
+    - tex: x_y
+      mml: <mrow><msub><mi>x</mi><mi>y</mi></msub></mrow>
+    - tex: x_y^z
+      mml: <mrow><msubsup><mi>x</mi><mi>y</mi><mi>z</mi></msubsup></mrow>
+    - tex: x^y_z
+      mml: <mrow><msubsup><mi>x</mi><mi>z</mi><mi>y</mi></msubsup></mrow>
+    - tex: ^x_y
+      mml: <mrow><msubsup><none></none><mi>y</mi><mi>x</mi></msubsup></mrow>
+    - tex: _x^y
+      mml: <mrow><msubsup><none></none><mi>x</mi><mi>y</mi></msubsup></mrow>
+    - tex: x^y^z
+      mml: <mrow><msup><mi>x</mi><mi>y</mi></msup><msup><none></none><mi>z</mi></msup></mrow>
+    - tex: x_y_z
+      mml: <mrow><msub><mi>x</mi><mi>y</mi></msub><msub><none></none><mi>z</mi></msub></mrow>
+    - tex: x^{y^z}
+      mml: <mrow><msup><mi>x</mi><mrow><msup><mi>y</mi><mi>z</mi></msup></mrow></msup></mrow>
+    - tex: '{x^y}^z'
+      mml: <mrow><msup><mrow><msup><mi>x</mi><mi>y</mi></msup></mrow><mi>z</mi></msup></mrow>
+    - tex: x_{y_z}
+      mml: <mrow><msub><mi>x</mi><mrow><msub><mi>y</mi><mi>z</mi></msub></mrow></msub></mrow>
+    - tex: '{x_y}_z'
+      mml: <mrow><msub><mrow><msub><mi>x</mi><mi>y</mi></msub></mrow><mi>z</mi></msub></mrow>
+    - tex: x^{y_z}
+      mml: <mrow><msup><mi>x</mi><mrow><msub><mi>y</mi><mi>z</mi></msub></mrow></msup></mrow>
+    - tex: '{x^y}_z'
+      mml: <mrow><msub><mrow><msup><mi>x</mi><mi>y</mi></msup></mrow><mi>z</mi></msub></mrow>
+    - tex: x_{y^z}
+      mml: <mrow><msub><mi>x</mi><mrow><msup><mi>y</mi><mi>z</mi></msup></mrow></msub></mrow>
+    - tex: '{x_y}^z'
+      mml: <mrow><msup><mrow><msub><mi>x</mi><mi>y</mi></msub></mrow><mi>z</mi></msup></mrow>
+    - tex: x_{y_a^b}^{z_c^d}
+      mml: <mrow><msubsup><mi>x</mi><mrow><msubsup><mi>y</mi><mi>a</mi><mi>b</mi></msubsup></mrow><mrow><msubsup><mi>z</mi><mi>c</mi><mi>d</mi></msubsup></mrow></msubsup></mrow>
+    - tex: x^\text{hello world}
+      mml: <mrow><msup><mi>x</mi><mtext>hello&nbsp;world</mtext></msup></mrow>
+    - tex: |
+        x^{\text{hello world}}
+      mml: <mrow><msup><mi>x</mi><mtext>hello&nbsp;world</mtext></msup></mrow>
