@@ -52,16 +52,16 @@ var (
 	}
 
 	precompiled_commands = map[string]*MMLNode{
-		"argmin":     NewMMLNode("mi", "arg min").SetProps(propMovablelimits | propLimitsunderover),
-		"argmax":     NewMMLNode("mi", "arg max").SetProps(propMovablelimits | propLimitsunderover),
-		"projlim":    NewMMLNode("mi", "proj lim").SetProps(propMovablelimits | propLimitsunderover),
-		"injlim":     NewMMLNode("mi", "inj lim").SetProps(propMovablelimits | propLimitsunderover),
-		"limsup":     NewMMLNode("mi", "lim sup").SetProps(propMovablelimits | propLimitsunderover),
-		"liminf":     NewMMLNode("mi", "lim inf").SetProps(propMovablelimits | propLimitsunderover),
-		"varinjlim":  NewMMLNode("munder").SetProps(propMovablelimits|propLimitsunderover).AppendChild(NewMMLNode("mi", "lim"), NewMMLNode("mo", "→").SetTrue("stretchy")),
-		"varprojlim": NewMMLNode("munder").SetProps(propMovablelimits|propLimitsunderover).AppendChild(NewMMLNode("mi", "lim"), NewMMLNode("mo", "←").SetTrue("stretchy")),
-		"varliminf":  NewMMLNode("mpadded").SetProps(propMovablelimits | propLimitsunderover).AppendChild(NewMMLNode("mi", "lim").SetCssProp("padding", "0 0 0.1em 0").SetCssProp("border-bottom", "0.065em solid")),
-		"varlimsup":  NewMMLNode("mpadded").SetProps(propMovablelimits | propLimitsunderover).AppendChild(NewMMLNode("mi", "lim").SetCssProp("padding", "0.1em 0 0 0").SetCssProp("border-top", "0.065em solid")),
+		"argmin":     NewMMLNode("mo", "arg min").SetProps(propMovablelimits | propLimitsunderover),
+		"argmax":     NewMMLNode("mo", "arg max").SetProps(propMovablelimits | propLimitsunderover),
+		"projlim":    NewMMLNode("mo", "proj lim").SetProps(propMovablelimits | propLimitsunderover),
+		"injlim":     NewMMLNode("mo", "inj lim").SetProps(propMovablelimits | propLimitsunderover),
+		"limsup":     NewMMLNode("mo", "lim sup").SetProps(propMovablelimits | propLimitsunderover),
+		"liminf":     NewMMLNode("mo", "lim inf").SetProps(propMovablelimits | propLimitsunderover),
+		"varinjlim":  NewMMLNode("munder").SetProps(propMovablelimits|propLimitsunderover).AppendChild(NewMMLNode("mo", "lim"), NewMMLNode("mo", "→").SetTrue("stretchy")),
+		"varprojlim": NewMMLNode("munder").SetProps(propMovablelimits|propLimitsunderover).AppendChild(NewMMLNode("mo", "lim"), NewMMLNode("mo", "←").SetTrue("stretchy")),
+		"varliminf":  NewMMLNode("mpadded").SetProps(propMovablelimits | propLimitsunderover).AppendChild(NewMMLNode("mo", "lim").SetCssProp("padding", "0 0 0.1em 0").SetCssProp("border-bottom", "0.065em solid")),
+		"varlimsup":  NewMMLNode("mpadded").SetProps(propMovablelimits | propLimitsunderover).AppendChild(NewMMLNode("mo", "lim").SetCssProp("padding", "0.1em 0 0 0").SetCssProp("border-top", "0.065em solid")),
 	}
 
 	math_variants = map[string]parseContext{
@@ -104,8 +104,9 @@ var (
 	}
 	// TODO: should these be combining unicode characters?
 	accents = map[string]rune{
-		"acute":          0x00b4,
-		"bar":            0x0305,
+		"acute": 0x00b4,
+		//"bar":            0x0305,
+		"bar":            0x203e,
 		"breve":          0x0306,
 		"u":              0x0306,
 		"check":          0x030c,
@@ -113,7 +114,7 @@ var (
 		"ddot":           0x0308,
 		"dddot":          0x20db,
 		"ddddot":         0x20dc,
-		"frown":          0x0311,
+		"invbreve":       0x0311,
 		"grave":          0x0060,
 		"hat":            0x0302,
 		"mathring":       0x030a,

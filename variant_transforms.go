@@ -46,7 +46,7 @@ func (n *MMLNode) set_variants_from_context(context parseContext) {
 	case ctxVarSans:
 		variant = "sans-serif"
 	case ctxVarSans | ctxVarBold:
-		variant = "sans-serif-bold"
+		variant = "bold-sans-serif"
 	case ctxVarSans | ctxVarBold | ctxVarItalic:
 		variant = "sans-serif-bold-italic"
 	case ctxVarSans | ctxVarItalic:

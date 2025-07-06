@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"strings"
 )
 
@@ -278,4 +279,107 @@ func (pitz *Pitziil) SemanticsOnly(tex string) (string, error) {
 	}
 	ast.Write(&builder, indent)
 	return builder.String(), err
+}
+
+type directoryEntry struct {
+	input  string
+	result string
+	kind   string
+}
+
+// Create an HTML directory of all available symbols and commands
+func CreateDirectory() {
+	allnames := make([]string, 0, len(symbolTable))
+	results := make(map[string]directoryEntry)
+	temp := make(map[string][]string)
+	aliases := make(map[string][]string)
+	for name, value := range symbolTable {
+		allnames = append(allnames, name)
+		if _, ok := temp[value.char]; ok {
+			temp[value.char] = append(temp[value.char], name)
+		} else {
+			temp[value.char] = []string{name}
+		}
+		tex := `\` + name
+		res, _ := DisplayStyle(tex, nil)
+		results[name] = directoryEntry{tex, res, "Symbol"}
+	}
+
+	for _, synonyms := range temp {
+		for _, name := range synonyms {
+			if _, ok := aliases[name]; !ok {
+				aliases[name] = make([]string, 0)
+				for _, syn := range synonyms {
+					if syn == name {
+						continue
+					}
+					aliases[name] = append(aliases[name], syn)
+				}
+			}
+		}
+	}
+
+	for name, _ := range math_variants {
+		allnames = append(allnames, name)
+		tex := `\` + name + `{ABCLMNOPQRXYZabclmnopqrxyz0123456789}`
+		res, _ := DisplayStyle(tex, nil)
+		results[name] = directoryEntry{tex, res, "Math Variant"}
+	}
+	for name, _ := range accents {
+		allnames = append(allnames, name)
+		tex := `\` + name + `{a} \quad \` + name + `{xyz}`
+		res, _ := DisplayStyle(tex, nil)
+		results[name] = directoryEntry{tex, res, "Accent"}
+	}
+	for name, _ := range accents_below {
+		allnames = append(allnames, name)
+		tex := `\` + name + `{a} \quad \` + name + `{xyz}`
+		res, _ := DisplayStyle(tex, nil)
+		results[name] = directoryEntry{tex, res, "Accent"}
+	}
+	slices.Sort(allnames)
+	f, err := os.Create("directory.html")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	fmt.Fprintln(f, `
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<title>TreeBlood Directory</title>
+		<meta name="description" content="TreeBlood Directory"/>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1"/>
+		<link rel="stylesheet" href="stylesheet.css">
+		<style>
+			table {
+				border-collapse: collapse;
+			}
+			tr {
+				border: 3px solid #888888;
+			}
+			td {
+				padding: 1em;
+			}
+			.tex{
+				max-width: 50em;
+				height: 100%%;
+				overflow: auto;
+				font-size: 0.7em;
+			}
+		</style>
+	</head>
+	<body>
+	<table><tbody>`)
+	for _, name := range allnames {
+		row := results[name]
+		if len(aliases[name]) > 0 {
+			fmt.Fprintf(f, `<tr><td><div class="tex"><code>%s</code><br>(aliases: <code>%s</code>)</div></td><td>%s</td><td>%s</td></tr>`, row.input, strings.Join(aliases[name], ", "), row.kind, row.result)
+		} else {
+			fmt.Fprintf(f, `<tr><td><div class="tex"><code>%s</code></div></td><td>%s</td><td>%s</td></tr>`, row.input, row.kind, row.result)
+		}
+		fmt.Fprintln(f)
+	}
+	f.Write([]byte(`</tbody></table></body></html>`))
 }

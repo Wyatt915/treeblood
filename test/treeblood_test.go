@@ -99,6 +99,10 @@ func readTestcases() map[string][]TexTest {
 	return AllTests
 }
 
+func TestCreateDirectory(t *testing.T) {
+	treeblood.CreateDirectory()
+}
+
 func TestTexInputs(t *testing.T) {
 	AllTests := readTestcases()
 	results := make(map[string][]TexTest)
