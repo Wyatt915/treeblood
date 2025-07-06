@@ -52,6 +52,8 @@ var (
 	}
 
 	precompiled_commands = map[string]*MMLNode{
+		"argmin":     NewMMLNode("mi", "arg min").SetProps(propMovablelimits | propLimitsunderover),
+		"argmax":     NewMMLNode("mi", "arg max").SetProps(propMovablelimits | propLimitsunderover),
 		"projlim":    NewMMLNode("mi", "proj lim").SetProps(propMovablelimits | propLimitsunderover),
 		"injlim":     NewMMLNode("mi", "inj lim").SetProps(propMovablelimits | propLimitsunderover),
 		"limsup":     NewMMLNode("mi", "lim sup").SetProps(propMovablelimits | propLimitsunderover),
