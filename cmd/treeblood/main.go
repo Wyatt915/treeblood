@@ -12,6 +12,12 @@ import (
 func main() {
 	inputPtr := flag.String("i", "", "input file name")
 	outputPtr := flag.String("o", "", "output file name")
+	formatPtr := flag.String("f", "display",
+		`accepted values:
+	- display: 	for display equations
+	- inline: 	for inline equations
+	- semantic: only produce the first child of the <semantics> tag (no <math> or <semantics> tags will be written)
+	`)
 	var reader io.ReadCloser
 	var writer io.WriteCloser
 	var tex []byte
@@ -42,7 +48,16 @@ func main() {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
-	mml, err := treeblood.DisplayStyle(string(tex), nil)
+	var mml string
+	switch *formatPtr {
+	case "display":
+		mml, err = treeblood.DisplayStyle(string(tex), nil)
+	case "inline":
+		mml, err = treeblood.InlineStyle(string(tex), nil)
+	case "semantic":
+		doc := treeblood.NewPitziil()
+		mml, err = doc.SemanticsOnly(string(tex))
+	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		fmt.Fprintln(os.Stderr, mml)

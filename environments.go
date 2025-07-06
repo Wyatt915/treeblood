@@ -283,7 +283,7 @@ func processEnv(node *MMLNode, env string, ctx parseContext) *MMLNode {
 	case "cases":
 		left = strechyOP("{")
 		attrib["columnalign"] = "left"
-	case "align", "align*":
+	case "align", "align*", "aligned":
 		attrib["displaystyle"] = "true"
 		//attrib["columnalign"] = "left"
 		flipflop := []string{"right", "left"}

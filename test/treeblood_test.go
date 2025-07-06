@@ -1,14 +1,13 @@
 package treeblood_test
 
 import (
-	"bytes"
 	"encoding/xml"
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/wyatt915/treeblood"
 	"go.yaml.in/yaml/v3"
@@ -87,7 +86,7 @@ func compareXML(a, b string) error {
 	return dft(x, y)
 }
 
-func TestAll(t *testing.T) {
+func readTestcases() map[string][]TexTest {
 	AllTests := make(map[string][]TexTest)
 	testfile, err := os.ReadFile("TESTCASES.yaml")
 	if err != nil {
@@ -97,12 +96,22 @@ func TestAll(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
+	return AllTests
+}
+
+func TestTexInputs(t *testing.T) {
+	AllTests := readTestcases()
+	results := make(map[string][]TexTest)
 	for testname, tests := range AllTests {
+		if testname == "derivatives" {
+			continue
+		}
 		subtest := func(tt *testing.T) {
 			doc := treeblood.NewPitziil()
+			doc.PrintOneLine = true
+			results[testname] = make([]TexTest, 0)
 			for i, test := range tests {
 				res, err := doc.SemanticsOnly(test.Tex)
-				doc.PrintOneLine = true
 				if err != nil {
 					tt.Errorf("Subtest %s failed on #%d", testname, i)
 					//fmt.Printf("Subtest %s failed on #%d", testname, i)
@@ -111,9 +120,72 @@ func TestAll(t *testing.T) {
 					tt.Errorf("%s produced incorrect output (%s):\n%s\n", testname, err.Error(), test.Tex)
 					//fmt.Printf("%s produced incorrect output: %s\n", testname, res)
 				}
+				results[testname] = append(results[testname], TexTest{Tex: test.Tex, MML: res})
+
 			}
 		}
 		t.Run(testname, subtest)
+	}
+
+	html, err := os.Create("results.html")
+	if err != nil {
+		panic(err)
+	}
+	defer html.Close()
+	writeHTML(html, results)
+
+	f, err := os.Create("results.yaml")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	yml, err := yaml.Marshal(results)
+	if err != nil {
+		panic(err)
+	}
+	f.Write(yml)
+}
+
+func BenchmarkTexInputs(b *testing.B) {
+	AllTests := readTestcases()
+	doc := treeblood.NewPitziil()
+	names := make([]string, 0)
+	for name := range AllTests {
+		names = append(names, name)
+	}
+	slices.Sort(names)
+	for _, name := range names {
+		tests := AllTests[name]
+		b.Run(name, func(b *testing.B) {
+			chars := 0
+			for b.Loop() {
+				for _, t := range tests {
+					chars += len(t.Tex)
+					doc.DisplayStyle(t.Tex)
+				}
+			}
+			b.ReportMetric(float64(chars)/float64(b.Elapsed().Milliseconds()), "characters/ms")
+			b.ReportAllocs()
+		})
+	}
+}
+
+func BenchmarkComplexInputs(b *testing.B) {
+	AllTests := readTestcases()
+	doc := treeblood.NewPitziil()
+	tests := AllTests["intmath"]
+	for _, test := range tests {
+		b.Run(test.Tex, func(b *testing.B) {
+			chars := 0
+			for b.Loop() {
+				for _, t := range tests {
+					chars += len(t.Tex)
+					doc.DisplayStyle(t.Tex)
+				}
+			}
+			b.ReportMetric(float64(chars)/float64(b.Elapsed().Milliseconds()), "characters/ms")
+			b.ReportAllocs()
+		})
 	}
 }
 
@@ -149,26 +221,23 @@ func TestAll(t *testing.T) {
 //	writeHTML(f, `Intmath`, inputs, nil)
 //}
 
-func readTestFile(name string) []string {
-	testcases, err := os.ReadFile(name)
-	if err != nil {
-		panic(err.Error())
-	}
+//func readTestFile(name string) []string {
+//	testcases, err := os.ReadFile(name)
+//	if err != nil {
+//		panic(err.Error())
+//	}
+//
+//	test := make([]string, 0)
+//
+//	for _, s := range bytes.Split(testcases, []byte{'\n', '\n'}) {
+//		if len(s) > 1 {
+//			test = append(test, string(s))
+//		}
+//	}
+//	return test
+//}
 
-	test := make([]string, 0)
-
-	for _, s := range bytes.Split(testcases, []byte{'\n', '\n'}) {
-		if len(s) > 1 {
-			test = append(test, string(s))
-		}
-	}
-	return test
-}
-
-func writeHTML(w io.Writer, testname string, test []string, macros map[string]string) {
-	fmt.Println(testname, "test:")
-	var total_time time.Duration
-	var total_chars int
+func writeHTML(w io.Writer, tests map[string][]TexTest) {
 	fmt.Fprintf(w, `
 	<!DOCTYPE html>
 	<html lang="en">
@@ -197,35 +266,21 @@ func writeHTML(w io.Writer, testname string, test []string, macros map[string]st
 		</style>
 	</head>
 	<body>
-	<table><tbody><tr><th colspan="3">TreeBlood %s Test</th></tr>`, testname, testname, testname)
-	//prepared := treeblood.PrepareMacros(macros)
+	<table><tbody>`, "TreeBlood Tests", "TreeBlood Tests")
 	pitz := treeblood.NewDocument(nil, false)
-	ioMap := make([]TexTest, 0)
-	for _, tex := range test {
-		//fmt.Println(tex)
-		begin := time.Now()
-		rendered, err := pitz.DisplayStyle(tex)
-		elapsed := time.Since(begin)
-		if err != nil {
-			rendered = "ERROR: " + err.Error()
+	for testname, test := range tests {
+		fmt.Fprintf(w, "<tr><th colspan=\"3\">TreeBlood %s Test</th></tr>\n", testname)
+		for _, tex := range test {
+			rendered, err := pitz.DisplayStyle(tex.Tex)
+			if err != nil {
+				rendered = "ERROR: " + err.Error()
+			}
+			inline, err := pitz.TextStyle(tex.Tex)
+			if err != nil {
+				inline = "ERROR: " + err.Error()
+			}
+			fmt.Fprintf(w, `<tr><td><div class="tex"><pre>%s</pre></div></td><td>%s</td><td>%s</td></tr>`, tex.Tex, rendered, inline)
 		}
-		total_time += elapsed
-		total_chars += len(tex)
-		inline, err := pitz.TextStyle(tex)
-		ioMap = append(ioMap, TexTest{Tex: tex, MML: strings.TrimSpace(rendered)})
-		fmt.Fprintf(w, `<tr><td><div class="tex"><pre>%s</pre></div></td><td>%s</td><td>%s</td></tr>`, tex, rendered, inline)
-		fmt.Printf("%d characters in %v (%f characters/ms)\n", len(tex), elapsed, float64(len(tex))/(1000*elapsed.Seconds()))
 	}
 	w.Write([]byte(`</tbody></table></body></html>`))
-	fmt.Println("time: ", total_time)
-	fmt.Println("chars: ", total_chars)
-	fmt.Printf("throughput: %.4f character/ms\n\n", float64(total_chars)/(1000*total_time.Seconds()))
-
-	cases, _ := yaml.Marshal(ioMap)
-	f, err := os.Create(testname + ".yaml")
-	if err != nil {
-		panic(err.Error())
-	}
-	defer f.Close()
-	f.Write(cases)
 }

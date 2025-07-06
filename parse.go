@@ -88,9 +88,9 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 	doCommand := func(tok Token) *MMLNode {
 		var n *MMLNode
 		if is_symbol(tok) {
-			n = make_symbol(tok, context)
+			n = make_symbol(tok, context&^ctxRoot)
 		} else {
-			n = pitz.ProcessCommand(context, tok, q)
+			n = pitz.ProcessCommand(context&^ctxRoot, tok, q)
 		}
 		return n
 	}
@@ -117,7 +117,7 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 			continue
 		}
 		if len(expr.toks) > 1 {
-			temp := pitz.ParseTex(ExpressionQueue(expr.toks), context)
+			temp := pitz.ParseTex(ExpressionQueue(expr.toks), context&^ctxRoot)
 			temp.Properties |= promotedProperties
 			siblings = append(siblings, temp)
 			promotedProperties = 0
@@ -186,18 +186,18 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 				child.SetTrue("stretchy")
 			}
 		case tok.Kind&(tokOpen|tokEnv) == tokOpen|tokEnv:
-			ctx := setEnvironmentContext(tok, context)
+			ctx := setEnvironmentContext(tok, context) &^ ctxRoot
 			env, _ := q.PopFront()
 			child = processEnv(pitz.ParseTex(ExpressionQueue(env.toks), ctx), tok.Value, ctx)
 			q.PopFront()
 		case tok.Kind&(tokOpen|tokCurly) == tokOpen|tokCurly:
-			child = pitz.ParseTex(q, context)
+			child = pitz.ParseTex(q, context&^ctxRoot)
 		case tok.Kind&tokLetter > 0:
 			child = NewMMLNode("mi", tok.Value)
-			child.set_variants_from_context(context)
+			child.set_variants_from_context(context &^ ctxRoot)
 		case tok.Kind&tokNumber > 0:
 			child = NewMMLNode("mn", tok.Value)
-			child.set_variants_from_context(context)
+			child.set_variants_from_context(context &^ ctxRoot)
 		case tok.Kind&tokOpen > 0:
 			child = NewMMLNode("mo")
 			// process the (bracketed expression) as a standalone mrow
@@ -221,8 +221,8 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 					container.AppendChild(child)
 				}
 				container.AppendChild(
-					pitz.ParseTex(q, context),
-					pitz.ParseTex(q, context), //closing fence
+					pitz.ParseTex(q, context&^ctxRoot),
+					pitz.ParseTex(q, context&^ctxRoot), //closing fence
 				)
 				siblings = append(siblings, container)
 				//don't need to worry about promotedProperties here.
@@ -249,9 +249,9 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 			child = doFence(tok)
 		case tok.Kind&tokCommand > 0:
 			if is_symbol(tok) {
-				child = make_symbol(tok, context)
+				child = make_symbol(tok, context&^ctxRoot)
 			} else {
-				child = pitz.ProcessCommand(context, tok, q)
+				child = pitz.ProcessCommand(context&^ctxRoot, tok, q)
 			}
 		case tok.Kind&tokWhitespace > 0:
 			if context&ctxText > 0 {
@@ -306,7 +306,19 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 		node = NewMMLNode("mrow")
 		node.Children = append(node.Children, siblings...)
 	} else if len(siblings) == 1 {
-		return siblings[0]
+		if siblings[0] == nil {
+			return nil
+		}
+		//if siblings[0].Tag == "mrow" {
+		//	siblings[0].doPostProcess()
+		//	return siblings[0]
+		//}
+		if context&ctxRoot == ctxRoot && !(siblings[0].Tag == "mrow" || siblings[0].Tag == "mtd") {
+			node = NewMMLNode("mrow")
+			node.Children = append(node.Children, siblings...)
+		} else {
+			return siblings[0]
+		}
 	} else {
 		return nil
 	}
