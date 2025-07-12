@@ -85,19 +85,10 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 		}
 		context ^= ctxEnvHasArg
 	}
-	doCommand := func(tok Token) *MMLNode {
-		var n *MMLNode
-		if is_symbol(tok) {
-			n = make_symbol(tok, context&^ctxRoot)
-		} else {
-			n = pitz.ProcessCommand(context&^ctxRoot, tok, q)
-		}
-		return n
-	}
 	doFence := func(tok Token) *MMLNode {
 		var n *MMLNode
 		if tok.Kind&tokCommand > 0 {
-			n = doCommand(tok)
+			n = pitz.ProcessCommand(context&^ctxRoot, tok, q)
 		} else {
 			n = NewMMLNode("mo")
 			n.Text = tok.Value
@@ -211,7 +202,7 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 				child.SetFalse("stretchy")
 			}
 			if tok.Kind&tokCommand > 0 {
-				child = doCommand(tok)
+				child = pitz.ProcessCommand(context&^ctxRoot, tok, q)
 			} else {
 				child.Text = tok.Value
 			}
@@ -241,18 +232,14 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 				child.SetFalse("stretchy")
 			}
 			if tok.Kind&tokCommand > 0 {
-				child = doCommand(tok)
+				child = pitz.ProcessCommand(context&^ctxRoot, tok, q)
 			} else {
 				child.Text = tok.Value
 			}
 		case tok.Kind&tokFence > 0:
 			child = doFence(tok)
 		case tok.Kind&tokCommand > 0:
-			if is_symbol(tok) {
-				child = make_symbol(tok, context&^ctxRoot)
-			} else {
-				child = pitz.ProcessCommand(context&^ctxRoot, tok, q)
-			}
+			child = pitz.ProcessCommand(context&^ctxRoot, tok, q)
 		case tok.Kind&tokWhitespace > 0:
 			if context&ctxText > 0 {
 				child = NewMMLNode("mspace", " ")
@@ -340,60 +327,6 @@ func is_symbol(tok Token) bool {
 	_, inSymbTbl := symbolTable[tok.Value]
 	_, inCmdOps := command_identifiers[tok.Value]
 	return inSymbTbl || inCmdOps
-}
-
-func make_symbol(tok Token, ctx parseContext) *MMLNode {
-	name := tok.Value
-	n := NewMMLNode()
-	if prop, ok := command_identifiers[name]; ok {
-		n.Tag = "mi"
-		n.Properties = prop
-		if t, ok := symbolTable[name]; ok {
-			if t.char != "" {
-				n.Text = t.char
-			} else {
-				n.Text = t.entity
-			}
-		} else {
-			n.Text = name
-			n.SetAttr("lspace", "0.11111em")
-		}
-	} else if t, ok := symbolTable[name]; ok {
-		n.Properties = t.properties
-		if t.char != "" {
-			n.Text = t.char
-		} else {
-			n.Text = t.entity
-		}
-		if ctx&ctxTable > 0 && t.properties&(propHorzArrow|propVertArrow) > 0 {
-			n.SetTrue("stretchy")
-		}
-		if n.Properties&propSymUpright > 0 {
-			ctx |= ctxVarNormal
-		}
-		switch t.kind {
-		case sym_binaryop, sym_opening, sym_closing, sym_relation:
-			n.Tag = "mo"
-		case sym_large:
-			n.Tag = "mo"
-			// we do an XOR rather than an OR here to remove this property
-			// from any of the integral symbols from symbolTable.
-			n.Properties ^= propLimitsunderover
-			n.Properties |= propLargeop | propMovablelimits
-		case sym_alphabetic:
-			n.Tag = "mi"
-		default:
-			if tok.Kind&tokFence > 0 {
-				n.Tag = "mo"
-			} else {
-				n.Tag = "mi"
-			}
-		}
-	}
-	n.Tok = tok
-	n.set_variants_from_context(ctx)
-	n.setAttribsFromProperties()
-	return n
 }
 
 func (node *MMLNode) doPostProcess() {

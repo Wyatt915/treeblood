@@ -12,6 +12,7 @@ const (
 	sym_closing
 	sym_diacritic
 	sym_large
+	sym_operator
 )
 
 var (
@@ -105,6 +106,12 @@ type symbol struct {
 // they are italic. (follows https://www.ams.org/arc/tex/amsmath/amsldoc.pdf
 // §9.4 "Italic Greek Letters")
 var symbolTable = map[string]symbol{
+	"argmin":  {char: "arg min", kind: sym_operator, properties: propMovablelimits | propLimitsunderover},
+	"argmax":  {char: "arg max", kind: sym_operator, properties: propMovablelimits | propLimitsunderover},
+	"projlim": {char: "proj lim", kind: sym_operator, properties: propMovablelimits | propLimitsunderover},
+	"injlim":  {char: "inj lim", kind: sym_operator, properties: propMovablelimits | propLimitsunderover},
+	"limsup":  {char: "lim sup", kind: sym_operator, properties: propMovablelimits | propLimitsunderover},
+	"liminf":  {char: "lim inf", kind: sym_operator, properties: propMovablelimits | propLimitsunderover},
 	"$": {
 		char:   "$",
 		entity: "&dollar;",
