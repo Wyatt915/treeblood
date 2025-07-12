@@ -102,7 +102,6 @@ var (
 		"huge":              9 << ctxSizeOffset,
 		"Huge":              10 << ctxSizeOffset,
 	}
-	// TODO: should these be combining unicode characters?
 	accents = map[string]rune{
 		"acute":          0x00b4,
 		"bar":            0x00af,

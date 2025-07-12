@@ -242,16 +242,6 @@ var symbolTable = map[string]symbol{
 		entity: "&ropar;",
 		kind:   sym_closing,
 	},
-	//"ElsevierGlyph{3018}": {
-	//	char:   "〘",
-	//	entity: "&loang;",
-	//	kind:   sym_opening,
-	//},
-	//"ElsevierGlyph{E25E}": {
-	//	char:   "⨵",
-	//	entity: "&rotimes;",
-	//	kind:   sym_binaryop,
-	//},
 	"ElzAnd": {
 		char:   "⩓",
 		entity: "&And;",
@@ -1087,11 +1077,6 @@ var symbolTable = map[string]symbol{
 		entity: "&lowbar;",
 		kind:   sym_other,
 	},
-	//"acute": {
-	//	char:   "́",
-	//	entity: "",
-	//	kind:   sym_diacritic,
-	//},
 	"adots": {
 		char:   "⋰",
 		entity: "&utdot;",
@@ -1172,11 +1157,6 @@ var symbolTable = map[string]symbol{
 		entity: "&bsol;",
 		kind:   sym_normal,
 	},
-	//"bar": {
-	//	char:   "̄",
-	//	entity: "",
-	//	kind:   sym_diacritic,
-	//},
 	"barwedge": {
 		char:   "⌅",
 		entity: "&barwed;",
@@ -1367,11 +1347,6 @@ var symbolTable = map[string]symbol{
 		entity: "&timesb;",
 		kind:   sym_binaryop,
 	},
-	//"breve": {
-	//	char:   "̆",
-	//	entity: "",
-	//	kind:   sym_diacritic,
-	//},
 	"btimes": {
 		char:   "⨲",
 		entity: "&btimes;",
@@ -1412,11 +1387,6 @@ var symbolTable = map[string]symbol{
 		entity: "&ctdot;",
 		kind:   sym_other,
 	},
-	//"check": {
-	//	char:   "̌",
-	//	entity: "",
-	//	kind:   sym_diacritic,
-	//},
 	"chi": {
 		char:   "χ",
 		entity: "&chi;",
@@ -1580,21 +1550,6 @@ var symbolTable = map[string]symbol{
 		entity: "&Dagger;",
 		kind:   sym_other,
 	},
-	//"ddddot": {
-	//	char:   "⃜",
-	//	entity: "&DotDot;",
-	//	kind:   sym_diacritic,
-	//},
-	//"dddot": {
-	//	char:   "⃛",
-	//	entity: "&tdot;",
-	//	kind:   sym_diacritic,
-	//},
-	//"ddot": {
-	//	char:   "̈",
-	//	entity: "",
-	//	kind:   sym_diacritic,
-	//},
 	"ddots": {
 		char:   "⋱",
 		entity: "&dtdot;",
@@ -1655,11 +1610,6 @@ var symbolTable = map[string]symbol{
 		entity: "&divonx;",
 		kind:   sym_binaryop,
 	},
-	//"dot": {
-	//	char:   "̇",
-	//	entity: "",
-	//	kind:   sym_diacritic,
-	//},
 	"doteq": {
 		char:   "≐",
 		entity: "&esdot;",
@@ -1885,11 +1835,6 @@ var symbolTable = map[string]symbol{
 		entity: "&gnsim;",
 		kind:   sym_relation,
 	},
-	//"grave": {
-	//	char:   "̀",
-	//	entity: "",
-	//	kind:   sym_diacritic,
-	//},
 	"greater": {
 		char:   ">",
 		entity: "&gt;",
@@ -1940,11 +1885,6 @@ var symbolTable = map[string]symbol{
 		entity: "&gvnE;",
 		kind:   sym_relation,
 	},
-	//"hat": {
-	//	char:   "̂",
-	//	entity: "",
-	//	kind:   sym_diacritic,
-	//},
 	"heartsuit": {
 		char:   "♡",
 		entity: "",
@@ -3322,11 +3262,6 @@ var symbolTable = map[string]symbol{
 		entity: "&theta;",
 		kind:   sym_alphabetic,
 	},
-	//"tilde": {
-	//	char:   "̃",
-	//	entity: "",
-	//	kind:   sym_diacritic,
-	//},
 	"tildetrpl": {
 		char:   "≋",
 		entity: "&apid;",
@@ -3420,11 +3355,6 @@ var symbolTable = map[string]symbol{
 		kind:       sym_relation,
 		properties: propHorzArrow,
 	},
-	//"u": {
-	//	char:   "˘",
-	//	entity: "&breve;",
-	//	kind:   sym_other,
-	//},
 	"ulcorner": {
 		char:   "⌜",
 		entity: "&ulcorn;",
