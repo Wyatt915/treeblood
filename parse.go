@@ -206,15 +206,22 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 			} else {
 				child.Text = tok.Value
 			}
-			if tok.Kind&(tokOpen|tokFence) == (tokOpen|tokFence) && tok.MatchOffset > 0 {
+			if tok.Kind&(tokOpen|tokFence) == (tokOpen | tokFence) {
 				container := NewMMLNode("mrow")
 				if tok.Kind&tokNull == 0 {
 					container.AppendChild(child)
 				}
-				container.AppendChild(
-					pitz.ParseTex(q, context&^ctxRoot),
-					pitz.ParseTex(q, context&^ctxRoot), //closing fence
-				)
+				enclosed := NewMMLNode("mrow")
+				temp, _ := q.PopFront()
+				pitz.ParseTex(ExpressionQueue(temp.toks), context&^ctxRoot, enclosed)
+				//append the enclosed mrow and the closing fence
+				container.AppendChild(enclosed)
+				front, err := q.PeekFront()
+				if len(front.toks) > 0 && err == nil && front.toks[0].Kind&(tokFence|tokClose) == tokFence|tokClose {
+					temp, _ = q.PopFront()
+					container.AppendChild(pitz.ParseTex(ExpressionQueue(temp.toks), context&^ctxRoot))
+				}
+				//row := NewMMLNode("mrow").AppendChild(container)
 				siblings = append(siblings, container)
 				//don't need to worry about promotedProperties here.
 				continue
