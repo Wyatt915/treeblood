@@ -19,15 +19,18 @@ For simple, quick one-off conversions use `treeblood.DisplayStyle()` as follows:
 ```go
 package main
 
-import "github.com/wyatt915/treeblood"
+import (
+  "fmt"
 
-func main(){
-    tex := `x=\frac{-b\pm\sqrt{b^2 - 4ac}{2a}`
-    displaystyle := true
-    mml, err := treeblood.DisplayStyle(tex, nil)
-    if err == nil {
-        fmt.Println(mml)
-    }
+  "github.com/wyatt915/treeblood"
+)
+
+func main() {
+  tex := `x=\frac{-b\pm\sqrt{b^2 - 4ac}{2a}`
+  mml, err := treeblood.DisplayStyle(tex, nil)
+  if err == nil {
+    fmt.Println(mml)
+  }
 }
 ```
 
