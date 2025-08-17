@@ -1,6 +1,7 @@
 package treeblood
 
 import (
+	"errors"
 	"fmt"
 	"math/bits"
 	"strconv"
@@ -8,7 +9,7 @@ import (
 )
 
 type CommandSpec struct {
-	F    func(*Pitziil, string, bool, parseContext, []Expression, []Expression) *MMLNode
+	F    func(*Pitziil, string, bool, parseContext, []*TokenBuffer, *TokenBuffer) *MMLNode
 	argc int
 	optc int
 }
@@ -205,16 +206,6 @@ func restringify(n *MMLNode, sb *strings.Builder) {
 	n.Children = n.Children[:0]
 }
 
-func getOption(tokens []Token, idx int) ([]Token, int) {
-	if idx < len(tokens)-1 {
-		result, i, kind := GetNextExpr(tokens, idx+1)
-		if kind == expr_options {
-			return result, i
-		}
-	}
-	return nil, idx
-}
-
 func endOfSwitchContext(switchname string, toks []Token, idx int, ctx parseContext) int {
 	for i := idx; i < len(toks); i++ {
 		if ctx&ctxTable > 0 {
@@ -271,8 +262,7 @@ func makeTexLogo(isLaTeXLogo bool) *MMLNode {
 }
 
 // ProcessCommand sets the value of n and returns the next index of tokens to be processed.
-func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Expression]) *MMLNode {
-	var nextExpr Expression
+func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, b *TokenBuffer) *MMLNode {
 	star := tok.Kind&tokStarSuffix > 0
 	name := tok.Value
 	// dv and family take a variable number of arguments so try them first
@@ -280,7 +270,7 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Ex
 	//case "dv", "adv", "odv", "mdv", "fdv", "jdv", "pdv":
 	//	return pitz.doDerivative(name, star, context, q)
 	case "newcommand", "def", "renewcommand":
-		return pitz.newCommand(name, context, q)
+		return pitz.newCommand(name, context, b)
 	case "LaTeX":
 		return makeTexLogo(true)
 	case "TeX":
@@ -289,10 +279,10 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Ex
 	if pitz.needMacroExpansion[name] {
 		macro := pitz.macros[name]
 		argc := macro.Argcount
-		args := make([]Expression, argc)
+		args := make([]*TokenBuffer, argc)
 		var err error
 		for n := range argc {
-			args[n], err = q.PopFrontWhile(isExprWhitespace)
+			args[n], err = b.GetNextExpr()
 			if err != nil {
 				n := NewMMLNode("merror", name)
 				n.SetAttr("title", "Error expanding macro")
@@ -314,7 +304,7 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Ex
 			logger.Println(err.Error())
 			return n
 		}
-		return pitz.ParseTex(ExpressionQueue(temp), context)
+		return pitz.ParseTex(NewTokenBuffer(temp), context)
 	}
 	if prop, ok := command_identifiers[name]; ok {
 		n := NewMMLNode("mi")
@@ -376,59 +366,52 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Ex
 		// command.
 		return NewMMLNode("mrow").AppendChild(node).SetProps(node.Properties)
 	}
-	if v, ok := math_variants[name]; ok {
-		nextExpr, _ := q.PopFrontWhile(isExprWhitespace)
+	if variant, ok := math_variants[name]; ok {
+		nextExpr, err := b.GetNextExpr()
 		var wrapper *MMLNode
 		if name == "mathrm" {
 			wrapper = NewMMLNode("mpadded").SetAttr("lspace", "0")
 		}
-		return pitz.ParseTex(ExpressionQueue(nextExpr.toks), context|v, wrapper)
+		if err != nil {
+			logger.Printf("WARN: Expected an argument for math variant '%s'", name)
+			// treat the remainder of the buffer as argument
+			return pitz.ParseTex(b, context|variant, wrapper)
+
+		}
+		return pitz.ParseTex(nextExpr, context|variant, wrapper)
 	}
-	if _, ok := space_widths[name]; ok {
+	if width, ok := space_widths[name]; ok {
 		n := NewMMLNode("mspace")
 		n.Tok = tok
 		if name == `\` {
 			n.SetAttr("linebreak", "newline")
+		} else {
+			n.SetAttr("width", fmt.Sprintf("%.7fem", float32(width)/18.0))
 		}
 		return n
 	}
 	if sw, ok := switches[name]; ok {
-		cellEnd := func(ex Expression) bool {
-			if len(ex.toks) > 1 {
-				return false
-			}
-			if ex.toks[0].Kind&tokReserved > 0 && ex.toks[0].Value == "&" {
+		cellEnd := func(t Token) bool {
+			if t.Kind&tokReserved > 0 && t.Value == "&" {
 				return true
 			}
-			if ex.toks[0].Value == "\\" || ex.toks[0].Value == "cr" {
+			if t.Value == "\\" || t.Value == "cr" {
 				return true
 			}
 			return false
 		}
-		switchExpressions := newQueue[Expression]()
-		exp, err := q.PeekFront()
-		for err == nil && !cellEnd(exp) {
-			switchExpressions.PushBack(exp)
-			q.PopFront()
-			exp, err = q.PeekFront()
-		}
+		switchExpressions := b.GetUntil(cellEnd)
 
 		n := NewMMLNode("mstyle")
-		switch name {
-		case "color":
-			expr, _ := switchExpressions.PopFront()
-			switch expr.kind {
-			case expr_group:
-				n.SetAttr("mathcolor", StringifyTokens(expr.toks))
+		if name == "color" {
+			expr, err := switchExpressions.GetNextExpr()
+			if err == nil {
+				n.SetAttr("mathcolor", StringifyTokens(expr.Expr))
 				pitz.ParseTex(switchExpressions, context|sw, n)
 				return n
-			default:
-				for !switchExpressions.Empty() {
-					ex, _ := switchExpressions.PopBack()
-					q.PushFront(ex)
-				}
-				return NewMMLNode("merror", name).SetAttr("title", fmt.Sprintf("%s expects an argument", name))
 			}
+			b.Unget()
+			return NewMMLNode("merror", name).SetAttr("title", fmt.Sprintf("%s expects an argument", name))
 		}
 		pitz.ParseTex(switchExpressions, context|sw, n)
 		switch name {
@@ -470,27 +453,30 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Ex
 		return n
 	}
 	var n *MMLNode
-	tempQ := newQueue[Expression]()
 	if spec, ok := command_args[name]; ok {
-		n = pitz.processCommandArgs(context, name, star, q, spec)
+		n = pitz.processCommandArgs(context, name, star, b, spec)
 	} else if ch, ok := accents[name]; ok {
 		n = NewMMLNode("mover").SetTrue("accent")
-		nextExpr, _ = q.PopFrontWhile(isExprWhitespace)
 		acc := NewMMLNode("mo", string(ch))
 		acc.SetTrue("stretchy") // once more for chrome...
-		tempQ.PushBack(nextExpr)
-		base := pitz.ParseTex(tempQ, context)
+		tempbuf, err := b.GetNextExpr()
+		if errors.Is(err, ErrTokenBufferSingle) {
+			tempbuf, _ = b.GetNextN(1)
+		}
+		base := pitz.ParseTex(tempbuf, context)
 		if base.Tag == "mi" {
 			base.SetAttr("style", "font-feature-settings: 'dtls' on;")
 		}
 		n.AppendChild(base, acc)
 	} else if ch, ok := accents_below[name]; ok {
 		n = NewMMLNode("munder").SetTrue("accent")
-		nextExpr, _ = q.PopFrontWhile(isExprWhitespace)
-		tempQ.PushBack(nextExpr)
 		acc := NewMMLNode("mo", string(ch))
 		acc.SetTrue("stretchy") // once more for chrome...
-		base := pitz.ParseTex(tempQ, context)
+		tempbuf, err := b.GetNextExpr()
+		if errors.Is(err, ErrTokenBufferSingle) {
+			tempbuf, _ = b.GetNextN(1)
+		}
+		base := pitz.ParseTex(tempbuf, context)
 		if base.Tag == "mi" {
 			base.SetAttr("style", "font-feature-settings: 'dtls' on;")
 		}
@@ -510,31 +496,31 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, q *queue[Ex
 }
 
 // Process commands that take arguments
-func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star bool, q *queue[Expression], spec CommandSpec) *MMLNode {
-	opts := make([]Expression, 0)
-	args := make([]Expression, 0)
-	var expr Expression
-	if q.Empty() {
+func (pitz *Pitziil) processCommandArgs(context parseContext, name string, star bool, b *TokenBuffer, spec CommandSpec) *MMLNode {
+	args := make([]*TokenBuffer, 0)
+	if b.Empty() {
 		return NewMMLNode("merror", name).SetAttr("title", name+" requires one or more arguments")
 	}
-	for !q.Empty() && len(args) < spec.argc {
-		expr, _ = q.PopFrontWhile(isExprWhitespace)
-		if expr.kind == expr_options && len(opts) < spec.optc {
-			expr, _ = q.PopFront() //discard the opening '['
-			opts = append(opts, expr)
-			q.PopFront() // discard the closing ']'
-		} else {
-			args = append(args, expr)
+	opt, _ := b.GetOptions()
+	for !b.Empty() && len(args) < spec.argc {
+		arg, err := b.GetNextExpr()
+		if err == nil {
+			args = append(args, arg)
+		} else if errors.Is(err, ErrTokenBufferSingle) {
+			arg, err := b.GetNextN(1, true)
+			if err == nil {
+				args = append(args, arg)
+			}
 		}
 	}
 	if len(args) != spec.argc {
 		return NewMMLNode("merror", name).SetAttr("title", "wrong number of arguments")
 	}
-	return spec.F(pitz, name, star, context, args, opts)
+	return spec.F(pitz, name, star, context, args, opt)
 }
 
-func (pitz *Pitziil) newCommand(macroCommand string, context parseContext, q *queue[Expression]) (errNode *MMLNode) {
-	var expr, optDefault, definition Expression
+func (pitz *Pitziil) newCommand(macroCommand string, context parseContext, b *TokenBuffer) (errNode *MMLNode) {
+	var optDefault, definition *TokenBuffer
 	var argcount int
 	var name string
 	makeMerror := func(msg string) *MMLNode {
@@ -542,62 +528,51 @@ func (pitz *Pitziil) newCommand(macroCommand string, context parseContext, q *qu
 		n.SetAttr("title", msg)
 		return n
 	}
-	expr, _ = q.PopFrontWhile(isExprWhitespace)
-	if len(expr.toks) != 1 || expr.toks[0].Kind != tokCommand {
+	t, err := b.GetNextToken()
+	if err == nil && t.Kind&tokCommand == 0 {
 		errNode = makeMerror("newcommand expects an argument of exactly one \\command")
-	}
-	name = expr.toks[0].Value
-	keepConsuming := true
-	const (
-		begin int = 1 << iota
-	)
-	for count := 0; keepConsuming; count++ {
-		expr, err := q.PopFront()
-		if err != nil {
-			errNode = makeMerror("newcommand expects a definition")
-			break
-		}
-		switch expr.kind {
-		case expr_group:
-			definition = expr
-			keepConsuming = false
-		case expr_options:
-			expr, err = q.PopFront()
-			if err != nil {
-				errNode = makeMerror(err.Error())
-				return
-			}
-			switch count {
-			case 0:
-				argcount, err = strconv.Atoi(expr.toks[0].Value)
-				if err != nil {
-					errNode = makeMerror("newcommand expects an argument of exactly one \\command")
-				}
-			case 1:
-				optDefault = expr
-			default:
-				errNode = makeMerror("newcommand expects an argument of exactly one \\command")
-				return
-			}
-			_, err = q.PopFront() //discard ']'
-			if err != nil {
-				errNode = makeMerror(err.Error())
-				return
-			}
-		default:
+		return
+	} else if errors.Is(err, ErrTokenBufferExpr) {
+		temp, err := b.GetNextExpr()
+		if len(temp.Expr) != 1 || err != nil {
+			errNode = makeMerror("newcommand expects an argument of exactly one \\command")
+			return
+		} else if temp.Expr[0].Kind&tokCommand == 0 {
 			errNode = makeMerror("newcommand expects an argument of exactly one \\command")
 			return
 		}
+		t = temp.Expr[0]
 	}
-	for _, t := range definition.toks {
+	name = t.Value
+	if temp, err := b.GetOptions(); err == nil {
+		// can only handle a single digit number
+		argcount, err = strconv.Atoi(temp.Expr[0].Value)
+		if err != nil {
+			errNode = makeMerror("newcommand: unspecified argument count")
+			return
+		}
+		if temp, err = b.GetOptions(); err == nil {
+			optDefault = temp
+		}
+	}
+	definition, err = b.GetNextExpr()
+	if errors.Is(err, ErrTokenBufferSingle) {
+		definition, err = b.GetNextN(1, true)
+	}
+	if err != nil {
+		errNode = makeMerror("malformed macro definition")
+		return
+	}
+	for _, t := range definition.Expr {
 		if t.Value == name && t.Kind&tokCommand > 0 {
 			logger.Println("Recursive macro definition detected")
+			errNode = makeMerror("Recursive macro definition detected")
 			return
 		}
 	}
 	cmd := Macro{
-		Definition:    definition.toks,
-		OptionDefault: optDefault.toks,
+		Definition:    definition.Expr,
+		OptionDefault: optDefault.Expr,
 		Argcount:      argcount,
 		Dynamic:       true,
 	}
@@ -798,70 +773,4 @@ func makeSubscript(base, radical *MMLNode) *MMLNode {
 	s := NewMMLNode("msub")
 	s.AppendChild(base, radical)
 	return s
-}
-
-func (pitz *Pitziil) prescript(super, sub, base Expression, context parseContext) *MMLNode {
-	multi := NewMMLNode("mmultiscripts")
-	multi.AppendChild(pitz.ParseTex(ExpressionQueue(base.toks), context))
-	multi.AppendChild(NewMMLNode("none"), NewMMLNode("none"), NewMMLNode("mprescripts"))
-	temp := pitz.ParseTex(ExpressionQueue(sub.toks), context)
-	if temp != nil {
-		multi.AppendChild(temp)
-	}
-	temp = pitz.ParseTex(ExpressionQueue(super.toks), context)
-	if temp != nil {
-		multi.AppendChild(temp)
-	}
-	return multi
-}
-
-func (pitz *Pitziil) sideset(left, right, base Expression, context parseContext) *MMLNode {
-	multi := NewMMLNode("mmultiscripts")
-	multi.Properties |= propLimitsunderover
-	multi.AppendChild(pitz.ParseTex(ExpressionQueue(base.toks), context))
-	getScripts := func(side Expression) []*MMLNode {
-		subscripts := make([]*MMLNode, 0)
-		superscripts := make([]*MMLNode, 0)
-		var last string
-		q := ExpressionQueue(side.toks)
-		for !q.Empty() {
-			temp, _ := q.PopFront()
-			if len(temp.toks) != 1 {
-				continue
-			}
-			t := temp.toks[0]
-			switch t.Value {
-			case "^":
-				if last == t.Value {
-					subscripts = append(subscripts, NewMMLNode("none"))
-				}
-				expr, _ := q.PopFront()
-				superscripts = append(superscripts, pitz.ParseTex(ExpressionQueue(expr.toks), context))
-				last = t.Value
-			case "_":
-				if last == t.Value {
-					superscripts = append(superscripts, NewMMLNode("none"))
-				}
-				expr, _ := q.PopFront()
-				subscripts = append(subscripts, pitz.ParseTex(ExpressionQueue(expr.toks), context))
-				last = t.Value
-			}
-		}
-		if len(superscripts) == 0 {
-			superscripts = append(superscripts, NewMMLNode("none"))
-		}
-		if len(subscripts) == 0 {
-			subscripts = append(subscripts, NewMMLNode("none"))
-		}
-		result := make([]*MMLNode, len(subscripts)+len(superscripts))
-		for i := range len(subscripts) {
-			result[2*i] = subscripts[i]
-			result[2*i+1] = superscripts[i]
-		}
-		return result
-	}
-	multi.AppendChild(getScripts(right)...)
-	multi.AppendChild(NewMMLNode("mprescripts"))
-	multi.AppendChild(getScripts(left)...)
-	return multi
 }

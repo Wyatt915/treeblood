@@ -25,8 +25,7 @@ const (
 	lxMacroArg
 )
 const (
-	tokNull TokenKind = 1 << iota
-	tokWhitespace
+	tokWhitespace TokenKind = 1 << iota
 	tokComment
 	tokCommand
 	tokEscaped
@@ -48,6 +47,7 @@ const (
 	tokBigness4
 	tokInfix
 	tokStarSuffix
+	tokNull = 0
 )
 
 var (
@@ -265,56 +265,176 @@ func GetNextExpr(tokens []Token, idx int) ([]Token, int, ExprKind) {
 	return result, idx, kind
 }
 
-type Expression struct {
-	toks []Token
-	kind ExprKind
+type TokenBuffer struct {
+	Expr []Token // The current sub-expression
+	idx  int     // The index in the current sub-expression
+	jump int
 }
 
-func isExprWhitespace(e Expression) bool {
-	return (e.kind & expr_whitespace) > 0
+type TokenBufferErr struct {
+	code int
 }
 
-func ExpressionQueue(tokens []Token) *queue[Expression] {
-	q := newQueue[Expression]()
-	idx := 0
-	var kind ExprKind
-	for idx < len(tokens) {
-		if tokens[idx].Kind&tokComment > 0 {
-			idx++
-			continue
-		}
-		if tokens[idx].MatchOffset > 0 && tokens[idx].Kind&tokEscaped == 0 {
-			end := idx + tokens[idx].MatchOffset
-			if tokens[idx].Value == "{" {
-				kind = expr_group
-				q.PushBack(Expression{toks: tokens[idx+1 : end], kind: kind})
-			} else if tokens[idx].Value == "[" {
-				kind = expr_options
-				q.PushBack(Expression{toks: tokens[idx : idx+1], kind: kind})
-				q.PushBack(Expression{toks: tokens[idx+1 : end], kind: kind})
-				q.PushBack(Expression{toks: tokens[end : end+1], kind: kind})
-			} else if tokens[idx].Kind&(tokOpen|tokEnv) == tokOpen|tokEnv {
-				kind = expr_environment
-				q.PushBack(Expression{toks: tokens[idx : idx+1], kind: kind})
-				q.PushBack(Expression{toks: tokens[idx+1 : end], kind: kind})
-				q.PushBack(Expression{toks: tokens[end : end+1], kind: kind})
-			} else {
-				kind = expr_fenced
-				q.PushBack(Expression{toks: tokens[idx : idx+1], kind: kind})
-				q.PushBack(Expression{toks: tokens[idx+1 : end], kind: kind})
-				q.PushBack(Expression{toks: tokens[end : end+1], kind: kind})
-			}
-			idx = end
-		} else {
-			kind = expr_single_tok
-			if tokens[idx].Kind&tokWhitespace > 0 {
-				kind |= expr_whitespace
-			}
-			q.PushBack(Expression{toks: []Token{tokens[idx]}, kind: kind})
-		}
-		idx++
+const (
+	tbEndErr = iota + 1
+	tbIsExprErr
+	tbIsSingleErr
+)
+
+var (
+	ErrTokenBufferEnd    = &TokenBufferErr{tbEndErr}
+	ErrTokenBufferExpr   = &TokenBufferErr{tbIsExprErr}
+	ErrTokenBufferSingle = &TokenBufferErr{tbIsSingleErr}
+)
+
+func (e *TokenBufferErr) Error() string {
+	switch e.code {
+	case tbEndErr:
+		return "end of TokenBuffer"
+	case tbIsExprErr:
+		return "next value is expression, not Token"
+	case tbIsSingleErr:
+		return "next value is Token, not expression"
 	}
-	return q
+	return "unexpected TokenBuffer error"
+}
+
+func NewTokenBuffer(t []Token) *TokenBuffer {
+	return &TokenBuffer{Expr: t, idx: 0}
+}
+
+func (b *TokenBuffer) Empty() bool {
+	return b.idx >= len(b.Expr)
+}
+
+func (b *TokenBuffer) PeekFront() (Token, ExprKind, error) {
+	var t Token
+	var k ExprKind
+	if b.idx >= len(b.Expr) {
+		return t, k, &TokenBufferErr{tbEndErr}
+	}
+	t = b.Expr[b.idx]
+	k = expr_single_tok
+	if t.Value == "{" && t.Kind&tokEscaped == 0 {
+		k = expr_group
+	} else if t.Value == "[" && t.Kind&tokEscaped == 0 {
+		k |= expr_options
+	} else if t.Kind&tokFence > 0 {
+		k |= expr_fenced
+	} else if t.Kind&tokEnv > 0 {
+		k = expr_environment
+	} else if t.Kind&tokWhitespace > 0 {
+		k |= expr_whitespace
+	}
+	return t, k, nil
+}
+
+func (b *TokenBuffer) Advance() {
+	b.idx++
+	b.jump = 1
+}
+
+func (b *TokenBuffer) GetNextToken() (Token, error) {
+	var result Token
+	temp := b.idx
+	// an expression may contain whitespace, but never start with whitespace
+	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
+		b.idx++
+	}
+	if b.idx >= len(b.Expr) {
+		b.idx = temp
+		return result, &TokenBufferErr{tbEndErr}
+	}
+	if b.Expr[b.idx].MatchOffset > 0 && b.Expr[b.idx].Kind&tokEscaped == 0 && b.Expr[b.idx].Value == "{" {
+		b.idx = temp
+		return result, &TokenBufferErr{tbEndErr}
+	}
+	result = b.Expr[b.idx]
+	b.idx++
+	b.jump = b.idx - temp
+	return result, nil
+}
+
+func (b *TokenBuffer) GetNextExpr() (*TokenBuffer, error) {
+	temp := b.idx
+	var result *TokenBuffer
+	// an expression may contain whitespace, but never start with whitespace
+	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
+		b.idx++
+	}
+	if b.idx >= len(b.Expr) {
+		b.idx = temp
+		return nil, &TokenBufferErr{tbEndErr}
+	}
+	if b.Expr[b.idx].MatchOffset > 0 && b.Expr[b.idx].Kind&tokEscaped == 0 {
+		skip := 0
+		if b.Expr[b.idx].Value == "{" {
+			// we never parse the closing '}'
+			skip = 1
+		}
+		end := b.idx + b.Expr[b.idx].MatchOffset
+		result = NewTokenBuffer(b.Expr[b.idx+1 : end])
+		b.idx = end + skip
+	} else {
+		b.idx = temp
+		return nil, &TokenBufferErr{tbIsSingleErr}
+	}
+	b.jump = b.idx - temp
+	return result, nil
+}
+
+func (b *TokenBuffer) GetOptions() (*TokenBuffer, error) {
+	temp := b.idx
+	var result *TokenBuffer
+	// an expression may contain whitespace, but never start with whitespace
+	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
+		b.idx++
+	}
+	if b.idx >= len(b.Expr) {
+		b.idx = temp
+		return nil, &TokenBufferErr{tbEndErr}
+	}
+	if b.Expr[b.idx].MatchOffset > 0 && b.Expr[b.idx].Kind&tokEscaped == 0 && b.Expr[b.idx].Value == "[" {
+		end := b.idx + b.Expr[b.idx].MatchOffset
+		result = NewTokenBuffer(b.Expr[b.idx+1 : end])
+		b.idx = end + 1 // Don't parse closing "]"
+	} else {
+		b.idx = temp
+		return nil, &TokenBufferErr{}
+	}
+	b.jump = b.idx - temp
+	return result, nil
+}
+
+// Get tokens until (but not including) the condition f evaluates as true, or the end of the token buffer is reached
+func (b *TokenBuffer) GetUntil(f func(Token) bool) *TokenBuffer {
+	start := b.idx
+	for b.idx < len(b.Expr) && !f(b.Expr[b.idx]) {
+		b.idx++
+	}
+	b.jump = b.idx - start
+	return NewTokenBuffer(b.Expr[start:b.idx])
+}
+
+func (b *TokenBuffer) GetNextN(n int, skipWhitespace ...bool) (*TokenBuffer, error) {
+	if b.idx+n > len(b.Expr) {
+		return nil, &TokenBufferErr{tbEndErr}
+	}
+	start := b.idx
+	if skipWhitespace[0] {
+		for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
+			b.idx++
+		}
+		start = b.idx
+	}
+	b.idx += n
+	b.jump = n
+	return NewTokenBuffer(b.Expr[start:b.idx]), nil
+}
+
+// TODO: jump history for sequential unget calls
+func (b *TokenBuffer) Unget() {
+	b.idx -= b.jump
 }
 
 func tokenize(str string) ([]Token, error) {
