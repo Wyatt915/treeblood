@@ -108,7 +108,8 @@ func (pitz *Pitziil) ParseTex(b *TokenBuffer, context parseContext, parent ...*M
 			siblings = append(siblings, nil)
 			promotedProperties = 0
 			continue
-		} else if errors.Is(err, ErrTokenBufferExpr) {
+		}
+		if errors.Is(err, ErrTokenBufferExpr) {
 			expr, _ := b.GetNextExpr()
 			temp := pitz.ParseTex(expr, context&^ctxRoot)
 			temp.Properties |= promotedProperties

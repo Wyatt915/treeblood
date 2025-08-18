@@ -1,6 +1,7 @@
 package treeblood
 
 import (
+	"errors"
 	"log"
 	"os"
 	"slices"
@@ -273,6 +274,7 @@ type TokenBuffer struct {
 
 type TokenBufferErr struct {
 	code int
+	err  error
 }
 
 const (
@@ -282,21 +284,16 @@ const (
 )
 
 var (
-	ErrTokenBufferEnd    = &TokenBufferErr{tbEndErr}
-	ErrTokenBufferExpr   = &TokenBufferErr{tbIsExprErr}
-	ErrTokenBufferSingle = &TokenBufferErr{tbIsSingleErr}
+	ErrTokenBufferEnd    = errors.New("end of TokenBuffer")
+	ErrTokenBufferExpr   = errors.New("expected token, got expression")
+	ErrTokenBufferSingle = errors.New("expected expression, got token")
 )
 
 func (e *TokenBufferErr) Error() string {
-	switch e.code {
-	case tbEndErr:
-		return "end of TokenBuffer"
-	case tbIsExprErr:
-		return "next value is expression, not Token"
-	case tbIsSingleErr:
-		return "next value is Token, not expression"
-	}
-	return "unexpected TokenBuffer error"
+	return e.err.Error()
+}
+func (e *TokenBufferErr) Unwrap() error {
+	return e.err
 }
 
 func NewTokenBuffer(t []Token) *TokenBuffer {
@@ -304,14 +301,26 @@ func NewTokenBuffer(t []Token) *TokenBuffer {
 }
 
 func (b *TokenBuffer) Empty() bool {
-	return b.idx >= len(b.Expr)
+	if b.idx >= len(b.Expr) {
+		return true
+	}
+	temp := b.idx
+	// an expression may contain whitespace, but never start with whitespace
+	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
+		b.idx++
+	}
+	if b.idx >= len(b.Expr) {
+		return true
+	}
+	b.idx = temp
+	return false
 }
 
 func (b *TokenBuffer) PeekFront() (Token, ExprKind, error) {
 	var t Token
 	var k ExprKind
 	if b.idx >= len(b.Expr) {
-		return t, k, &TokenBufferErr{tbEndErr}
+		return t, k, &TokenBufferErr{tbEndErr, ErrTokenBufferEnd}
 	}
 	t = b.Expr[b.idx]
 	k = expr_single_tok
@@ -343,11 +352,11 @@ func (b *TokenBuffer) GetNextToken() (Token, error) {
 	}
 	if b.idx >= len(b.Expr) {
 		b.idx = temp
-		return result, &TokenBufferErr{tbEndErr}
+		return result, &TokenBufferErr{tbEndErr, ErrTokenBufferEnd}
 	}
-	if b.Expr[b.idx].MatchOffset > 0 && b.Expr[b.idx].Kind&tokEscaped == 0 && b.Expr[b.idx].Value == "{" {
+	if b.Expr[b.idx].Kind&(tokEscaped|tokCurly|tokOpen) == (tokCurly | tokOpen) {
 		b.idx = temp
-		return result, &TokenBufferErr{tbEndErr}
+		return result, &TokenBufferErr{tbIsExprErr, ErrTokenBufferExpr}
 	}
 	result = b.Expr[b.idx]
 	b.idx++
@@ -364,7 +373,7 @@ func (b *TokenBuffer) GetNextExpr() (*TokenBuffer, error) {
 	}
 	if b.idx >= len(b.Expr) {
 		b.idx = temp
-		return nil, &TokenBufferErr{tbEndErr}
+		return nil, &TokenBufferErr{tbEndErr, ErrTokenBufferEnd}
 	}
 	if b.Expr[b.idx].MatchOffset > 0 && b.Expr[b.idx].Kind&tokEscaped == 0 {
 		skip := 0
@@ -377,7 +386,7 @@ func (b *TokenBuffer) GetNextExpr() (*TokenBuffer, error) {
 		b.idx = end + skip
 	} else {
 		b.idx = temp
-		return nil, &TokenBufferErr{tbIsSingleErr}
+		return nil, &TokenBufferErr{tbIsSingleErr, ErrTokenBufferSingle}
 	}
 	b.jump = b.idx - temp
 	return result, nil
@@ -392,7 +401,7 @@ func (b *TokenBuffer) GetOptions() (*TokenBuffer, error) {
 	}
 	if b.idx >= len(b.Expr) {
 		b.idx = temp
-		return nil, &TokenBufferErr{tbEndErr}
+		return nil, &TokenBufferErr{tbEndErr, ErrTokenBufferEnd}
 	}
 	if b.Expr[b.idx].MatchOffset > 0 && b.Expr[b.idx].Kind&tokEscaped == 0 && b.Expr[b.idx].Value == "[" {
 		end := b.idx + b.Expr[b.idx].MatchOffset
@@ -418,10 +427,10 @@ func (b *TokenBuffer) GetUntil(f func(Token) bool) *TokenBuffer {
 
 func (b *TokenBuffer) GetNextN(n int, skipWhitespace ...bool) (*TokenBuffer, error) {
 	if b.idx+n > len(b.Expr) {
-		return nil, &TokenBufferErr{tbEndErr}
+		return nil, &TokenBufferErr{tbEndErr, ErrTokenBufferEnd}
 	}
 	start := b.idx
-	if skipWhitespace[0] {
+	if skipWhitespace != nil && skipWhitespace[0] {
 		for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
 			b.idx++
 		}
