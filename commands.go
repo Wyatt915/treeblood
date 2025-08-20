@@ -368,6 +368,10 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, b *TokenBuf
 	}
 	if variant, ok := math_variants[name]; ok {
 		nextExpr, err := b.GetNextExpr()
+		if errors.Is(err, ErrTokenBufferSingle) {
+
+			nextExpr, err = b.GetNextN(1, true)
+		}
 		var wrapper *MMLNode
 		if name == "mathrm" {
 			wrapper = NewMMLNode("mpadded").SetAttr("lspace", "0")
@@ -461,7 +465,7 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, b *TokenBuf
 		acc.SetTrue("stretchy") // once more for chrome...
 		tempbuf, err := b.GetNextExpr()
 		if errors.Is(err, ErrTokenBufferSingle) {
-			tempbuf, _ = b.GetNextN(1)
+			tempbuf, _ = b.GetNextN(1, true)
 		}
 		base := pitz.ParseTex(tempbuf, context)
 		if base.Tag == "mi" {
@@ -474,7 +478,7 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, b *TokenBuf
 		acc.SetTrue("stretchy") // once more for chrome...
 		tempbuf, err := b.GetNextExpr()
 		if errors.Is(err, ErrTokenBufferSingle) {
-			tempbuf, _ = b.GetNextN(1)
+			tempbuf, _ = b.GetNextN(1, true)
 		}
 		base := pitz.ParseTex(tempbuf, context)
 		if base.Tag == "mi" {
