@@ -198,12 +198,6 @@ func (pitz *Pitziil) ParseTex(b *TokenBuffer, context parseContext, parent ...*M
 			child = processEnv(pitz.ParseTex(env, ctx), tok.Value, ctx)
 		case tok.Kind&(tokOpen|tokCurly) == tokOpen|tokCurly:
 			child = pitz.ParseTex(b, context&^ctxRoot)
-		case tok.Kind&tokLetter > 0:
-			child = NewMMLNode("mi", tok.Value)
-			child.set_variants_from_context(context &^ ctxRoot)
-		case tok.Kind&tokNumber > 0:
-			child = NewMMLNode("mn", tok.Value)
-			child.set_variants_from_context(context &^ ctxRoot)
 		case tok.Kind&tokOpen > 0:
 			child = NewMMLNode("mo")
 			if tok.Kind&tokCommand > 0 {
@@ -249,6 +243,12 @@ func (pitz *Pitziil) ParseTex(b *TokenBuffer, context parseContext, parent ...*M
 			}
 		case tok.Kind&tokFence > 0:
 			child = doFence(tok)
+		case tok.Kind&tokLetter > 0:
+			child = NewMMLNode("mi", tok.Value)
+			child.set_variants_from_context(context &^ ctxRoot)
+		case tok.Kind&tokNumber > 0:
+			child = NewMMLNode("mn", tok.Value)
+			child.set_variants_from_context(context &^ ctxRoot)
 		case tok.Kind&tokCommand > 0:
 			child = pitz.ProcessCommand(context&^ctxRoot, tok, b)
 		case tok.Kind&tokWhitespace > 0:

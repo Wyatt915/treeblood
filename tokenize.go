@@ -74,6 +74,8 @@ type Token struct {
 	Kind        TokenKind
 	MatchOffset int // offset from current index to matching paren, brace, etc.
 	Value       string
+	start       int // the index of the beginning of this token in the untokenized rune slice
+	end         int // the index immediately after the end of this token in the untokenized rune slice
 }
 
 func getToken(tex []rune, start int) (Token, int) {
@@ -87,7 +89,7 @@ func getToken(tex []rune, start int) (Token, int) {
 		r := tex[idx]
 		switch state {
 		case lxEnd:
-			return Token{Kind: kind, Value: string(result)}, idx
+			return Token{Kind: kind, Value: string(result), start: start, end: idx + 1}, idx
 		case lxBegin:
 			switch {
 			case unicode.IsLetter(r):
@@ -137,7 +139,7 @@ func getToken(tex []rune, start int) (Token, int) {
 				continue
 			case r == '|':
 				state = lxEnd
-				kind = tokFence
+				kind = tokLetter
 				result = append(result, r)
 			default:
 				state = lxEnd
@@ -191,7 +193,7 @@ func getToken(tex []rune, start int) (Token, int) {
 				result = append(result, r)
 			case unicode.IsSpace(r):
 				state = lxEnd
-				kind = tokWhitespace | tokCommand
+				kind = tokCommand
 				result = append(result, ' ')
 			case unicode.IsLetter(r):
 				state = lxCommand
@@ -307,7 +309,7 @@ func (b *TokenBuffer) Empty() bool {
 	}
 	temp := b.idx
 	// an expression may contain whitespace, but never start with whitespace
-	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace|tokEscaped) == tokComment|tokWhitespace {
+	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
 		b.idx++
 	}
 	if b.idx >= len(b.Expr) {
@@ -315,28 +317,6 @@ func (b *TokenBuffer) Empty() bool {
 	}
 	b.idx = temp
 	return false
-}
-
-func (b *TokenBuffer) PeekFront() (Token, ExprKind, error) {
-	var t Token
-	var k ExprKind
-	if b.idx >= len(b.Expr) {
-		return t, k, &TokenBufferErr{tbEndErr, ErrTokenBufferEnd}
-	}
-	t = b.Expr[b.idx]
-	k = expr_single_tok
-	if t.Value == "{" && t.Kind&tokEscaped == 0 {
-		k = expr_group
-	} else if t.Value == "[" && t.Kind&tokEscaped == 0 {
-		k |= expr_options
-	} else if t.Kind&tokFence > 0 {
-		k |= expr_fenced
-	} else if t.Kind&tokEnv > 0 {
-		k = expr_environment
-	} else if t.Kind&tokWhitespace > 0 {
-		k |= expr_whitespace
-	}
-	return t, k, nil
 }
 
 func (b *TokenBuffer) Advance() {
@@ -348,7 +328,7 @@ func (b *TokenBuffer) GetNextToken() (Token, error) {
 	var result Token
 	temp := b.idx
 	// an expression may contain whitespace, but never start with whitespace
-	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace|tokEscaped) == tokComment|tokWhitespace {
+	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
 		b.idx++
 	}
 	if b.idx >= len(b.Expr) {
@@ -369,7 +349,7 @@ func (b *TokenBuffer) GetNextExpr() (*TokenBuffer, error) {
 	temp := b.idx
 	var result *TokenBuffer
 	// an expression may contain whitespace, but never start with whitespace
-	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace|tokEscaped) == tokComment|tokWhitespace {
+	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
 		b.idx++
 	}
 	if b.idx >= len(b.Expr) {
@@ -397,7 +377,7 @@ func (b *TokenBuffer) GetOptions() (*TokenBuffer, error) {
 	temp := b.idx
 	var result *TokenBuffer
 	// an expression may contain whitespace, but never start with whitespace
-	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace|tokEscaped) == tokComment|tokWhitespace {
+	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
 		b.idx++
 	}
 	if b.idx >= len(b.Expr) {
