@@ -35,6 +35,7 @@ const (
 	tokChar
 	tokOpen
 	tokClose
+	tokMiddle
 	tokCurly
 	tokEnv
 	tokFence
@@ -645,6 +646,7 @@ func fixFences(toks []Token) []Token {
 				temp.Value = nextval
 			}
 			temp.Kind |= tokFence | tokOpen
+			temp.Kind &= ^(tokMiddle | tokClose)
 		case "middle":
 			i++
 			temp = toks[i]
@@ -654,7 +656,7 @@ func fixFences(toks []Token) []Token {
 			} else {
 				temp.Value = nextval
 			}
-			temp.Kind |= tokFence
+			temp.Kind |= tokFence | tokMiddle
 			temp.Kind &= ^(tokOpen | tokClose)
 		case "right":
 			i++
@@ -666,6 +668,7 @@ func fixFences(toks []Token) []Token {
 				temp.Value = nextval
 			}
 			temp.Kind |= tokFence | tokClose
+			temp.Kind &= ^(tokOpen | tokMiddle)
 		case "big", "Big", "bigg", "Bigg":
 			i++
 			temp = toks[i]
