@@ -215,9 +215,10 @@ func (pitz *Pitziil) ParseTex(b *TokenBuffer, context parseContext, parent ...*M
 			if tok.Kind&tokFence == tokFence {
 				container := NewMMLNode("mrow")
 				if tok.Kind&tokNull == 0 {
-					siblings = append(siblings, child)
+					//siblings = append(siblings, child)
+					container.AppendChild(child)
 				}
-				temp, _ := b.GetNextN(tok.MatchOffset - 1)
+				temp, _ := b.GetNextN(tok.MatchOffset)
 				pitz.ParseTex(temp, context&^ctxRoot, container)
 				siblings = append(siblings, container)
 				//don't need to worry about promotedProperties here.
@@ -506,9 +507,13 @@ func (node *MMLNode) postProcessScripts() {
 			base = NewMMLNode("none")
 			skip-- // there is one less node to nillify
 		}
+		// munder and mover tags must be encapsulated in an mrow for firefox to correctly render strechy fences
+		// surrounding them.
+		needs_mrow := false
 		if hasBoth {
 			if base.Properties&propLimitsunderover > 0 {
 				script = NewMMLNode("munderover")
+				needs_mrow = true
 			} else {
 				script = NewMMLNode("msubsup")
 			}
@@ -516,6 +521,7 @@ func (node *MMLNode) postProcessScripts() {
 		} else if hasSub {
 			if base.Properties&propLimitsunderover > 0 {
 				script = NewMMLNode("munder")
+				needs_mrow = true
 			} else {
 				script = NewMMLNode("msub")
 			}
@@ -523,6 +529,7 @@ func (node *MMLNode) postProcessScripts() {
 		} else if hasSuper {
 			if base.Properties&propLimitsunderover > 0 {
 				script = NewMMLNode("mover")
+				needs_mrow = true
 			} else {
 				script = NewMMLNode("msup")
 			}
@@ -530,7 +537,11 @@ func (node *MMLNode) postProcessScripts() {
 		} else {
 			continue
 		}
-		node.Children[pos] = script
+		if needs_mrow {
+			node.Children[pos] = NewMMLNode("mrow").AppendChild(script)
+		} else {
+			node.Children[pos] = script
+		}
 		for j := pos + 1; j <= skip+pos && j < len(node.Children); j++ {
 			node.Children[j] = nil
 		}
