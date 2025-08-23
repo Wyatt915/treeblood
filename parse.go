@@ -1,6 +1,7 @@
 package treeblood
 
 import (
+	"errors"
 	"fmt"
 	"log"
 )
@@ -71,16 +72,17 @@ var (
 )
 
 // Parse a list of TeX tokens into a MathML node tree
-func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent ...*MMLNode) *MMLNode {
+func (pitz *Pitziil) ParseTex(b *TokenBuffer, context parseContext, parent ...*MMLNode) *MMLNode {
 	var node *MMLNode
 	siblings := make([]*MMLNode, 0)
 	var optionString string
 	if context&ctxEnvHasArg > 0 {
-		nextExpr, _ := q.PeekFront()
-		if nextExpr.kind == expr_group || nextExpr.kind == expr_options {
-			optionString = StringifyTokens(nextExpr.toks)
-			q.PopFront()
+		_, err := b.GetNextToken()
+		if errors.Is(err, ErrTokenBufferExpr) {
+			temp, _ := b.GetNextExpr()
+			optionString = StringifyTokens(temp.Expr)
 		} else {
+			b.Unget()
 			logger.Println("WARN: environment expects an argument")
 		}
 		context ^= ctxEnvHasArg
@@ -88,10 +90,19 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 	doFence := func(tok Token) *MMLNode {
 		var n *MMLNode
 		if tok.Kind&tokCommand > 0 {
-			n = pitz.ProcessCommand(context&^ctxRoot, tok, q)
+			n = pitz.ProcessCommand(context&^ctxRoot, tok, b)
 		} else {
 			n = NewMMLNode("mo")
 			n.Text = tok.Value
+		}
+		if tok.Kind&tokOpen == tokOpen {
+			n.SetAttr("form", "prefix")
+		}
+		if tok.Kind&tokMiddle == tokMiddle {
+			n.SetAttr("form", "infix")
+		}
+		if tok.Kind&tokClose == tokClose {
+			n.SetAttr("form", "postfix")
 		}
 		n.SetTrue("fence")
 		n.SetTrue("stretchy")
@@ -99,22 +110,24 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 	}
 	// properties granted by a previous node
 	var promotedProperties NodeProperties
-	for !q.Empty() {
-		expr, _ := q.PopFront()
+	for !b.Empty() {
 		var child *MMLNode
-		if len(expr.toks) == 0 {
+		tok, err := b.GetNextToken()
+		if errors.Is(err, ErrTokenBufferEnd) {
 			siblings = append(siblings, nil)
 			promotedProperties = 0
 			continue
 		}
-		if len(expr.toks) > 1 {
-			temp := pitz.ParseTex(ExpressionQueue(expr.toks), context&^ctxRoot)
-			temp.Properties |= promotedProperties
+		if errors.Is(err, ErrTokenBufferExpr) {
+			expr, _ := b.GetNextExpr()
+			temp := pitz.ParseTex(expr, context&^ctxRoot)
+			if temp != nil {
+				temp.Properties |= promotedProperties
+			}
 			siblings = append(siblings, temp)
 			promotedProperties = 0
 			continue
 		}
-		tok := expr.toks[0]
 		if context&ctxTable > 0 {
 			switch tok.Value {
 			case "&":
@@ -128,16 +141,12 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 			case "\\", "cr":
 				child = NewMMLNode()
 				child.Properties = propRowSep
-				option, _ := q.PopFront()
-				if option.kind == expr_options {
-					option, _ = q.PopFront() // discard '['
+				option, err := b.GetOptions()
+				if err == nil {
 					dummy := NewMMLNode("rowspacing")
 					dummy.Properties = propNonprint
-					dummy.SetAttr("rowspacing", StringifyTokens(option.toks))
+					dummy.SetAttr("rowspacing", StringifyTokens(option.Expr))
 					siblings = append(siblings, dummy)
-					q.PopFront() // discard ']'
-				} else {
-					q.PushFront(option)
 				}
 				siblings = append(siblings, child)
 				continue
@@ -154,8 +163,15 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 			switch tok.Value {
 			case "^":
 				promotedProperties |= propSuperscript
+				// handle the case where no base for the superscript is given
+				if len(siblings) == 0 {
+					siblings = append(siblings, nil)
+				}
 			case "_":
 				promotedProperties |= propSubscript
+				if len(siblings) == 0 {
+					siblings = append(siblings, nil)
+				}
 			case "over":
 				promotedProperties |= propInfixOver
 			case "choose":
@@ -178,56 +194,43 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 			}
 		case tok.Kind&(tokOpen|tokEnv) == tokOpen|tokEnv:
 			ctx := setEnvironmentContext(tok, context) &^ ctxRoot
-			env, _ := q.PopFront()
-			child = processEnv(pitz.ParseTex(ExpressionQueue(env.toks), ctx), tok.Value, ctx)
-			q.PopFront()
+			env, _ := b.GetNextN(tok.MatchOffset)
+			child = processEnv(pitz.ParseTex(env, ctx), tok.Value, ctx)
 		case tok.Kind&(tokOpen|tokCurly) == tokOpen|tokCurly:
-			child = pitz.ParseTex(q, context&^ctxRoot)
-		case tok.Kind&tokLetter > 0:
-			child = NewMMLNode("mi", tok.Value)
-			child.set_variants_from_context(context &^ ctxRoot)
-		case tok.Kind&tokNumber > 0:
-			child = NewMMLNode("mn", tok.Value)
-			child.set_variants_from_context(context &^ ctxRoot)
+			child = pitz.ParseTex(b, context&^ctxRoot)
 		case tok.Kind&tokOpen > 0:
 			child = NewMMLNode("mo")
-			// process the (bracketed expression) as a standalone mrow
-			//if tok.Kind&(tokOpen|tokFence) == (tokOpen|tokFence) && tok.MatchOffset > 0 {
-			//	end = i + tok.MatchOffset
-			//}
+			if tok.Kind&tokCommand > 0 {
+				child = pitz.ProcessCommand(context&^ctxRoot, tok, b)
+			} else {
+				child.Text = tok.Value
+			}
+			child.SetAttr("form", "prefix")
 			if tok.Kind&tokFence > 0 {
 				child.SetTrue("fence")
 				child.SetTrue("stretchy")
 			} else {
 				child.SetFalse("stretchy")
 			}
-			if tok.Kind&tokCommand > 0 {
-				child = pitz.ProcessCommand(context&^ctxRoot, tok, q)
-			} else {
-				child.Text = tok.Value
-			}
-			if tok.Kind&(tokOpen|tokFence) == (tokOpen | tokFence) {
+			if tok.Kind&tokFence == tokFence {
 				container := NewMMLNode("mrow")
 				if tok.Kind&tokNull == 0 {
 					container.AppendChild(child)
 				}
-				enclosed := NewMMLNode("mrow")
-				temp, _ := q.PopFront()
-				pitz.ParseTex(ExpressionQueue(temp.toks), context&^ctxRoot, enclosed)
-				//append the enclosed mrow and the closing fence
-				container.AppendChild(enclosed)
-				front, err := q.PeekFront()
-				if len(front.toks) > 0 && err == nil && front.toks[0].Kind&(tokFence|tokClose) == tokFence|tokClose {
-					temp, _ = q.PopFront()
-					container.AppendChild(pitz.ParseTex(ExpressionQueue(temp.toks), context&^ctxRoot))
-				}
-				//row := NewMMLNode("mrow").AppendChild(container)
+				temp, _ := b.GetNextN(tok.MatchOffset)
+				pitz.ParseTex(temp, context&^ctxRoot, container)
 				siblings = append(siblings, container)
 				//don't need to worry about promotedProperties here.
 				continue
 			}
 		case tok.Kind&tokClose > 0:
 			child = NewMMLNode("mo")
+			if tok.Kind&tokCommand > 0 {
+				child = pitz.ProcessCommand(context&^ctxRoot, tok, b)
+			} else {
+				child.Text = tok.Value
+			}
+			child.SetAttr("form", "postfix")
 			if tok.Kind&tokNull > 0 {
 				child = nil
 				break
@@ -238,15 +241,16 @@ func (pitz *Pitziil) ParseTex(q *queue[Expression], context parseContext, parent
 			} else {
 				child.SetFalse("stretchy")
 			}
-			if tok.Kind&tokCommand > 0 {
-				child = pitz.ProcessCommand(context&^ctxRoot, tok, q)
-			} else {
-				child.Text = tok.Value
-			}
 		case tok.Kind&tokFence > 0:
 			child = doFence(tok)
+		case tok.Kind&tokLetter > 0:
+			child = NewMMLNode("mi", tok.Value)
+			child.set_variants_from_context(context &^ ctxRoot)
+		case tok.Kind&tokNumber > 0:
+			child = NewMMLNode("mn", tok.Value)
+			child.set_variants_from_context(context &^ ctxRoot)
 		case tok.Kind&tokCommand > 0:
-			child = pitz.ProcessCommand(context&^ctxRoot, tok, q)
+			child = pitz.ProcessCommand(context&^ctxRoot, tok, b)
 		case tok.Kind&tokWhitespace > 0:
 			if context&ctxText > 0 {
 				child = NewMMLNode("mspace", " ")
@@ -509,9 +513,13 @@ func (node *MMLNode) postProcessScripts() {
 			base = NewMMLNode("none")
 			skip-- // there is one less node to nillify
 		}
+		// munder and mover tags must be encapsulated in an mrow for firefox to correctly render strechy fences
+		// surrounding them.
+		needs_mrow := false
 		if hasBoth {
 			if base.Properties&propLimitsunderover > 0 {
 				script = NewMMLNode("munderover")
+				needs_mrow = true
 			} else {
 				script = NewMMLNode("msubsup")
 			}
@@ -519,6 +527,7 @@ func (node *MMLNode) postProcessScripts() {
 		} else if hasSub {
 			if base.Properties&propLimitsunderover > 0 {
 				script = NewMMLNode("munder")
+				needs_mrow = true
 			} else {
 				script = NewMMLNode("msub")
 			}
@@ -526,6 +535,7 @@ func (node *MMLNode) postProcessScripts() {
 		} else if hasSuper {
 			if base.Properties&propLimitsunderover > 0 {
 				script = NewMMLNode("mover")
+				needs_mrow = true
 			} else {
 				script = NewMMLNode("msup")
 			}
@@ -533,7 +543,11 @@ func (node *MMLNode) postProcessScripts() {
 		} else {
 			continue
 		}
-		node.Children[pos] = script
+		if needs_mrow {
+			node.Children[pos] = NewMMLNode("mrow").AppendChild(script)
+		} else {
+			node.Children[pos] = script
+		}
 		for j := pos + 1; j <= skip+pos && j < len(node.Children); j++ {
 			node.Children[j] = nil
 		}

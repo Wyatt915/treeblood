@@ -48,7 +48,7 @@ func TexToMML(tex string, macros map[string]string, block, displaystyle bool) (r
 		}
 	}
 	pitz := NewPitziil()
-	ast = wrapInMathTag(pitz.ParseTex(ExpressionQueue(tokens), ctxRoot), tex)
+	ast = wrapInMathTag(pitz.ParseTex(NewTokenBuffer(tokens), ctxRoot), tex)
 	if block {
 		ast.SetAttr("display", "block")
 	} else {
@@ -175,7 +175,7 @@ func (pitz *Pitziil) render(tex string, displaystyle bool) (result string, err e
 			return "", err
 		}
 	}
-	ast = pitz.wrapInMathTag(pitz.ParseTex(ExpressionQueue(tokens), ctxRoot), tex)
+	ast = pitz.wrapInMathTag(pitz.ParseTex(NewTokenBuffer(tokens), ctxRoot), tex)
 	ast.SetAttr("xmlns", "http://www.w3.org/1998/Math/MathML")
 	if displaystyle {
 		ast.SetAttr("display", "block")
@@ -271,7 +271,7 @@ func (pitz *Pitziil) SemanticsOnly(tex string) (string, error) {
 			return "", err
 		}
 	}
-	ast := pitz.ParseTex(ExpressionQueue(tokens), ctxRoot)
+	ast := pitz.ParseTex(NewTokenBuffer(tokens), ctxRoot)
 	var builder strings.Builder
 	var indent int
 	if pitz.PrintOneLine {

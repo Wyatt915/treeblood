@@ -97,7 +97,7 @@ func resolve_dependency_graph(macros map[string][]Token) []string {
 	return result
 }
 
-func ExpandSingleMacro(m Macro, args []Expression) ([]Token, error) {
+func ExpandSingleMacro(m Macro, args []*TokenBuffer) ([]Token, error) {
 	def := m.Definition
 	result := make([]Token, 0, len(def)*2) // twice the original capacity is probably fine?
 	for i, t := range def {
@@ -107,7 +107,7 @@ func ExpandSingleMacro(m Macro, args []Expression) ([]Token, error) {
 				return nil, err
 			}
 			n-- //Macros start being indexed at 1
-			result = append(result, args[n].toks...)
+			result = append(result, args[n].Expr...)
 		} else {
 			result = append(result, t)
 			result[i].MatchOffset = 0
@@ -168,7 +168,6 @@ func ExpandMacros(toks []Token, macros map[string]Macro) ([]Token, error) {
 	has_unexpanded_macros := true
 	var result, temp []Token
 	var err error
-	var kind ExprKind
 	for has_unexpanded_macros {
 		has_unexpanded_macros = false
 		result = make([]Token, 0, 2*len(toks))
@@ -178,10 +177,10 @@ func ExpandMacros(toks []Token, macros map[string]Macro) ([]Token, error) {
 			if def, ok := macros[t.Value]; ok && t.Kind&tokCommand > 0 && !def.Dynamic {
 
 				has_unexpanded_macros = true
-				args := make([]Expression, macros[t.Value].Argcount)
+				args := make([]*TokenBuffer, macros[t.Value].Argcount)
 				for n := range macros[t.Value].Argcount {
-					temp, i, kind = GetNextExpr(toks, i+1)
-					args[n] = Expression{toks: temp, kind: kind}
+					temp, i, _ = GetNextExpr(toks, i+1)
+					args[n] = NewTokenBuffer(temp)
 				}
 				temp, err := ExpandSingleMacro(def, args)
 				if err != nil {
