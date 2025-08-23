@@ -154,8 +154,14 @@ func (pitz *Pitziil) ParseTex(b *TokenBuffer, context parseContext, parent ...*M
 			switch tok.Value {
 			case "^":
 				promotedProperties |= propSuperscript
+				if len(siblings) == 0 {
+					siblings = append(siblings, nil)
+				}
 			case "_":
 				promotedProperties |= propSubscript
+				if len(siblings) == 0 {
+					siblings = append(siblings, nil)
+				}
 			case "over":
 				promotedProperties |= propInfixOver
 			case "choose":
