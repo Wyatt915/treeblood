@@ -206,16 +206,12 @@ func (pitz *Pitziil) ParseTex(b *TokenBuffer, context parseContext, parent ...*M
 			child.set_variants_from_context(context &^ ctxRoot)
 		case tok.Kind&tokOpen > 0:
 			child = NewMMLNode("mo")
-			child.SetAttr("form", "prefix")
-			// process the (bracketed expression) as a standalone mrow
-			//if tok.Kind&(tokOpen|tokFence) == (tokOpen|tokFence) && tok.MatchOffset > 0 {
-			//	end = i + tok.MatchOffset
-			//}
 			if tok.Kind&tokCommand > 0 {
 				child = pitz.ProcessCommand(context&^ctxRoot, tok, b)
 			} else {
 				child.Text = tok.Value
 			}
+			child.SetAttr("form", "prefix")
 			if tok.Kind&tokFence > 0 {
 				child.SetTrue("fence")
 				child.SetTrue("stretchy")
@@ -225,7 +221,6 @@ func (pitz *Pitziil) ParseTex(b *TokenBuffer, context parseContext, parent ...*M
 			if tok.Kind&tokFence == tokFence {
 				container := NewMMLNode("mrow")
 				if tok.Kind&tokNull == 0 {
-					//siblings = append(siblings, child)
 					container.AppendChild(child)
 				}
 				temp, _ := b.GetNextN(tok.MatchOffset)
@@ -236,6 +231,11 @@ func (pitz *Pitziil) ParseTex(b *TokenBuffer, context parseContext, parent ...*M
 			}
 		case tok.Kind&tokClose > 0:
 			child = NewMMLNode("mo")
+			if tok.Kind&tokCommand > 0 {
+				child = pitz.ProcessCommand(context&^ctxRoot, tok, b)
+			} else {
+				child.Text = tok.Value
+			}
 			child.SetAttr("form", "postfix")
 			if tok.Kind&tokNull > 0 {
 				child = nil
@@ -246,11 +246,6 @@ func (pitz *Pitziil) ParseTex(b *TokenBuffer, context parseContext, parent ...*M
 				child.SetTrue("stretchy")
 			} else {
 				child.SetFalse("stretchy")
-			}
-			if tok.Kind&tokCommand > 0 {
-				child = pitz.ProcessCommand(context&^ctxRoot, tok, b)
-			} else {
-				child.Text = tok.Value
 			}
 		case tok.Kind&tokFence > 0:
 			child = doFence(tok)

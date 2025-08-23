@@ -307,7 +307,7 @@ func (b *TokenBuffer) Empty() bool {
 	}
 	temp := b.idx
 	// an expression may contain whitespace, but never start with whitespace
-	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
+	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace|tokEscaped) == tokComment|tokWhitespace {
 		b.idx++
 	}
 	if b.idx >= len(b.Expr) {
@@ -348,7 +348,7 @@ func (b *TokenBuffer) GetNextToken() (Token, error) {
 	var result Token
 	temp := b.idx
 	// an expression may contain whitespace, but never start with whitespace
-	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
+	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace|tokEscaped) == tokComment|tokWhitespace {
 		b.idx++
 	}
 	if b.idx >= len(b.Expr) {
@@ -369,7 +369,7 @@ func (b *TokenBuffer) GetNextExpr() (*TokenBuffer, error) {
 	temp := b.idx
 	var result *TokenBuffer
 	// an expression may contain whitespace, but never start with whitespace
-	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
+	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace|tokEscaped) == tokComment|tokWhitespace {
 		b.idx++
 	}
 	if b.idx >= len(b.Expr) {
@@ -397,7 +397,7 @@ func (b *TokenBuffer) GetOptions() (*TokenBuffer, error) {
 	temp := b.idx
 	var result *TokenBuffer
 	// an expression may contain whitespace, but never start with whitespace
-	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
+	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace|tokEscaped) == tokComment|tokWhitespace {
 		b.idx++
 	}
 	if b.idx >= len(b.Expr) {
