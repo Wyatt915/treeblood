@@ -194,32 +194,24 @@ func (pitz *Pitziil) ParseTex(b *TokenBuffer, context parseContext, parent ...*M
 			//if tok.Kind&(tokOpen|tokFence) == (tokOpen|tokFence) && tok.MatchOffset > 0 {
 			//	end = i + tok.MatchOffset
 			//}
+			if tok.Kind&tokCommand > 0 {
+				child = pitz.ProcessCommand(context&^ctxRoot, tok, b)
+			} else {
+				child.Text = tok.Value
+			}
 			if tok.Kind&tokFence > 0 {
 				child.SetTrue("fence")
 				child.SetTrue("stretchy")
 			} else {
 				child.SetFalse("stretchy")
 			}
-			if tok.Kind&tokCommand > 0 {
-				child = pitz.ProcessCommand(context&^ctxRoot, tok, b)
-			} else {
-				child.Text = tok.Value
-			}
-			if tok.Kind&(tokOpen|tokFence) == (tokOpen | tokFence) {
+			if tok.Kind&tokFence == tokFence {
 				container := NewMMLNode("mrow")
 				if tok.Kind&tokNull == 0 {
-					container.AppendChild(child)
+					siblings = append(siblings, child)
 				}
-				enclosed := NewMMLNode("mrow")
-				temp, _ := b.GetNextN(tok.MatchOffset)
-				pitz.ParseTex(temp, context&^ctxRoot, enclosed)
-				//append the enclosed mrow and the closing fence
-				container.AppendChild(enclosed)
-				closing, err := b.GetNextN(1)
-				if err == nil && closing.Expr[0].Kind&(tokFence|tokClose) == tokFence|tokClose {
-					container.AppendChild(pitz.ParseTex(closing, context&^ctxRoot))
-				}
-				//row := NewMMLNode("mrow").AppendChild(container)
+				temp, _ := b.GetNextN(tok.MatchOffset - 1)
+				pitz.ParseTex(temp, context&^ctxRoot, container)
 				siblings = append(siblings, container)
 				//don't need to worry about promotedProperties here.
 				continue
