@@ -427,7 +427,7 @@ func (b *TokenBuffer) GetUntil(f func(Token) bool) *TokenBuffer {
 
 func (b *TokenBuffer) GetNextN(n int, skipWhitespace ...bool) (*TokenBuffer, error) {
 	if b.idx+n > len(b.Expr) {
-		return nil, &TokenBufferErr{tbEndErr, ErrTokenBufferEnd}
+		return NewTokenBuffer(b.Expr[b.idx:len(b.Expr)]), &TokenBufferErr{tbEndErr, ErrTokenBufferEnd}
 	}
 	start := b.idx
 	if skipWhitespace != nil && skipWhitespace[0] {

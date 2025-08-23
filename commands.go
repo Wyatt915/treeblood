@@ -404,7 +404,18 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, b *TokenBuf
 			}
 			return false
 		}
-		switchExpressions := b.GetUntil(cellEnd)
+		var i int
+		for i = b.idx; i < len(b.Expr); i++ {
+			t := b.Expr[i]
+			if t.Kind&(tokCurly|tokOpen) == tokCurly|tokOpen {
+				i += t.MatchOffset
+				continue
+			}
+			if cellEnd(t) {
+				break
+			}
+		}
+		switchExpressions, _ := b.GetNextN(i - b.idx)
 
 		n := NewMMLNode("mstyle")
 		if name == "color" {

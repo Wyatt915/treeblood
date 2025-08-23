@@ -154,6 +154,7 @@ func (pitz *Pitziil) ParseTex(b *TokenBuffer, context parseContext, parent ...*M
 			switch tok.Value {
 			case "^":
 				promotedProperties |= propSuperscript
+				// handle the case where no base for the superscript is given
 				if len(siblings) == 0 {
 					siblings = append(siblings, nil)
 				}
