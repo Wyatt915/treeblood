@@ -585,6 +585,9 @@ func (pitz *Pitziil) newCommand(macroCommand string, context parseContext, b *To
 			return
 		}
 	}
+	if optDefault == nil {
+		optDefault = NewTokenBuffer(nil)
+	}
 	cmd := Macro{
 		Definition:    definition.Expr,
 		OptionDefault: optDefault.Expr,
