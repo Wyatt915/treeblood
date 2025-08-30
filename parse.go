@@ -40,6 +40,7 @@ const (
 	ctxScriptscript
 	ctxText
 	ctxBracketed
+	ctxChemical
 	// SIZES (interpreted as a 4-bit unsigned int)
 	ctxSize_1
 	ctxSize_2

@@ -275,6 +275,18 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, b *TokenBuf
 		return makeTexLogo(true)
 	case "TeX":
 		return makeTexLogo(false)
+		// chemical expressions are parsed in such a unique way that we should take care of them entirely separately
+	case "ce":
+		expr, err := b.GetNextExpr()
+		if err != nil {
+			logger.Println(err)
+			return nil
+		}
+		chem, err := pitz.mhchem(expr, context)
+		if err != nil {
+			logger.Println(err)
+		}
+		return chem
 	}
 	if pitz.needMacroExpansion[name] {
 		macro := pitz.macros[name]
