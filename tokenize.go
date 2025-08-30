@@ -427,8 +427,7 @@ func (b *TokenBuffer) Unget() {
 	b.idx -= b.jump
 }
 
-func tokenize(str string) ([]Token, error) {
-	tex := []rune(strings.Clone(str))
+func tokenize(tex []rune) ([]Token, error) {
 	var tok Token
 	tokens := make([]Token, 0)
 	idx := 0
