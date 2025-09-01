@@ -324,12 +324,16 @@ func (b *TokenBuffer) Advance() {
 	b.jump = 1
 }
 
-func (b *TokenBuffer) GetNextToken() (Token, error) {
+func (b *TokenBuffer) GetNextToken(skipWhitespace ...bool) (Token, error) {
 	var result Token
 	temp := b.idx
-	// an expression may contain whitespace, but never start with whitespace
-	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
+	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&tokComment > 0 {
 		b.idx++
+	}
+	if skipWhitespace == nil || skipWhitespace[0] {
+		for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&tokWhitespace > 0 {
+			b.idx++
+		}
 	}
 	if b.idx >= len(b.Expr) {
 		b.idx = temp
@@ -409,6 +413,9 @@ func (b *TokenBuffer) GetUntil(f func(Token) bool) *TokenBuffer {
 func (b *TokenBuffer) GetNextN(n int, skipWhitespace ...bool) (*TokenBuffer, error) {
 	if b.idx+n > len(b.Expr) {
 		return NewTokenBuffer(b.Expr[b.idx:len(b.Expr)]), &TokenBufferErr{tbEndErr, ErrTokenBufferEnd}
+	}
+	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&tokComment > 0 {
+		b.idx++
 	}
 	start := b.idx
 	if skipWhitespace != nil && skipWhitespace[0] {
