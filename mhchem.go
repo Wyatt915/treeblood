@@ -315,6 +315,13 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 					currentAtom.charge.AppendNew("mo", "+")
 				}
 			}
+		} else if t.Value == "<" {
+			if arrow := makeArrow(t, b); arrow != nil {
+				result = append(result, arrow)
+			} else {
+				result = append(result, NewMMLNode("mo", t.Value))
+			}
+			state = chStart
 		} else if t.Value == "-" {
 			if !(b.Empty() || next.Kind&tokWhitespace == 0) {
 				if currentAtom != nil && ctx&ctxAtomScript == 0 {
@@ -322,6 +329,13 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 					currentAtom = nil
 				}
 				result = append(result, NewMMLNode("mo", "−").SetAttr("form", "infix"))
+			} else if next.Value == ">" {
+				if arrow := makeArrow(t, b); arrow != nil {
+					result = append(result, arrow)
+				} else {
+					result = append(result, NewMMLNode("mo", t.Value))
+				}
+				state = chStart
 			} else {
 				if currentAtom == nil {
 					currentAtom = &atom{}
@@ -412,4 +426,58 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 		currentAtom = nil
 	}
 	return result, nil
+}
+
+func makeArrow(t Token, b *TokenBuffer) *MMLNode {
+	toks := make([]string, 0, 4)
+	idx := b.idx
+	toks = append(toks, t.Value)
+	temp := b.GetUntil(func(t Token) bool {
+		return !(t.Value == "-" || t.Value == "=" || t.Value == "<" || t.Value == ">")
+	})
+	for !temp.Empty() {
+		tok, _ := temp.GetNextToken()
+		toks = append(toks, tok.Value)
+	}
+	for i := range 4 {
+		switch strings.Join(toks[0:4-i], "") {
+		case "->":
+			mover := NewMMLNode("mover").SetFalse("accent")
+			mover.AppendNew("mo", "→").SetTrue("stretchy")
+			mover.AppendNew("mspace").SetAttr("width", "2.8571em")
+			return mover
+		case "<-":
+			mover := NewMMLNode("mover").SetFalse("accent")
+			mover.AppendNew("mo", "←").SetTrue("stretchy")
+			mover.AppendNew("mspace").SetAttr("width", "2.8571em")
+			return mover
+		case "<->":
+			mover := NewMMLNode("mover").SetFalse("accent")
+			mover.AppendNew("mo", "↔").SetTrue("stretchy")
+			mover.AppendNew("mspace").SetAttr("width", "2.8571em")
+			return mover
+		case "<-->":
+			mover := NewMMLNode("mover").SetFalse("accent")
+			mover.AppendNew("mo", "⇄").SetTrue("stretchy")
+			mover.AppendNew("mspace").SetAttr("width", "2.8571em")
+			return mover
+		case "<=>":
+			mover := NewMMLNode("mover").SetFalse("accent")
+			mover.AppendNew("mo", "⇌").SetTrue("stretchy")
+			mover.AppendNew("mspace").SetAttr("width", "2.8571em")
+			return mover
+			//case "<<=>":
+			//	mover := NewMMLNode("mover").SetFalse("accent")
+			//	mover.AppendNew("mo", "⇌").SetTrue("stretchy")
+			//	mover.AppendNew("mspace").SetAttr("width", "2.8571em")
+			//	return mover
+			//case "<=>>":
+			//	mover := NewMMLNode("mover").SetFalse("accent")
+			//	mover.AppendNew("mo", "⇌").SetTrue("stretchy")
+			//	mover.AppendNew("mspace").SetAttr("width", "2.8571em")
+			//	return mover
+		}
+	}
+	b.idx = idx
+	return nil
 }
