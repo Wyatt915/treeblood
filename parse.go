@@ -40,7 +40,8 @@ const (
 	ctxScriptscript
 	ctxText
 	ctxBracketed
-	ctxChemical
+	ctxChemical   // we are in a \ce{...} chemical equation
+	ctxAtomScript // we are in a super or subscript in a chemical equation
 	// SIZES (interpreted as a 4-bit unsigned int)
 	ctxSize_1
 	ctxSize_2
@@ -71,6 +72,15 @@ var (
 		"none":        true,
 	}
 )
+
+func (pitz *Pitziil) OriginalString(b *TokenBuffer) string {
+	if b.Empty() {
+		return ""
+	}
+	start := b.Expr[0].start
+	end := b.Expr[len(b.Expr)-1].end
+	return string(pitz.currentExpr[start:end])
+}
 
 // Parse a list of TeX tokens into a MathML node tree
 func (pitz *Pitziil) ParseTex(b *TokenBuffer, context parseContext, parent ...*MMLNode) *MMLNode {

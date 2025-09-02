@@ -286,7 +286,7 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, b *TokenBuf
 		if err != nil {
 			logger.Println(err)
 		}
-		return chem
+		return NewMMLNode("mrow").AppendChild(chem...)
 	}
 	if pitz.needMacroExpansion[name] {
 		macro := pitz.macros[name]
@@ -335,42 +335,8 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, b *TokenBuf
 		n.set_variants_from_context(context)
 		n.setAttribsFromProperties()
 		return n
-	} else if t, ok := symbolTable[name]; ok {
-		n := NewMMLNode()
-		n.Properties = t.properties
-		if t.char != "" {
-			n.Text = t.char
-		} else {
-			n.Text = t.entity
-		}
-		if context&ctxTable > 0 && t.properties&(propHorzArrow|propVertArrow) > 0 {
-			n.SetTrue("stretchy")
-		}
-		if n.Properties&propSymUpright > 0 {
-			context |= ctxVarNormal
-		}
-		switch t.kind {
-		case sym_binaryop, sym_opening, sym_closing, sym_relation, sym_operator:
-			n.Tag = "mo"
-		case sym_large:
-			n.Tag = "mo"
-			// we do an XOR rather than an OR here to remove this property
-			// from any of the integral symbols from symbolTable.
-			n.Properties ^= propLimitsunderover
-			n.Properties |= propLargeop | propMovablelimits
-		case sym_alphabetic:
-			n.Tag = "mi"
-		default:
-			if tok.Kind&tokFence > 0 {
-				n.Tag = "mo"
-			} else {
-				n.Tag = "mi"
-			}
-		}
-		n.Tok = tok
-		n.set_variants_from_context(context)
-		n.setAttribsFromProperties()
-		return n
+	} else if sym, ok := symbolTable[name]; ok {
+		return makeSymbol(sym, tok, context)
 	}
 	if node, ok := precompiled_commands[tok.Value]; ok {
 		// we must wrap this node in a new mrow since all instances point to the same memory location. Thius way, we can
@@ -514,6 +480,44 @@ func (pitz *Pitziil) ProcessCommand(context parseContext, tok Token, b *TokenBuf
 			n = NewMMLNode("mo", tok.Value)
 		} else {
 			n = NewMMLNode("merror", tok.Value)
+		}
+	}
+	n.Tok = tok
+	n.set_variants_from_context(context)
+	n.setAttribsFromProperties()
+	return n
+}
+
+func makeSymbol(t symbol, tok Token, context parseContext) *MMLNode {
+	n := NewMMLNode()
+	n.Properties = t.properties
+	if t.char != "" {
+		n.Text = t.char
+	} else {
+		n.Text = t.entity
+	}
+	if context&ctxTable > 0 && t.properties&(propHorzArrow|propVertArrow) > 0 {
+		n.SetTrue("stretchy")
+	}
+	if n.Properties&propSymUpright > 0 {
+		context |= ctxVarNormal
+	}
+	switch t.kind {
+	case sym_binaryop, sym_opening, sym_closing, sym_relation, sym_operator:
+		n.Tag = "mo"
+	case sym_large:
+		n.Tag = "mo"
+		// we do an XOR rather than an OR here to remove this property
+		// from any of the integral symbols from symbolTable.
+		n.Properties ^= propLimitsunderover
+		n.Properties |= propLargeop | propMovablelimits
+	case sym_alphabetic:
+		n.Tag = "mi"
+	default:
+		if tok.Kind&tokFence > 0 {
+			n.Tag = "mo"
+		} else {
+			n.Tag = "mi"
 		}
 	}
 	n.Tok = tok
