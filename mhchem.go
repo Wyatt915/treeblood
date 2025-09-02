@@ -124,7 +124,7 @@ func (a *atom) toMML() *MMLNode {
 }
 
 func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error) {
-	result := make([]*MMLNode, len(b.Expr))
+	result := make([]*MMLNode, 0, len(b.Expr))
 	ctx |= ctxChemical
 	state := chStart
 	var promotedProperties NodeProperties
@@ -254,6 +254,10 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 					NewMMLNode("mspace").SetAttr("width", "0.0556em"),
 				)
 			} else {
+				if currentAtom != nil && ctx&ctxAtomScript == 0 {
+					result = append(result, currentAtom.toMML())
+					currentAtom = nil
+				}
 				result = append(result, makeSymbol(symbolTable["cdot"], t, ctx))
 			}
 		} else if t.Value == "(" && t.MatchOffset > 0 {
@@ -312,7 +316,7 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 				}
 			}
 		} else if t.Value == "-" {
-			if !(b.Empty() || next.Kind&tokWhitespace > 0) {
+			if !(b.Empty() || next.Kind&tokWhitespace == 0) {
 				if currentAtom != nil && ctx&ctxAtomScript == 0 {
 					result = append(result, currentAtom.toMML())
 					currentAtom = nil

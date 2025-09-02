@@ -89,7 +89,7 @@ func getToken(tex []rune, start int) (Token, int) {
 		r := tex[idx]
 		switch state {
 		case lxEnd:
-			return Token{Kind: kind, Value: string(result), start: start, end: idx + 1}, idx
+			return Token{Kind: kind, Value: string(result), start: start, end: idx}, idx
 		case lxBegin:
 			switch {
 			case unicode.IsLetter(r):
@@ -136,7 +136,6 @@ func getToken(tex []rune, start int) (Token, int) {
 				state = lxSpace
 				kind = tokWhitespace
 				result = append(result, ' ')
-				continue
 			case r == '|':
 				state = lxEnd
 				kind = tokLetter
@@ -157,14 +156,14 @@ func getToken(tex []rune, start int) (Token, int) {
 		case lxSpace:
 			switch {
 			case !unicode.IsSpace(r):
-				return Token{Kind: kind, Value: string(result)}, idx
+				return Token{Kind: kind, Value: string(result), start: start, end: idx}, idx
 			}
 		case lxNumber:
 			switch {
 			case r == '.':
 				result = append(result, r)
 			case !unicode.IsNumber(r):
-				return Token{Kind: kind, Value: string(result)}, idx
+				return Token{Kind: kind, Value: string(result), start: start, end: idx}, idx
 			default:
 				result = append(result, r)
 			}
@@ -211,7 +210,7 @@ func getToken(tex []rune, start int) (Token, int) {
 				//result = append(result, r)
 			case !unicode.IsLetter(r):
 				val := string(result)
-				return Token{Kind: kind, Value: val}, idx
+				return Token{Kind: kind, Value: val, start: start, end: idx}, idx
 			default:
 				result = append(result, r)
 			}
