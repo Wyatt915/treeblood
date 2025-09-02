@@ -81,6 +81,7 @@ func (a *atom) toMML() *MMLNode {
 	if a.charge != nil {
 		i += 2
 	}
+	multiscripts := a.z != nil || a.mass != nil
 	if a.name == nil {
 		a.name = NewMMLNode("mrow")
 	}
@@ -96,7 +97,7 @@ func (a *atom) toMML() *MMLNode {
 	if a.z == nil {
 		a.z = NewMMLNode("mrow")
 	}
-	if a.z != nil || a.mass != nil {
+	if multiscripts {
 		return NewMMLNode("mmultiscripts").AppendChild(
 			a.name,
 			a.count,
