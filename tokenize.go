@@ -163,8 +163,6 @@ func getToken(tex []rune, start int) (Token, int) {
 			switch {
 			case r == '.':
 				result = append(result, r)
-			case unicode.IsSpace(r):
-				state = lxEnd
 			case !unicode.IsNumber(r):
 				return Token{Kind: kind, Value: string(result)}, idx
 			default:
