@@ -84,7 +84,7 @@ func (a *atom) toMML() *MMLNode {
 	multiscripts := a.z != nil || a.mass != nil
 	if a.name == nil {
 		a.name = NewMMLNode("mrow")
-	} else {
+	} else if _, ok := a.name.Attrib["intent"]; !ok {
 		a.name.SetAttr("intent", ":chemical-element")
 	}
 	if a.charge == nil {
@@ -297,27 +297,46 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 				mrow := NewMMLNode("mo", "(").SetAttr("form", "prefix")
 				pitz.ParseTex(expr, ctx^ctxChemical, mrow)
 				result = append(result, mrow)
+				continue
 			} else if t.MatchOffset == 2 {
 				if next.Value == "v" && state == chStart {
 					result = append(result, makeSymbol(symbolTable["downarrow"], next, ctx))
-					b.GetNextN(t.MatchOffset)
+					continue
 				} else if next.Value == "^" && state == chStart {
 					result = append(result, makeSymbol(symbolTable["uparrow"], next, ctx))
-					b.GetNextN(t.MatchOffset)
+					continue
 				}
-			} else {
-				mrow := NewMMLNode("mrow")
-				mrow.AppendChild(NewMMLNode("mo", "(").SetAttr("form", "prefix"))
-				paren, err := pitz.mhchem(expr, ctx)
-				if err != nil {
-					return nil, err
-				}
-				mrow.AppendChild(paren...)
-				currentAtom = &atom{name: mrow}
-				state = chSpecies
 			}
+			mrow := NewMMLNode("mrow").SetAttr("intent", ":chemical-formula")
+			mrow.AppendChild(NewMMLNode("mo", "(").SetAttr("form", "prefix"))
+			paren, err := pitz.mhchem(expr, ctx)
+			if err != nil {
+				return nil, err
+			}
+			mrow.AppendChild(paren...)
+			currentAtom = &atom{name: mrow}
+			state = chSpecies
+
 			//} else if t.Value == ")" {
 			//	mrow.AppendChild(NewMMLNode("mo", ")").SetAttr("form", "suffix"))
+		} else if t.Value == "[" && t.MatchOffset > 0 {
+			if currentAtom != nil && ctx&ctxAtomScript == 0 {
+				result = append(result, currentAtom.toMML())
+				currentAtom = nil
+			}
+			expr, err := b.GetNextN(t.MatchOffset)
+			if err != nil {
+				return nil, err
+			}
+			mrow := NewMMLNode("mrow").SetAttr("intent", ":chemical-formula")
+			mrow.AppendChild(NewMMLNode("mo", "[").SetAttr("form", "prefix"))
+			paren, err := pitz.mhchem(expr, ctx)
+			if err != nil {
+				return nil, err
+			}
+			mrow.AppendChild(paren...)
+			currentAtom = &atom{name: mrow}
+			state = chSpecies
 
 		} else if t.Value == "+" {
 			if state == chStart {
@@ -340,7 +359,7 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 				}
 			}
 		} else if t.Value == "<" {
-			if arrow := makeArrow(t, b); arrow != nil {
+			if arrow := pitz.makeArrow(t, b); arrow != nil {
 				result = append(result, arrow)
 			} else {
 				result = append(result, NewMMLNode("mo", t.Value))
@@ -354,7 +373,7 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 				}
 				result = append(result, NewMMLNode("mo", "−").SetAttr("form", "infix"))
 			} else if next.Value == ">" {
-				if arrow := makeArrow(t, b); arrow != nil {
+				if arrow := pitz.makeArrow(t, b); arrow != nil {
 					result = append(result, arrow)
 				} else {
 					result = append(result, NewMMLNode("mo", t.Value))
@@ -443,6 +462,17 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 				currentAtom.count = subscript
 				state = chSubscript
 			}
+		} else {
+			if currentAtom != nil && ctx&ctxAtomScript == 0 {
+				result = append(result, currentAtom.toMML())
+				currentAtom = nil
+			}
+			elem := NewMMLNode("mo", t.Value)
+			if t.Kind&tokClose > 0 {
+				elem.SetAttr("form", "postfix")
+			}
+			result = append(result, elem)
+			state = chStart
 		}
 	}
 	if currentAtom != nil && ctx&ctxAtomScript == 0 {
@@ -452,7 +482,7 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 	return result, nil
 }
 
-func makeArrow(t Token, b *TokenBuffer) *MMLNode {
+func (pitz *Pitziil) makeArrow(t Token, b *TokenBuffer) *MMLNode {
 	toks := make([]string, 0, 4)
 	idx := b.idx
 	toks = append(toks, t.Value)
@@ -470,27 +500,32 @@ func makeArrow(t Token, b *TokenBuffer) *MMLNode {
 				mover := NewMMLNode("mover").SetFalse("accent")
 				mover.AppendNew("mo", "→").SetTrue("stretchy")
 				mover.AppendNew("mspace").SetAttr("width", "2.8571em")
-				return mover
+				b.idx = idx + 1
+				return NewMMLNode("mrow").AppendChild(mover)
 			case "<-":
 				mover := NewMMLNode("mover").SetFalse("accent")
 				mover.AppendNew("mo", "←").SetTrue("stretchy")
 				mover.AppendNew("mspace").SetAttr("width", "2.8571em")
-				return mover
+				b.idx = idx + 1
+				return NewMMLNode("mrow").AppendChild(mover)
 			case "<->":
 				mover := NewMMLNode("mover").SetFalse("accent")
 				mover.AppendNew("mo", "↔").SetTrue("stretchy")
 				mover.AppendNew("mspace").SetAttr("width", "2.8571em")
-				return mover
-			case "<-->":
-				mover := NewMMLNode("mover").SetFalse("accent")
-				mover.AppendNew("mo", "⇄").SetTrue("stretchy")
-				mover.AppendNew("mspace").SetAttr("width", "2.8571em")
-				return mover
+				b.idx = idx + 2
+				return NewMMLNode("mrow").AppendChild(mover)
 			case "<=>":
 				mover := NewMMLNode("mover").SetFalse("accent")
 				mover.AppendNew("mo", "⇌").SetTrue("stretchy")
 				mover.AppendNew("mspace").SetAttr("width", "2.8571em")
-				return mover
+				b.idx = idx + 2
+				return NewMMLNode("mrow").AppendChild(mover)
+			case "<-->":
+				mover := NewMMLNode("mover").SetFalse("accent")
+				mover.AppendNew("mo", "⇄").SetTrue("stretchy")
+				mover.AppendNew("mspace").SetAttr("width", "2.8571em")
+				b.idx = idx + 3
+				return NewMMLNode("mrow").AppendChild(mover)
 			case "<<=>":
 				frac := NewMMLNode("mfrac").SetAttr("linethickness", "0")
 				num := NewMMLNode("mpadded").SetAttr("voffset", "-0.58em")
@@ -502,6 +537,7 @@ func makeArrow(t Token, b *TokenBuffer) *MMLNode {
 				mover.AppendNew("mspace").SetAttr("width", "2.8571em")
 				den.AppendChild(mover)
 				frac.AppendChild(den)
+				b.idx = idx + 3
 				return NewMMLNode("mrow").AppendChild(frac)
 			case "<=>>":
 				frac := NewMMLNode("mfrac").SetAttr("linethickness", "0")
@@ -514,11 +550,38 @@ func makeArrow(t Token, b *TokenBuffer) *MMLNode {
 				den := NewMMLNode("mpadded").SetAttr("voffset", "0.58em")
 				den.AppendNew("mo", "↽")
 				frac.AppendChild(den)
+				b.idx = idx + 3
 				return NewMMLNode("mrow").AppendChild(frac)
 			}
 		}
 		b.idx = idx
 		return nil
 	}
-	return tryArrow()
+	getEmbellishment := func() *MMLNode {
+		opt, err := b.GetOptions(false)
+		if err == nil {
+			tmp, err := pitz.mhchem(opt, ctxChemical)
+			if err != nil {
+				b.Unget()
+			} else {
+				return NewMMLNode("mrow").AppendChild(tmp...)
+			}
+		}
+		return nil
+	}
+	if arrow := tryArrow(); arrow != nil {
+		above := getEmbellishment()
+		below := getEmbellishment()
+		if above != nil && below != nil {
+			above.SetAttr("scriptlevel", "+1")
+			below.SetAttr("scriptlevel", "+1")
+			return NewMMLNode("munderover").AppendChild(arrow, below, above)
+		} else if above != nil {
+			above.SetAttr("scriptlevel", "+1")
+			return NewMMLNode("mover").AppendChild(arrow, above)
+		} else {
+			return arrow
+		}
+	}
+	return nil
 }

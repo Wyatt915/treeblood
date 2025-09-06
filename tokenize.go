@@ -374,12 +374,15 @@ func (b *TokenBuffer) GetNextExpr() (*TokenBuffer, error) {
 	return result, nil
 }
 
-func (b *TokenBuffer) GetOptions() (*TokenBuffer, error) {
+// Extract the tokens strictly between [square brackets]. skipWhitespace is true by default.
+func (b *TokenBuffer) GetOptions(skipWhitespace ...bool) (*TokenBuffer, error) {
 	temp := b.idx
 	var result *TokenBuffer
 	// an expression may contain whitespace, but never start with whitespace
-	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
-		b.idx++
+	if len(skipWhitespace) < 1 || skipWhitespace[0] {
+		for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
+			b.idx++
+		}
 	}
 	if b.idx >= len(b.Expr) {
 		b.idx = temp
