@@ -440,45 +440,62 @@ func makeArrow(t Token, b *TokenBuffer) *MMLNode {
 		tok, _ := temp.GetNextToken()
 		toks = append(toks, tok.Value)
 	}
-	for i := range 4 {
-		switch strings.Join(toks[0:4-i], "") {
-		case "->":
-			mover := NewMMLNode("mover").SetFalse("accent")
-			mover.AppendNew("mo", "→").SetTrue("stretchy")
-			mover.AppendNew("mspace").SetAttr("width", "2.8571em")
-			return mover
-		case "<-":
-			mover := NewMMLNode("mover").SetFalse("accent")
-			mover.AppendNew("mo", "←").SetTrue("stretchy")
-			mover.AppendNew("mspace").SetAttr("width", "2.8571em")
-			return mover
-		case "<->":
-			mover := NewMMLNode("mover").SetFalse("accent")
-			mover.AppendNew("mo", "↔").SetTrue("stretchy")
-			mover.AppendNew("mspace").SetAttr("width", "2.8571em")
-			return mover
-		case "<-->":
-			mover := NewMMLNode("mover").SetFalse("accent")
-			mover.AppendNew("mo", "⇄").SetTrue("stretchy")
-			mover.AppendNew("mspace").SetAttr("width", "2.8571em")
-			return mover
-		case "<=>":
-			mover := NewMMLNode("mover").SetFalse("accent")
-			mover.AppendNew("mo", "⇌").SetTrue("stretchy")
-			mover.AppendNew("mspace").SetAttr("width", "2.8571em")
-			return mover
-			//case "<<=>":
-			//	mover := NewMMLNode("mover").SetFalse("accent")
-			//	mover.AppendNew("mo", "⇌").SetTrue("stretchy")
-			//	mover.AppendNew("mspace").SetAttr("width", "2.8571em")
-			//	return mover
-			//case "<=>>":
-			//	mover := NewMMLNode("mover").SetFalse("accent")
-			//	mover.AppendNew("mo", "⇌").SetTrue("stretchy")
-			//	mover.AppendNew("mspace").SetAttr("width", "2.8571em")
-			//	return mover
+	tryArrow := func() *MMLNode {
+		for i := range 4 {
+			switch strings.Join(toks[0:4-i], "") {
+			case "->":
+				mover := NewMMLNode("mover").SetFalse("accent")
+				mover.AppendNew("mo", "→").SetTrue("stretchy")
+				mover.AppendNew("mspace").SetAttr("width", "2.8571em")
+				return mover
+			case "<-":
+				mover := NewMMLNode("mover").SetFalse("accent")
+				mover.AppendNew("mo", "←").SetTrue("stretchy")
+				mover.AppendNew("mspace").SetAttr("width", "2.8571em")
+				return mover
+			case "<->":
+				mover := NewMMLNode("mover").SetFalse("accent")
+				mover.AppendNew("mo", "↔").SetTrue("stretchy")
+				mover.AppendNew("mspace").SetAttr("width", "2.8571em")
+				return mover
+			case "<-->":
+				mover := NewMMLNode("mover").SetFalse("accent")
+				mover.AppendNew("mo", "⇄").SetTrue("stretchy")
+				mover.AppendNew("mspace").SetAttr("width", "2.8571em")
+				return mover
+			case "<=>":
+				mover := NewMMLNode("mover").SetFalse("accent")
+				mover.AppendNew("mo", "⇌").SetTrue("stretchy")
+				mover.AppendNew("mspace").SetAttr("width", "2.8571em")
+				return mover
+			case "<<=>":
+				frac := NewMMLNode("mfrac").SetAttr("linethickness", "0")
+				num := NewMMLNode("mpadded").SetAttr("voffset", "-0.58em")
+				num.AppendNew("mo", "⇀")
+				frac.AppendChild(num)
+				den := NewMMLNode("mpadded").SetAttr("voffset", "0.58em")
+				mover := NewMMLNode("mover").SetFalse("accent")
+				mover.AppendNew("mo", "↽").SetTrue("stretchy")
+				mover.AppendNew("mspace").SetAttr("width", "2.8571em")
+				den.AppendChild(mover)
+				frac.AppendChild(den)
+				return NewMMLNode("mrow").AppendChild(frac)
+			case "<=>>":
+				frac := NewMMLNode("mfrac").SetAttr("linethickness", "0")
+				num := NewMMLNode("mpadded").SetAttr("voffset", "-0.58em")
+				mover := NewMMLNode("mover").SetFalse("accent")
+				mover.AppendNew("mo", "⇀").SetTrue("stretchy")
+				mover.AppendNew("mspace").SetAttr("width", "2.8571em")
+				num.AppendChild(mover)
+				frac.AppendChild(num)
+				den := NewMMLNode("mpadded").SetAttr("voffset", "0.58em")
+				den.AppendNew("mo", "↽")
+				frac.AppendChild(den)
+				return NewMMLNode("mrow").AppendChild(frac)
+			}
 		}
+		b.idx = idx
+		return nil
 	}
-	b.idx = idx
-	return nil
+	return tryArrow()
 }
