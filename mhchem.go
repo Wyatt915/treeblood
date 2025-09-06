@@ -366,30 +366,35 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 			}
 			state = chStart
 		} else if t.Value == "-" {
-			if !(b.Empty() || next.Kind&tokWhitespace == 0) {
-				if currentAtom != nil && ctx&ctxAtomScript == 0 {
-					result = append(result, currentAtom.toMML())
-					currentAtom = nil
-				}
-				result = append(result, NewMMLNode("mo", "−").SetAttr("form", "infix"))
-			} else if next.Value == ">" {
+			if next.Value == ">" {
 				if arrow := pitz.makeArrow(t, b); arrow != nil {
 					result = append(result, arrow)
 				} else {
 					result = append(result, NewMMLNode("mo", t.Value))
 				}
 				state = chStart
-			} else {
-				if currentAtom == nil {
-					currentAtom = &atom{}
+			} else if !b.Empty() && next.Kind&tokWhitespace == 0 {
+				if currentAtom != nil && ctx&ctxAtomScript == 0 {
+					result = append(result, currentAtom.toMML())
+					currentAtom = nil
 				}
-				if currentAtom.charge == nil {
-					currentAtom.charge = NewMMLNode("mo", "−")
-				} else if currentAtom.charge.Tag == "mrow" {
-					currentAtom.charge.AppendNew("mo", "−")
+				result = append(result, NewMMLNode("mo", "−").SetAttr("form", "infix").SetAttr("form", "infix").SetAttr("lspace", "0").SetAttr("rspace", "0"))
+				state = chStart
+			} else {
+				if currentAtom != nil && ctx&ctxAtomScript == 0 {
+					if currentAtom.charge == nil {
+						currentAtom.charge = NewMMLNode("mo", "−")
+					} else if currentAtom.charge.Tag == "mrow" {
+						currentAtom.charge.AppendNew("mo", "−")
+					} else {
+						currentAtom.charge = NewMMLNode("mrow").AppendChild(currentAtom.charge)
+						currentAtom.charge.AppendNew("mo", "−")
+					}
+					result = append(result, currentAtom.toMML())
+					currentAtom = nil
+					state = chStart
 				} else {
-					currentAtom.charge = NewMMLNode("mrow").AppendChild(currentAtom.charge)
-					currentAtom.charge.AppendNew("mo", "−")
+					result = append(result, NewMMLNode("mo", "−").SetAttr("form", "infix").SetAttr("lspace", "0").SetAttr("rspace", "0"))
 				}
 			}
 		} else if t.Kind&tokLetter > 0 {
@@ -573,11 +578,8 @@ func (pitz *Pitziil) makeArrow(t Token, b *TokenBuffer) *MMLNode {
 		above := getEmbellishment()
 		below := getEmbellishment()
 		if above != nil && below != nil {
-			above.SetAttr("scriptlevel", "+1")
-			below.SetAttr("scriptlevel", "+1")
 			return NewMMLNode("munderover").AppendChild(arrow, below, above)
 		} else if above != nil {
-			above.SetAttr("scriptlevel", "+1")
 			return NewMMLNode("mover").AppendChild(arrow, above)
 		} else {
 			return arrow
