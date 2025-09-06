@@ -84,6 +84,8 @@ func (a *atom) toMML() *MMLNode {
 	multiscripts := a.z != nil || a.mass != nil
 	if a.name == nil {
 		a.name = NewMMLNode("mrow")
+	} else {
+		a.name.SetAttr("intent", ":chemical-element")
 	}
 	if a.charge == nil {
 		a.charge = NewMMLNode("mrow")
@@ -105,7 +107,7 @@ func (a *atom) toMML() *MMLNode {
 			NewMMLNode("mprescripts"),
 			a.z,
 			a.mass,
-		)
+		).SetAttr("intent", ":chemical-formula")
 	} else {
 		switch i {
 		case 0:
@@ -114,11 +116,11 @@ func (a *atom) toMML() *MMLNode {
 			}
 			return a.name
 		case 1:
-			return NewMMLNode("msub").AppendChild(a.name, a.count)
+			return NewMMLNode("msub").SetAttr("intent", ":chemical-formula").AppendChild(a.name, a.count)
 		case 2:
-			return NewMMLNode("msup").AppendChild(a.name, a.charge)
+			return NewMMLNode("msup").SetAttr("intent", ":chemical-formula").AppendChild(a.name, a.charge)
 		case 3:
-			return NewMMLNode("msubsup").AppendChild(a.name, a.count, a.charge)
+			return NewMMLNode("msubsup").SetAttr("intent", ":chemical-formula").AppendChild(a.name, a.count, a.charge)
 		}
 	}
 	return nil
@@ -130,6 +132,40 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 	state := chStart
 	var promotedProperties NodeProperties
 	var currentAtom *atom
+	atomSubSup := func(scr *MMLNode) {
+		if promotedProperties&propSubscript > 0 {
+			if currentAtom == nil {
+				currentAtom = &atom{
+					z: scr,
+				}
+			} else if currentAtom.z == nil && currentAtom.name == nil {
+				currentAtom.z = scr
+			} else if currentAtom.count == nil && currentAtom.name != nil {
+				currentAtom.count = scr
+			} else {
+				result = append(result, currentAtom.toMML())
+				currentAtom = &atom{
+					z: scr,
+				}
+			}
+		}
+		if promotedProperties&propSuperscript > 0 {
+			if currentAtom == nil {
+				currentAtom = &atom{
+					mass: scr,
+				}
+			} else if currentAtom.mass == nil && currentAtom.name == nil {
+				currentAtom.mass = scr
+			} else if currentAtom.charge == nil && currentAtom.name != nil {
+				currentAtom.charge = scr
+			} else {
+				result = append(result, currentAtom.toMML())
+				currentAtom = &atom{
+					mass: scr,
+				}
+			}
+		}
+	}
 	for !b.Empty() {
 		t, err := b.GetNextToken(false)
 		var next Token
@@ -147,38 +183,7 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 				if len(temp) > 1 {
 					scr = NewMMLNode("mrow").AppendChild(temp...)
 				}
-				if promotedProperties&propSubscript > 0 {
-					if currentAtom == nil {
-						currentAtom = &atom{
-							z: scr,
-						}
-					} else if currentAtom.z == nil && currentAtom.name == nil {
-						currentAtom.z = scr
-					} else if currentAtom.count == nil && currentAtom.name != nil {
-						currentAtom.count = scr
-					} else {
-						result = append(result, currentAtom.toMML())
-						currentAtom = &atom{
-							z: scr,
-						}
-					}
-				}
-				if promotedProperties&propSuperscript > 0 {
-					if currentAtom == nil {
-						currentAtom = &atom{
-							mass: scr,
-						}
-					} else if currentAtom.mass == nil && currentAtom.name == nil {
-						currentAtom.mass = scr
-					} else if currentAtom.charge == nil && currentAtom.name != nil {
-						currentAtom.charge = scr
-					} else {
-						result = append(result, currentAtom.toMML())
-						currentAtom = &atom{
-							mass: scr,
-						}
-					}
-				}
+				atomSubSup(scr)
 				promotedProperties = 0
 			} else {
 				for !expr.Empty() {
@@ -191,6 +196,22 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 					}
 				}
 			}
+			continue
+		}
+		if promotedProperties != 0 {
+			temp, err := pitz.mhchem(NewTokenBuffer([]Token{t}), ctx|ctxAtomScript)
+			if err != nil {
+				return nil, err
+			}
+			var scr *MMLNode
+			if len(temp) == 1 {
+				scr = temp[0]
+			}
+			if len(temp) > 1 {
+				scr = NewMMLNode("mrow").AppendChild(temp...)
+			}
+			atomSubSup(scr)
+			promotedProperties = 0
 			continue
 		}
 		if !b.Empty() {
@@ -213,8 +234,10 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 					}
 				}
 				promotedProperties |= propSuperscript
+				continue
 			case "_":
 				promotedProperties |= propSubscript
+				continue
 			}
 		} else if t.Kind&tokCommand == tokCommand {
 			if currentAtom != nil && ctx&ctxAtomScript == 0 {
