@@ -345,6 +345,8 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 					currentAtom = nil
 				}
 				result = append(result, NewMMLNode("mo", "+").SetAttr("form", "infix"))
+			} else if ctx&ctxAtomScript > 0 {
+				result = append(result, NewMMLNode("mo", "+").SetAttr("form", "infix"))
 			} else {
 				if currentAtom == nil {
 					currentAtom = &atom{}
