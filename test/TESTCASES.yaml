@@ -67,6 +67,86 @@ basic:
       mml: <mrow><mi>φ</mi><mo>=</mo><mn>1</mn><mo>+</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><mi>⋯</mi></mrow></mfrac></mrow></mfrac></mrow></mfrac></mrow></mfrac></mrow></mfrac><mo>=</mo><msqrt><mrow><mn>1</mn><mo>+</mo><msqrt><mrow><mn>1</mn><mo>+</mo><msqrt><mrow><mn>1</mn><mo>+</mo><msqrt><mrow><mn>1</mn><mo>+</mo><msqrt><mrow><mn>1</mn><mo>+</mo><msqrt><mrow><mn>1</mn><mo>+</mo><msqrt><mrow><mn>1</mn><mo>+</mo><msqrt><mrow><mn>1</mn><mo>+</mo><mi>⋯</mi></mrow></msqrt></mrow></msqrt></mrow></msqrt></mrow></msqrt></mrow></msqrt></mrow></msqrt></mrow></msqrt></mrow></msqrt></mrow>
     - tex: \def\d{\mathrm{d}} \oint_C \vec{B}\circ \d\vec{l} = \mu_0 \left( I_{\text{enc}} + \varepsilon_0 \frac{\d}{\d t} \int_S {\vec{E} \circ \hat{n}}\; \d a \right)
       mml: '<mrow><msub><mo largeop="true" movablelimits="true">∮</mo><mi>C</mi></msub><mover accent="true"><mi style="font-feature-settings: ''dtls'' on;">B</mi><mo stretchy="true">⃗</mo></mover><mo>∘</mo><mpadded lspace="0"><mi mathvariant="normal">d</mi></mpadded><mover accent="true"><mi style="font-feature-settings: ''dtls'' on;">l</mi><mo stretchy="true">⃗</mo></mover><mo>=</mo><msub><mi>μ</mi><mn>0</mn></msub><mrow><mo fence="true" stretchy="true" form="prefix">(</mo><msub><mi>I</mi><mtext>enc</mtext></msub><mo>+</mo><msub><mi>ε</mi><mn>0</mn></msub><mfrac><mpadded lspace="0"><mi mathvariant="normal">d</mi></mpadded><mrow><mpadded lspace="0"><mi mathvariant="normal">d</mi></mpadded><mi>t</mi></mrow></mfrac><msub><mo largeop="true" movablelimits="true">∫</mo><mi>S</mi></msub><mrow><mover accent="true"><mi style="font-feature-settings: ''dtls'' on;">E</mi><mo stretchy="true">⃗</mo></mover><mo>∘</mo><mover accent="true"><mi style="font-feature-settings: ''dtls'' on;">n</mi><mo stretchy="true">^</mo></mover></mrow><mspace width="0.28em"></mspace><mpadded lspace="0"><mi mathvariant="normal">d</mi></mpadded><mi>a</mi><mo fence="true" stretchy="true" form="postfix">)</mo></mrow></mrow>'
+
+chemistry:
+    - tex: \ce{CO2 + C -> 2 CO}
+    - tex: \ce{Hg^2+ ->[I-] HgI2 ->[I-] [Hg^{II}I4]^2-}
+    - tex: \ce{H2O}
+    - tex: \ce{Sb2O3}
+    - tex: \ce{H+}
+    - tex: \ce{CrO4^2-}
+    - tex: \ce{[AgCl2]-}
+    - tex: \ce{Y^99+}
+    - tex: \ce{Y^{99+}}
+    - tex: \ce{Fe^{II}Fe^{III}2O4}
+    - tex: \ce{2H2O}
+    - tex: \ce{2 H2O}
+    - tex: \ce{0.5H2O}
+    - tex: \ce{1/2H2O}
+    - tex: \ce{(1/2)H2O}
+    - tex: \ce{$n$H2O}
+    - tex: \ce{^{227}_{90}Th+}
+    - tex: \ce{^227_90Th+}
+    - tex: \ce{^{0}_{-1}n^{-}}
+    - tex: \ce{^0_-1n-}
+    - tex: \ce{H{}^3HO}
+    - tex: \ce{H^3HO}
+    - tex: \ce{(NH4)2S}
+    - tex: \ce{[\{(X2)3\}2]^3+}
+    - tex: \ce{CH4 + 2 $\left( \ce{O2 + 79/21 N2} \right)$}
+    - tex: \ce{H2(aq)}
+    - tex: \ce{CO3^2-{}_{(aq)}}
+    - tex: \ce{NaOH(aq,$\infty$)}
+    - tex: \ce{OCO^{.-}}
+    - tex: \ce{NO^{(2.)-}}
+    - tex: \ce{NO_x}
+    - tex: \ce{Fe^n+}
+    - tex: \ce{x Na(NH4)HPO4 ->[\Delta] (NaPO3)_x + x NH3 ^ + x H2O}
+    - tex: \ce{\mu-Cl}
+    - tex: \ce{[Pt(\eta^2-C2H4)Cl3]-}
+    - tex: \ce{^234_90Th -> ^0_-1\beta{} + ^234_91Pa}
+    - tex: \ce{Fe(CN)_{$\frac{6}{2}$}}
+    - tex: \ce{NO_$x$}
+    - tex: \ce{NO_${x}$}
+    - tex: \ce{$cis${-}[PtCl2(NH3)2]}
+    - tex: \ce{{(+)}_589{-}[Co(en)3]Cl3}
+    - tex: \ce{KCr(SO4)2*12H2O}
+    - tex: \ce{KCr(SO4)2.12H2O}
+    - tex: \ce{KCr(SO4)2 * 12 H2O}
+    - tex: \ce{C6H5-CHO}
+    - tex: \ce{A-B=C#D}
+    - tex: \ce{A\bond{-}B\bond{=}C\bond{#}D}
+    - tex: \ce{A\bond{1}B\bond{2}C\bond{3}D}
+    - tex: \ce{A\bond{~}B\bond{~-}C}
+    - tex: \ce{A\bond{~--}B\bond{~=}C\bond{-~-}D}
+    - tex: \ce{A\bond{...}B\bond{....}C}
+    - tex: \ce{A\bond{->}B\bond{<-}C}
+    - tex: \ce{A -> B}
+    - tex: \ce{A <- B}
+    - tex: \ce{A <-> B}
+    - tex: \ce{A <--> B}
+    - tex: \ce{A <=> B}
+    - tex: \ce{A <=>> B}
+    - tex: \ce{A <<=> B}
+    - tex: \ce{A ->[H2O] B}
+    - tex: \ce{A ->[{text above}][{text below}] B}
+    - tex: \ce{A ->[$x$][$x_i$] B}
+    - tex: \ce{A ->[${x}$] B}
+    - tex: \ce{A + B}
+    - tex: \ce{A - B}
+    - tex: \ce{A = B}
+    - tex: \ce{A \pm B}
+    - tex: \ce{SO4^2- + Ba^2+ -> BaSO4 v}
+    - tex: \ce{A v B (v) -> B ^ B (^)}
+    - tex: \ce{Zn^2+ <=>[+ 2OH-][+ 2H+] \underset{\text{amphoteres Hydroxid}}{\ce{Zn(OH)2 v}} <=>[+ 2OH-][+ 2H+] \underset{\text{Hydroxozikat}}{\ce{[Zn(OH)4]^2-}}}
+    - tex: \ce{\frac{[Hg^2+][Hg]}{[Hg2^2+]}}
+    - tex: \ce{Hg^2+ ->[I-] \underset{\mathrm{red}}{\ce{HgI2}} ->[I-] \underset{\mathrm{red}}{\ce{[Hg^{II}I4]^2-}}}
+    - tex: \ce{N2}
+    - tex: \ce{O2}
+    - tex: \ce{CO2}
+    - tex: \ce{RNO2 &<=>[+e] RNO2^{-.} \\ RNO2^{-.} &<=>[+e] RNO2^2-}
+
+
 intmath:
     - tex: \frac{1}{\Bigl(\sqrt{\phi \sqrt{5}}-\phi\Bigr) e^{\frac25 \pi}} \equiv 1+\frac{e^{-2\pi}} {1+\frac{e^{-4\pi}} {1+\frac{e^{-6\pi}} {1+\frac{e^{-8\pi}} {1+\cdots} } } }
       mml: <mrow><mfrac><mn>1</mn><mrow><mo form="prefix" stretchy="false" scriptlevel="-2">(</mo><msqrt><mrow><mi>ϕ</mi><msqrt><mn>5</mn></msqrt></mrow></msqrt><mo>−</mo><mi>ϕ</mi><mo form="postfix" stretchy="false" scriptlevel="-2">)</mo><msup><mi>e</mi><mfrac><mn>25</mn><mi>π</mi></mfrac></msup></mrow></mfrac><mo>≡</mo><mn>1</mn><mo>+</mo><mfrac><mrow><msup><mi>e</mi><mrow><mo>−</mo><mn>2</mn><mi>π</mi></mrow></msup></mrow><mrow><mn>1</mn><mo>+</mo><mfrac><mrow><msup><mi>e</mi><mrow><mo>−</mo><mn>4</mn><mi>π</mi></mrow></msup></mrow><mrow><mn>1</mn><mo>+</mo><mfrac><mrow><msup><mi>e</mi><mrow><mo>−</mo><mn>6</mn><mi>π</mi></mrow></msup></mrow><mrow><mn>1</mn><mo>+</mo><mfrac><mrow><msup><mi>e</mi><mrow><mo>−</mo><mn>8</mn><mi>π</mi></mrow></msup></mrow><mrow><mn>1</mn><mo>+</mo><mi>⋯</mi></mrow></mfrac></mrow></mfrac></mrow></mfrac></mrow></mfrac></mrow>

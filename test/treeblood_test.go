@@ -120,9 +120,11 @@ func TestTexInputs(t *testing.T) {
 					tt.Errorf("Subtest %s failed on #%d", testname, i)
 					//fmt.Printf("Subtest %s failed on #%d", testname, i)
 				}
-				if err = compareXML(res, test.MML); err != nil {
-					tt.Errorf("%s produced incorrect output (%s):\n%s\n", testname, err.Error(), test.Tex)
-					//fmt.Printf("%s produced incorrect output: %s\n", testname, res)
+				if test.MML != "" {
+					if err = compareXML(res, test.MML); err != nil {
+						tt.Errorf("%s produced incorrect output (%s):\n%s\n", testname, err.Error(), test.Tex)
+						//fmt.Printf("%s produced incorrect output: %s\n", testname, res)
+					}
 				}
 				results[testname] = append(results[testname], TexTest{Tex: test.Tex, MML: res})
 
@@ -272,7 +274,13 @@ func writeHTML(w io.Writer, tests map[string][]TexTest) {
 	<body>
 	<table><tbody>`, "TreeBlood Tests", "TreeBlood Tests")
 	pitz := treeblood.NewDocument(nil, false)
-	for testname, test := range tests {
+	testnames := make([]string, 0, len(tests))
+	for testname, _ := range tests {
+		testnames = append(testnames, testname)
+	}
+	slices.Sort(testnames)
+	for _, testname := range testnames {
+		test := tests[testname]
 		fmt.Fprintf(w, "<tr><th colspan=\"3\">TreeBlood %s Test</th></tr>\n", testname)
 		for _, tex := range test {
 			rendered, err := pitz.DisplayStyle(tex.Tex)
