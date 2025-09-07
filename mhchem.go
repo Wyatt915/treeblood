@@ -30,12 +30,34 @@ func bond(str string) (*MMLNode, error) {
 		return NewMMLNode("mo", "="), nil
 	case "3", "#":
 		return NewMMLNode("mo", "≡"), nil
-	case "~":
 	case "~-":
-	case "~--":
-	case "~=":
+		return NewMMLNode("mo", "−⃛"), nil
+	case "~--", "~=":
+		dashes := NewMMLNode("mrow")
+		dashes.AppendNew("mspace").SetCssProp("background-color", "currentColor").SetAttr("width", "0.15em").SetAttr("height", "0.06em")
+
+		dashes.AppendNew("mspace").SetAttr("width", "0.1111em")
+		dashes.AppendNew("mspace").SetCssProp("background-color", "currentColor").SetAttr("width", "0.15em").SetAttr("height", "0.06em")
+		dashes.AppendNew("mspace").SetAttr("width", "0.1111em")
+		dashes.AppendNew("mspace").SetCssProp("background-color", "currentColor").SetAttr("width", "0.15em").SetAttr("height", "0.06em")
+
+		dashesContainer := NewMMLNode("mpadded").SetAttr("voffset", "0.48em").SetCssProp("padding", "0.48em 0px 0px")
+		dashesContainer.AppendChild(dashes)
+		solid := NewMMLNode("mpadded").SetAttr("voffset", "0.27em").SetCssProp("padding", "0.27em 0px 0px")
+		solid.AppendNew("mspace").SetCssProp("background-color", "currentColor").SetAttr("width", "0.672em").SetAttr("height", "0.06em")
+		top := NewMMLNode("mrow")
+		top.AppendChild(NewMMLNode("mpadded").SetAttr("width", "0.1px").AppendChild(dashesContainer), solid)
+		bottom := NewMMLNode("mpadded").SetAttr("voffset", "0.05em").SetCssProp("padding", "0.05em 0px 0px")
+		bottom.AppendNew("mspace").SetCssProp("background-color", "currentColor").SetAttr("width", "0.672em").SetAttr("height", "0.06em")
+		return NewMMLNode("mrow").AppendChild(
+			NewMMLNode("mspace").SetAttr("width", "0.075em"),
+			NewMMLNode("mpadded").SetAttr("width", "0.1px").AppendChild(top),
+			bottom,
+			NewMMLNode("mspace").SetAttr("width", "0.075em"),
+		), nil
+
 	case "-~-":
-	case "...":
+	case "...", "~":
 		b := NewMMLNode("mrow")
 		for range 3 {
 			b.AppendChild(NewMMLNode("mo", "⋅").SetAttr("lspace", "0").SetAttr("rspace", "0"))
@@ -278,6 +300,7 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 				if _, ok := cmd.Attrib["mathvariant"]; !ok {
 					cmd.SetAttr("mathvariant", "normal")
 				}
+				result = append(result, cmd)
 			}
 		} else if t.Value == "$" {
 			if currentAtom != nil && ctx&ctxAtomScript == 0 {
@@ -306,6 +329,12 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 				}
 				result = append(result, makeSymbol(symbolTable["cdot"], t, ctx))
 			}
+		} else if t.Value == "#" {
+			if currentAtom != nil && ctx&ctxAtomScript == 0 {
+				result = append(result, currentAtom.toMML())
+				currentAtom = nil
+			}
+			result = append(result, NewMMLNode("mo", "≡"))
 		} else if t.Value == "(" && t.MatchOffset > 0 {
 			if currentAtom != nil && ctx&ctxAtomScript == 0 {
 				result = append(result, currentAtom.toMML())
@@ -415,7 +444,7 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 				currentAtom = nil
 			}
 			if ctx&ctxAtomScript > 0 {
-				result = append(result, NewMMLNode("mo", "(").SetAttr("form", "prefix").SetFalse("stretchy"))
+				result = append(result, NewMMLNode("mo", t.Value).SetAttr("form", "prefix").SetFalse("stretchy"))
 				continue
 			}
 			expr, err := b.GetNextN(t.MatchOffset - 1)
