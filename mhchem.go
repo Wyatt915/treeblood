@@ -620,7 +620,7 @@ func (pitz *Pitziil) makeArrow(t Token, b *TokenBuffer) *MMLNode {
 				b.idx = idx + 3
 				return NewMMLNode("mrow").AppendChild(mover)
 			case "<<=>":
-				frac := NewMMLNode("mfrac").SetAttr("linethickness", "0")
+				frac := NewMMLNode("mfrac").SetAttr("linethickness", "0").SetTrue("displaystyle")
 				num := NewMMLNode("mpadded").SetAttr("voffset", "-0.58em")
 				num.AppendNew("mo", "⇀")
 				frac.AppendChild(num)
@@ -633,7 +633,7 @@ func (pitz *Pitziil) makeArrow(t Token, b *TokenBuffer) *MMLNode {
 				b.idx = idx + 3
 				return NewMMLNode("mrow").AppendChild(frac)
 			case "<=>>":
-				frac := NewMMLNode("mfrac").SetAttr("linethickness", "0")
+				frac := NewMMLNode("mfrac").SetAttr("linethickness", "0").SetTrue("displaystyle")
 				num := NewMMLNode("mpadded").SetAttr("voffset", "-0.58em")
 				mover := NewMMLNode("mover").SetFalse("accent")
 				mover.AppendNew("mo", "⇀").SetTrue("stretchy")
