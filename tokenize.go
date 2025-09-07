@@ -168,8 +168,12 @@ func getToken(tex []rune, start int) (Token, int) {
 				result = append(result, r)
 			}
 		case lxMacroArg:
-			result = append(result, r)
-			state = lxEnd
+			if unicode.IsNumber(r) {
+				result = append(result, r)
+				state = lxEnd
+			} else {
+				return Token{Kind: kind, Value: "#", start: start, end: idx}, idx
+			}
 		case lxWasBackslash:
 			switch {
 			case r == '|':
@@ -357,15 +361,10 @@ func (b *TokenBuffer) GetNextExpr() (*TokenBuffer, error) {
 		b.idx = temp
 		return nil, &TokenBufferErr{tbEndErr, ErrTokenBufferEnd}
 	}
-	if b.Expr[b.idx].MatchOffset > 0 && b.Expr[b.idx].Kind&tokEscaped == 0 {
-		skip := 0
-		if b.Expr[b.idx].Value == "{" {
-			// we never parse the closing '}'
-			skip = 1
-		}
+	if b.Expr[b.idx].MatchOffset > 0 && b.Expr[b.idx].Kind&tokEscaped == 0 && b.Expr[b.idx].Value == "{" {
 		end := b.idx + b.Expr[b.idx].MatchOffset
 		result = NewTokenBuffer(b.Expr[b.idx+1 : end])
-		b.idx = end + skip
+		b.idx = end + 1 // Skip over closing '}'
 	} else {
 		b.idx = temp
 		return nil, &TokenBufferErr{tbIsSingleErr, ErrTokenBufferSingle}
