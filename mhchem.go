@@ -23,6 +23,13 @@ import (
 //}
 
 func bond(str string) (*MMLNode, error) {
+	dashes := NewMMLNode("mrow")
+	dashes.AppendNew("mspace").SetCssProp("background-color", "currentColor").SetAttr("width", "0.15em").SetAttr("height", "0.06em")
+
+	dashes.AppendNew("mspace").SetAttr("width", "0.1111em")
+	dashes.AppendNew("mspace").SetCssProp("background-color", "currentColor").SetAttr("width", "0.15em").SetAttr("height", "0.06em")
+	dashes.AppendNew("mspace").SetAttr("width", "0.1111em")
+	dashes.AppendNew("mspace").SetCssProp("background-color", "currentColor").SetAttr("width", "0.15em").SetAttr("height", "0.06em")
 	switch str {
 	case "1", "-":
 		return NewMMLNode("mo", "−"), nil
@@ -31,16 +38,17 @@ func bond(str string) (*MMLNode, error) {
 	case "3", "#":
 		return NewMMLNode("mo", "≡"), nil
 	case "~-":
-		return NewMMLNode("mo", "−⃛"), nil
+		dashesContainer := NewMMLNode("mpadded").SetAttr("voffset", "0.34em").SetCssProp("padding", "0.34em 0px 0px")
+		dashesContainer.AppendChild(dashes)
+		solid := NewMMLNode("mpadded").SetAttr("voffset", "0.125em").SetCssProp("padding", "0.125em 0px 0px")
+		solid.AppendNew("mspace").SetCssProp("background-color", "currentColor").SetAttr("width", "0.672em").SetAttr("height", "0.06em")
+		return NewMMLNode("mrow").AppendChild(
+			NewMMLNode("mspace").SetAttr("width", "0.075em"),
+			NewMMLNode("mpadded").SetAttr("width", "0.1px").AppendChild(solid),
+			dashesContainer,
+			NewMMLNode("mspace").SetAttr("width", "0.075em"),
+		), nil
 	case "~--", "~=":
-		dashes := NewMMLNode("mrow")
-		dashes.AppendNew("mspace").SetCssProp("background-color", "currentColor").SetAttr("width", "0.15em").SetAttr("height", "0.06em")
-
-		dashes.AppendNew("mspace").SetAttr("width", "0.1111em")
-		dashes.AppendNew("mspace").SetCssProp("background-color", "currentColor").SetAttr("width", "0.15em").SetAttr("height", "0.06em")
-		dashes.AppendNew("mspace").SetAttr("width", "0.1111em")
-		dashes.AppendNew("mspace").SetCssProp("background-color", "currentColor").SetAttr("width", "0.15em").SetAttr("height", "0.06em")
-
 		dashesContainer := NewMMLNode("mpadded").SetAttr("voffset", "0.48em").SetCssProp("padding", "0.48em 0px 0px")
 		dashesContainer.AppendChild(dashes)
 		solid := NewMMLNode("mpadded").SetAttr("voffset", "0.27em").SetCssProp("padding", "0.27em 0px 0px")
@@ -57,6 +65,20 @@ func bond(str string) (*MMLNode, error) {
 		), nil
 
 	case "-~-":
+		dashesContainer := NewMMLNode("mpadded").SetAttr("voffset", "0.27em").SetCssProp("padding", "0.27em 0px 0px")
+		dashesContainer.AppendChild(dashes)
+		solid := NewMMLNode("mpadded").SetAttr("voffset", "0.48em").SetCssProp("padding", "0.48em 0px 0px")
+		solid.AppendNew("mspace").SetCssProp("background-color", "currentColor").SetAttr("width", "0.672em").SetAttr("height", "0.06em")
+		top := NewMMLNode("mrow")
+		top.AppendChild(NewMMLNode("mpadded").SetAttr("width", "0.1px").AppendChild(solid), dashesContainer)
+		bottom := NewMMLNode("mpadded").SetAttr("voffset", "0.05em").SetCssProp("padding", "0.05em 0px 0px")
+		bottom.AppendNew("mspace").SetCssProp("background-color", "currentColor").SetAttr("width", "0.672em").SetAttr("height", "0.06em")
+		return NewMMLNode("mrow").AppendChild(
+			NewMMLNode("mspace").SetAttr("width", "0.075em"),
+			NewMMLNode("mpadded").SetAttr("width", "0.1px").AppendChild(top),
+			bottom,
+			NewMMLNode("mspace").SetAttr("width", "0.075em"),
+		), nil
 	case "...", "~":
 		b := NewMMLNode("mrow")
 		for range 3 {
@@ -76,7 +98,6 @@ func bond(str string) (*MMLNode, error) {
 	default:
 		return nil, fmt.Errorf("unrecognized chemical bond '%s'", str)
 	}
-	return nil, fmt.Errorf("unrecognized chemical bond '%s'", str)
 }
 
 const (
