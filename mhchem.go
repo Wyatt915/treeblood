@@ -106,6 +106,7 @@ const (
 	chSpecies
 	chSubscript
 	chSuperscript
+	chScriptLetter
 )
 
 type atom struct {
@@ -513,8 +514,12 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 				currentAtom = nil
 			}
 			if ctx&ctxAtomScript > 0 {
-				result = append(result, NewMMLNode("mi", t.Value).SetAttr("mathvariant", "normal"))
-				state = chStart
+				if state != chScriptLetter && (b.Empty() || next.Kind&tokLetter == 0) {
+					result = append(result, NewMMLNode("mi", t.Value))
+				} else {
+					result = append(result, NewMMLNode("mi", t.Value).SetAttr("mathvariant", "normal"))
+				}
+				state = chScriptLetter
 				continue
 			}
 			letterbuf := b.GetUntil(func(t Token) bool { return t.Kind&tokLetter == 0 || !unicode.IsLower(([]rune(t.Value))[0]) })
