@@ -341,7 +341,7 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 				bondElem, err := bond(StringifyTokens(arg.Expr))
 				result = append(result, bondElem)
 			} else if symbol, ok := symbolTable[t.Value]; ok {
-				result = append(result, makeSymbol(symbol, t, ctx))
+				result = append(result, makeSymbol(symbol, t, ctx).SetAttr("mathvariant", "normal"))
 			} else {
 				cmd := pitz.ProcessCommand(ctx|ctxChemical, t, b)
 				if _, ok := cmd.Attrib["mathvariant"]; !ok {
