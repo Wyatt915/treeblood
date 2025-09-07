@@ -144,7 +144,7 @@ chemistry:
     - tex: \ce{N2}
     - tex: \ce{O2}
     - tex: \ce{CO2}
-    - tex: \ce{RNO2 &<=>[+e] RNO2^{-.} \\ RNO2^{-.} &<=>[+e] RNO2^2-}
+    - tex: \begin{align}\ce{RNO2 &<=>[+e] RNO2^{-.} \\ RNO2^{-.} &<=>[+e] RNO2^2-}\end{align}
 
 
 intmath:

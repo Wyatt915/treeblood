@@ -242,6 +242,31 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 			}
 			continue
 		}
+		if ctx&ctxTable > 0 {
+			var child *MMLNode
+			switch t.Value {
+			case "&":
+				// dont count an escaped \& command!
+				if t.Kind&tokReserved > 0 {
+					child = NewMMLNode()
+					child.Properties = propCellSep
+					result = append(result, child)
+					continue
+				}
+			case "\\", "cr":
+				child = NewMMLNode()
+				child.Properties = propRowSep
+				option, err := b.GetOptions()
+				if err == nil {
+					dummy := NewMMLNode("rowspacing")
+					dummy.Properties = propNonprint
+					dummy.SetAttr("rowspacing", StringifyTokens(option.Expr))
+					result = append(result, dummy)
+				}
+				result = append(result, child)
+				continue
+			}
+		}
 		if !b.Empty() {
 			next = b.Expr[b.idx]
 		}
