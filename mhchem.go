@@ -212,12 +212,148 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 			}
 		}
 	}
+	// flush the current atom (if any) and write n to the result
+	flush := func(n ...*MMLNode) {
+		if currentAtom != nil && ctx&ctxAtomScript == 0 {
+			result = append(result, currentAtom.toMML())
+			currentAtom = nil
+		}
+		if n != nil {
+			result = append(result, n...)
+		}
+	}
+	special := func(t, next Token) (bool, error) {
+		switch t.Value {
+		case "$":
+			math := b.GetUntil(func(t Token) bool { return t.Value == "$" })
+			if !b.Empty() {
+				parsedMath := pitz.ParseTex(math, ctx^ctxChemical)
+				flush(parsedMath)
+				b.GetNextToken() // discard closing '$'
+			} else {
+				return false, fmt.Errorf("missing closing '$' in chemical equation")
+			}
+		case ".", "*":
+			if ctx&ctxAtomScript > 0 {
+				result = append(result,
+					NewMMLNode("mspace").SetAttr("width", "0.0556em"),
+					NewMMLNode("mtext", "•"),
+					NewMMLNode("mspace").SetAttr("width", "0.0556em"),
+				)
+			} else {
+				flush(makeSymbol(symbolTable["cdot"], t, ctx))
+			}
+		case "#":
+			flush(NewMMLNode("mo", "≡"))
+		case "(":
+			if t.MatchOffset <= 0 {
+				fmt.Println("BEEP BOOP")
+				break
+			}
+			if ctx&ctxAtomScript > 0 {
+				flush(NewMMLNode("mo", "(").SetAttr("form", "prefix").SetFalse("stretchy"))
+				break
+			}
+			expr, err := b.GetNextN(t.MatchOffset - 1)
+			if err != nil {
+				return false, err
+			}
+			if t.MatchOffset == 4 && expr.Expr[0].Kind&expr.Expr[2].Kind&tokNumber > 0 && expr.Expr[1].Value == "/" {
+				mrow := NewMMLNode("mrow")
+				flush(NewMMLNode("mo", "(").SetAttr("form", "prefix").SetFalse("stretchy"))
+				pitz.ParseTex(expr, ctx^ctxChemical, mrow)
+				flush(mrow)
+				break
+			} else if t.MatchOffset == 2 {
+				if next.Value == "v" && state == chStart {
+					flush(makeSymbol(symbolTable["downarrow"], next, ctx).SetAttr("lspace", "0"))
+					b.GetNextToken() // discard closing ')'
+					break
+				} else if next.Value == "^" && state == chStart {
+					flush(makeSymbol(symbolTable["uparrow"], next, ctx).SetAttr("lspace", "0"))
+					b.GetNextToken() // discard closing ')'
+					break
+				}
+			}
+			mrow := NewMMLNode("mrow").SetAttr("intent", ":chemical-formula")
+			flush(NewMMLNode("mo", "(").SetAttr("form", "prefix").SetFalse("stretchy"))
+			paren, err := pitz.mhchem(expr, ctx)
+			if err != nil {
+				return false, err
+			}
+			mrow.AppendChild(paren...)
+			currentAtom = &atom{name: mrow}
+			state = chSpecies
+		case "+":
+			if state == chStart {
+				flush(NewMMLNode("mo", "+").SetAttr("form", "infix"))
+			} else if ctx&ctxAtomScript > 0 {
+				result = append(result, NewMMLNode("mo", "+").SetAttr("form", "infix"))
+			} else {
+				if currentAtom == nil {
+					currentAtom = &atom{}
+				}
+				if currentAtom.charge == nil {
+					currentAtom.charge = NewMMLNode("mo", "+")
+				} else if currentAtom.charge.Tag == "mrow" {
+					currentAtom.charge.AppendNew("mo", "+")
+				} else {
+					currentAtom.charge = NewMMLNode("mrow").AppendChild(currentAtom.charge)
+					currentAtom.charge.AppendNew("mo", "+")
+				}
+			}
+		case "<":
+			if arrow := pitz.makeArrow(t, b); arrow != nil {
+				flush(arrow)
+			} else {
+				flush(NewMMLNode("mo", t.Value))
+			}
+			state = chStart
+		case "-":
+			if next.Value == ">" {
+				if arrow := pitz.makeArrow(t, b); arrow != nil {
+					flush(arrow)
+				} else {
+					flush(NewMMLNode("mo", t.Value))
+				}
+				state = chStart
+			} else if !b.Empty() && next.Kind&tokWhitespace == 0 && next.Value != "{" {
+				if state == chSymbol {
+					flush(NewMMLNode("mi", "-"))
+				} else {
+					flush(NewMMLNode("mo", "−").SetAttr("form", "infix").SetAttr("form", "infix").SetAttr("lspace", "0").SetAttr("rspace", "0"))
+				}
+				state = chStart
+			} else {
+				if currentAtom != nil && ctx&ctxAtomScript == 0 {
+					if currentAtom.charge == nil {
+						currentAtom.charge = NewMMLNode("mo", "−")
+					} else if currentAtom.charge.Tag == "mrow" {
+						currentAtom.charge.AppendNew("mo", "−")
+					} else {
+						currentAtom.charge = NewMMLNode("mrow").AppendChild(currentAtom.charge)
+						currentAtom.charge.AppendNew("mo", "−")
+					}
+					result = append(result, currentAtom.toMML())
+					currentAtom = nil
+					state = chStart
+				} else if state == chGroup && (b.Empty() || next.Kind&tokWhitespace > 0) {
+					flush(NewMMLNode("msup").AppendChild(NewMMLNode("none"), NewMMLNode("mo", "−")))
+					state = chStart
+				} else {
+					flush(NewMMLNode("mo", "−").SetAttr("form", "infix").SetAttr("lspace", "0").SetAttr("rspace", "0"))
+				}
+			}
+		default:
+			return false, nil
+		}
+		return true, nil
+	}
 	for !b.Empty() {
 		t, err := b.GetNextToken(false)
 		var next Token
 		if err != nil && errors.Is(err, ErrTokenBufferExpr) {
 			expr, _ := b.GetNextExpr()
-			fmt.Println(pitz.OriginalString(expr))
 			if promotedProperties != 0 {
 				temp, err := pitz.mhchem(expr, ctx|ctxAtomScript)
 				if err != nil {
@@ -233,10 +369,7 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 				atomSubSup(scr)
 				promotedProperties = 0
 			} else {
-				if currentAtom != nil && ctx&ctxAtomScript == 0 {
-					result = append(result, currentAtom.toMML())
-					currentAtom = nil
-				}
+				flush()
 				for !expr.Empty() {
 					plain := expr.GetUntil(func(t Token) bool { return t.Value == "$" && t.Kind&tokReserved == tokReserved })
 					result = append(result, NewMMLNode("mtext", pitz.OriginalString(plain)))
@@ -313,11 +446,14 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 			promotedProperties = 0
 			continue
 		}
+		if ok, e := special(t, next); ok {
+			continue
+		} else if e != nil {
+			return nil, e
+		}
+
 		if t.Kind&tokWhitespace == tokWhitespace {
-			if currentAtom != nil && ctx&ctxAtomScript == 0 {
-				result = append(result, currentAtom.toMML())
-				currentAtom = nil
-			}
+			flush()
 			state = chStart
 			continue
 		} else if t.Kind&tokSubsup == tokSubsup {
@@ -336,177 +472,26 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 				continue
 			}
 		} else if t.Kind&tokCommand == tokCommand {
-			if currentAtom != nil && ctx&ctxAtomScript == 0 {
-				result = append(result, currentAtom.toMML())
-				currentAtom = nil
-			}
 			if t.Value == "bond" {
 				arg, err := b.GetNextExpr()
 				if err != nil {
 					return nil, err
 				}
 				bondElem, err := bond(StringifyTokens(arg.Expr))
-				result = append(result, bondElem)
+				flush(bondElem)
 			} else if symbol, ok := symbolTable[t.Value]; ok {
-				result = append(result, makeSymbol(symbol, t, ctx).SetAttr("mathvariant", "normal"))
+				flush(makeSymbol(symbol, t, ctx).SetAttr("mathvariant", "normal"))
 				state = chSymbol
 			} else {
 				cmd := pitz.ProcessCommand(ctx|ctxChemical, t, b)
 				if _, ok := cmd.Attrib["mathvariant"]; !ok {
 					cmd.SetAttr("mathvariant", "normal")
 				}
-				result = append(result, cmd)
-			}
-		} else if t.Value == "$" {
-			if currentAtom != nil && ctx&ctxAtomScript == 0 {
-				result = append(result, currentAtom.toMML())
-				currentAtom = nil
-			}
-			math := b.GetUntil(func(t Token) bool { return t.Value == "$" })
-			if !b.Empty() {
-				parsedMath := pitz.ParseTex(math, ctx^ctxChemical)
-				result = append(result, parsedMath)
-				b.GetNextToken() // discard closing '$'
-			} else {
-				return nil, fmt.Errorf("missing closing '$' in chemical equation")
-			}
-		} else if t.Value == "." || t.Value == "*" {
-			if ctx&ctxAtomScript > 0 {
-				result = append(result,
-					NewMMLNode("mspace").SetAttr("width", "0.0556em"),
-					NewMMLNode("mtext", "•"),
-					NewMMLNode("mspace").SetAttr("width", "0.0556em"),
-				)
-			} else {
-				if currentAtom != nil && ctx&ctxAtomScript == 0 {
-					result = append(result, currentAtom.toMML())
-					currentAtom = nil
-				}
-				result = append(result, makeSymbol(symbolTable["cdot"], t, ctx))
-			}
-		} else if t.Value == "#" {
-			if currentAtom != nil && ctx&ctxAtomScript == 0 {
-				result = append(result, currentAtom.toMML())
-				currentAtom = nil
-			}
-			result = append(result, NewMMLNode("mo", "≡"))
-		} else if t.Value == "(" && t.MatchOffset > 0 {
-			if currentAtom != nil && ctx&ctxAtomScript == 0 {
-				result = append(result, currentAtom.toMML())
-				currentAtom = nil
-			}
-			if ctx&ctxAtomScript > 0 {
-				result = append(result, NewMMLNode("mo", "(").SetAttr("form", "prefix").SetFalse("stretchy"))
-				continue
-			}
-			expr, err := b.GetNextN(t.MatchOffset - 1)
-			if err != nil {
-				return nil, err
-			}
-			if t.MatchOffset == 4 && expr.Expr[0].Kind&expr.Expr[2].Kind&tokNumber > 0 && expr.Expr[1].Value == "/" {
-				mrow := NewMMLNode("mrow")
-				result = append(result, NewMMLNode("mo", "(").SetAttr("form", "prefix").SetFalse("stretchy"))
-				pitz.ParseTex(expr, ctx^ctxChemical, mrow)
-				result = append(result, mrow)
-				continue
-			} else if t.MatchOffset == 2 {
-				if next.Value == "v" && state == chStart {
-					result = append(result, makeSymbol(symbolTable["downarrow"], next, ctx).SetAttr("lspace", "0"))
-					b.GetNextToken() // discard closing ')'
-					continue
-				} else if next.Value == "^" && state == chStart {
-					result = append(result, makeSymbol(symbolTable["uparrow"], next, ctx).SetAttr("lspace", "0"))
-					b.GetNextToken() // discard closing ')'
-					continue
-				}
-			}
-			mrow := NewMMLNode("mrow").SetAttr("intent", ":chemical-formula")
-			result = append(result, NewMMLNode("mo", "(").SetAttr("form", "prefix").SetFalse("stretchy"))
-			paren, err := pitz.mhchem(expr, ctx)
-			if err != nil {
-				return nil, err
-			}
-			mrow.AppendChild(paren...)
-			currentAtom = &atom{name: mrow}
-			state = chSpecies
-
-			//} else if t.Value == ")" {
-			//	mrow.AppendChild(NewMMLNode("mo", ")").SetAttr("form", "suffix"))
-		} else if t.Value == "+" {
-			if state == chStart {
-				if currentAtom != nil && ctx&ctxAtomScript == 0 {
-					result = append(result, currentAtom.toMML())
-					currentAtom = nil
-				}
-				result = append(result, NewMMLNode("mo", "+").SetAttr("form", "infix"))
-			} else if ctx&ctxAtomScript > 0 {
-				result = append(result, NewMMLNode("mo", "+").SetAttr("form", "infix"))
-			} else {
-				if currentAtom == nil {
-					currentAtom = &atom{}
-				}
-				if currentAtom.charge == nil {
-					currentAtom.charge = NewMMLNode("mo", "+")
-				} else if currentAtom.charge.Tag == "mrow" {
-					currentAtom.charge.AppendNew("mo", "+")
-				} else {
-					currentAtom.charge = NewMMLNode("mrow").AppendChild(currentAtom.charge)
-					currentAtom.charge.AppendNew("mo", "+")
-				}
-			}
-		} else if t.Value == "<" {
-			if arrow := pitz.makeArrow(t, b); arrow != nil {
-				result = append(result, arrow)
-			} else {
-				result = append(result, NewMMLNode("mo", t.Value))
-			}
-			state = chStart
-		} else if t.Value == "-" {
-			if next.Value == ">" {
-				if arrow := pitz.makeArrow(t, b); arrow != nil {
-					result = append(result, arrow)
-				} else {
-					result = append(result, NewMMLNode("mo", t.Value))
-				}
-				state = chStart
-			} else if !b.Empty() && next.Kind&tokWhitespace == 0 && next.Value != "{" {
-				if currentAtom != nil && ctx&ctxAtomScript == 0 {
-					result = append(result, currentAtom.toMML())
-					currentAtom = nil
-				}
-				if state == chSymbol {
-					result = append(result, NewMMLNode("mi", "-"))
-				} else {
-					result = append(result, NewMMLNode("mo", "−").SetAttr("form", "infix").SetAttr("form", "infix").SetAttr("lspace", "0").SetAttr("rspace", "0"))
-				}
-				state = chStart
-			} else {
-				if currentAtom != nil && ctx&ctxAtomScript == 0 {
-					if currentAtom.charge == nil {
-						currentAtom.charge = NewMMLNode("mo", "−")
-					} else if currentAtom.charge.Tag == "mrow" {
-						currentAtom.charge.AppendNew("mo", "−")
-					} else {
-						currentAtom.charge = NewMMLNode("mrow").AppendChild(currentAtom.charge)
-						currentAtom.charge.AppendNew("mo", "−")
-					}
-					result = append(result, currentAtom.toMML())
-					currentAtom = nil
-					state = chStart
-				} else if state == chGroup && (b.Empty() || next.Kind&tokWhitespace > 0) {
-					result = append(result, NewMMLNode("msup").AppendChild(NewMMLNode("none"), NewMMLNode("mo", "−")))
-					state = chStart
-				} else {
-					result = append(result, NewMMLNode("mo", "−").SetAttr("form", "infix").SetAttr("lspace", "0").SetAttr("rspace", "0"))
-				}
+				flush(cmd)
 			}
 		} else if t.Kind&tokOpen > 0 && t.MatchOffset > 0 {
-			if currentAtom != nil && ctx&ctxAtomScript == 0 {
-				result = append(result, currentAtom.toMML())
-				currentAtom = nil
-			}
 			if ctx&ctxAtomScript > 0 {
-				result = append(result, NewMMLNode("mo", t.Value).SetAttr("form", "prefix").SetFalse("stretchy"))
+				flush(NewMMLNode("mo", t.Value).SetAttr("form", "prefix").SetFalse("stretchy"))
 				continue
 			}
 			expr, err := b.GetNextN(t.MatchOffset - 1)
@@ -514,7 +499,7 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 				return nil, err
 			}
 			mrow := NewMMLNode("mrow").SetAttr("intent", ":chemical-formula")
-			result = append(result, NewMMLNode("mo", t.Value).SetAttr("form", "prefix").SetFalse("stretchy"))
+			flush(NewMMLNode("mo", t.Value).SetAttr("form", "prefix").SetFalse("stretchy"))
 			paren, err := pitz.mhchem(expr, ctx)
 			if err != nil {
 				return nil, err
@@ -522,17 +507,12 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 			mrow.AppendChild(paren...)
 			currentAtom = &atom{name: mrow}
 			state = chSpecies
-
 		} else if t.Kind&tokLetter > 0 {
-			if currentAtom != nil && ctx&ctxAtomScript == 0 {
-				result = append(result, currentAtom.toMML())
-				currentAtom = nil
-			}
 			if ctx&ctxAtomScript > 0 {
 				if state != chScriptLetter && (b.Empty() || next.Kind&tokLetter == 0) {
-					result = append(result, NewMMLNode("mi", t.Value))
+					flush(NewMMLNode("mi", t.Value))
 				} else {
-					result = append(result, NewMMLNode("mi", t.Value).SetAttr("mathvariant", "normal"))
+					flush(NewMMLNode("mi", t.Value).SetAttr("mathvariant", "normal"))
 				}
 				state = chScriptLetter
 				continue
@@ -540,16 +520,17 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 			letterbuf := b.GetUntil(func(t Token) bool { return t.Kind&tokLetter == 0 || !unicode.IsLower(([]rune(t.Value))[0]) })
 			if len(letterbuf.Expr) == 0 && (next.Kind&tokWhitespace > 0 || b.Empty()) {
 				if t.Value == "v" {
-					result = append(result, makeSymbol(symbolTable["downarrow"], next, ctx).SetAttr("lspace", "0"))
+					flush(makeSymbol(symbolTable["downarrow"], next, ctx).SetAttr("lspace", "0"))
 					state = chStart
 				} else if unicode.IsLower([]rune(t.Value)[0]) {
-					result = append(result, NewMMLNode("mi", t.Value))
+					flush(NewMMLNode("mi", t.Value))
 					state = chStart
 				} else {
-					result = append(result, NewMMLNode("mi", t.Value).SetAttr("mathvariant", "normal"))
+					flush(NewMMLNode("mi", t.Value).SetAttr("mathvariant", "normal"))
 					state = chStart
 				}
 			} else {
+				flush()
 				str := make([]string, 1+len(letterbuf.Expr))
 				str[0] = t.Value
 				for i, t := range letterbuf.Expr {
@@ -621,23 +602,16 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 				state = chSubscript
 			}
 		} else {
-			if currentAtom != nil && ctx&ctxAtomScript == 0 {
-				result = append(result, currentAtom.toMML())
-				currentAtom = nil
-			}
 			elem := NewMMLNode("mo", t.Value)
 			state = chStart
 			if t.Kind&tokClose > 0 {
 				elem.SetAttr("form", "postfix").SetFalse("stretchy")
 				state = chGroup
 			}
-			result = append(result, elem)
+			flush(elem)
 		}
 	}
-	if currentAtom != nil && ctx&ctxAtomScript == 0 {
-		result = append(result, currentAtom.toMML())
-		currentAtom = nil
-	}
+	flush()
 	return result, nil
 }
 
