@@ -161,6 +161,9 @@ func getToken(tex []rune, start int) (Token, int) {
 		case lxNumber:
 			switch {
 			case r == '.':
+				if idx < len(tex)-1 && !unicode.IsNumber(tex[idx+1]) {
+					return Token{Kind: kind, Value: string(result), start: start, end: idx}, idx
+				}
 				result = append(result, r)
 			case !unicode.IsNumber(r):
 				return Token{Kind: kind, Value: string(result), start: start, end: idx}, idx
