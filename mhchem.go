@@ -626,6 +626,7 @@ func (pitz *Pitziil) makeArrow(t Token, b *TokenBuffer) *MMLNode {
 		tok, _ := temp.GetNextToken()
 		toks = append(toks, tok.Value)
 	}
+	arrowTextAdjust := false
 	tryArrow := func() *MMLNode {
 		for i := range 4 {
 			switch strings.Join(toks[0:4-i], "") {
@@ -671,6 +672,7 @@ func (pitz *Pitziil) makeArrow(t Token, b *TokenBuffer) *MMLNode {
 				den.AppendChild(mover)
 				frac.AppendChild(den)
 				b.idx = idx + 3
+				arrowTextAdjust = true
 				return NewMMLNode("mrow").AppendChild(frac)
 			case "<=>>":
 				frac := NewMMLNode("mfrac").SetAttr("linethickness", "0").SetTrue("displaystyle")
@@ -684,6 +686,7 @@ func (pitz *Pitziil) makeArrow(t Token, b *TokenBuffer) *MMLNode {
 				den.AppendNew("mo", "↽")
 				frac.AppendChild(den)
 				b.idx = idx + 3
+				arrowTextAdjust = true
 				return NewMMLNode("mrow").AppendChild(frac)
 			}
 		}
@@ -705,6 +708,11 @@ func (pitz *Pitziil) makeArrow(t Token, b *TokenBuffer) *MMLNode {
 	if arrow := tryArrow(); arrow != nil {
 		above := getEmbellishment()
 		below := getEmbellishment()
+		if arrowTextAdjust {
+			arrowTextAdjust = false
+			above = NewMMLNode("mpadded").SetAttr("voffset", "-1.45em").AppendChild(above)
+			below = NewMMLNode("mpadded").SetAttr("voffset", "1.21em").AppendChild(below)
+		}
 		if above != nil && below != nil {
 			return NewMMLNode("munderover").AppendChild(arrow, below, above)
 		} else if above != nil {
