@@ -247,7 +247,6 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 			flush(NewMMLNode("mo", "≡"))
 		case "(":
 			if t.MatchOffset <= 0 {
-				fmt.Println("BEEP BOOP")
 				break
 			}
 			if ctx&ctxAtomScript > 0 {
