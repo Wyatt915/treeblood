@@ -89,7 +89,7 @@ func getToken(tex []rune, start int) (Token, int) {
 		r := tex[idx]
 		switch state {
 		case lxEnd:
-			return Token{Kind: kind, Value: string(result), start: start, end: idx + 1}, idx
+			return Token{Kind: kind, Value: string(result), start: start, end: idx}, idx
 		case lxBegin:
 			switch {
 			case unicode.IsLetter(r):
@@ -136,7 +136,6 @@ func getToken(tex []rune, start int) (Token, int) {
 				state = lxSpace
 				kind = tokWhitespace
 				result = append(result, ' ')
-				continue
 			case r == '|':
 				state = lxEnd
 				kind = tokLetter
@@ -157,22 +156,27 @@ func getToken(tex []rune, start int) (Token, int) {
 		case lxSpace:
 			switch {
 			case !unicode.IsSpace(r):
-				return Token{Kind: kind, Value: string(result)}, idx
+				return Token{Kind: kind, Value: string(result), start: start, end: idx}, idx
 			}
 		case lxNumber:
 			switch {
 			case r == '.':
+				if idx < len(tex)-1 && !unicode.IsNumber(tex[idx+1]) {
+					return Token{Kind: kind, Value: string(result), start: start, end: idx}, idx
+				}
 				result = append(result, r)
-			case unicode.IsSpace(r):
-				state = lxEnd
 			case !unicode.IsNumber(r):
-				return Token{Kind: kind, Value: string(result)}, idx
+				return Token{Kind: kind, Value: string(result), start: start, end: idx}, idx
 			default:
 				result = append(result, r)
 			}
 		case lxMacroArg:
-			result = append(result, r)
-			state = lxEnd
+			if unicode.IsNumber(r) {
+				result = append(result, r)
+				state = lxEnd
+			} else {
+				return Token{Kind: kind, Value: "#", start: start, end: idx}, idx
+			}
 		case lxWasBackslash:
 			switch {
 			case r == '|':
@@ -213,7 +217,7 @@ func getToken(tex []rune, start int) (Token, int) {
 				//result = append(result, r)
 			case !unicode.IsLetter(r):
 				val := string(result)
-				return Token{Kind: kind, Value: val}, idx
+				return Token{Kind: kind, Value: val, start: start, end: idx}, idx
 			default:
 				result = append(result, r)
 			}
@@ -324,12 +328,16 @@ func (b *TokenBuffer) Advance() {
 	b.jump = 1
 }
 
-func (b *TokenBuffer) GetNextToken() (Token, error) {
+func (b *TokenBuffer) GetNextToken(skipWhitespace ...bool) (Token, error) {
 	var result Token
 	temp := b.idx
-	// an expression may contain whitespace, but never start with whitespace
-	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
+	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&tokComment > 0 {
 		b.idx++
+	}
+	if skipWhitespace == nil || skipWhitespace[0] {
+		for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&tokWhitespace > 0 {
+			b.idx++
+		}
 	}
 	if b.idx >= len(b.Expr) {
 		b.idx = temp
@@ -356,15 +364,10 @@ func (b *TokenBuffer) GetNextExpr() (*TokenBuffer, error) {
 		b.idx = temp
 		return nil, &TokenBufferErr{tbEndErr, ErrTokenBufferEnd}
 	}
-	if b.Expr[b.idx].MatchOffset > 0 && b.Expr[b.idx].Kind&tokEscaped == 0 {
-		skip := 0
-		if b.Expr[b.idx].Value == "{" {
-			// we never parse the closing '}'
-			skip = 1
-		}
+	if b.Expr[b.idx].MatchOffset > 0 && b.Expr[b.idx].Kind&tokEscaped == 0 && b.Expr[b.idx].Value == "{" {
 		end := b.idx + b.Expr[b.idx].MatchOffset
 		result = NewTokenBuffer(b.Expr[b.idx+1 : end])
-		b.idx = end + skip
+		b.idx = end + 1 // Skip over closing '}'
 	} else {
 		b.idx = temp
 		return nil, &TokenBufferErr{tbIsSingleErr, ErrTokenBufferSingle}
@@ -373,12 +376,15 @@ func (b *TokenBuffer) GetNextExpr() (*TokenBuffer, error) {
 	return result, nil
 }
 
-func (b *TokenBuffer) GetOptions() (*TokenBuffer, error) {
+// Extract the tokens strictly between [square brackets]. skipWhitespace is true by default.
+func (b *TokenBuffer) GetOptions(skipWhitespace ...bool) (*TokenBuffer, error) {
 	temp := b.idx
 	var result *TokenBuffer
 	// an expression may contain whitespace, but never start with whitespace
-	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
-		b.idx++
+	if len(skipWhitespace) < 1 || skipWhitespace[0] {
+		for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
+			b.idx++
+		}
 	}
 	if b.idx >= len(b.Expr) {
 		b.idx = temp
@@ -410,6 +416,9 @@ func (b *TokenBuffer) GetNextN(n int, skipWhitespace ...bool) (*TokenBuffer, err
 	if b.idx+n > len(b.Expr) {
 		return NewTokenBuffer(b.Expr[b.idx:len(b.Expr)]), &TokenBufferErr{tbEndErr, ErrTokenBufferEnd}
 	}
+	for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&tokComment > 0 {
+		b.idx++
+	}
 	start := b.idx
 	if skipWhitespace != nil && skipWhitespace[0] {
 		for b.idx < len(b.Expr) && b.Expr[b.idx].Kind&(tokComment|tokWhitespace) > 0 {
@@ -427,8 +436,7 @@ func (b *TokenBuffer) Unget() {
 	b.idx -= b.jump
 }
 
-func tokenize(str string) ([]Token, error) {
-	tex := []rune(strings.Clone(str))
+func tokenize(tex []rune) ([]Token, error) {
 	var tok Token
 	tokens := make([]Token, 0)
 	idx := 0

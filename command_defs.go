@@ -97,7 +97,9 @@ func cmd_textcolor(pitz *Pitziil, name string, star bool, ctx parseContext, args
 }
 
 func cmd_undersetOverset(pitz *Pitziil, name string, star bool, ctx parseContext, args []*TokenBuffer, opt *TokenBuffer) *MMLNode {
-	base := pitz.ParseTex(args[1], ctx)
+	var base, embellishment *MMLNode
+	base = pitz.ParseTex(args[1], ctx&^ctxChemical)
+	embellishment = pitz.ParseTex(args[0], ctx&^ctxChemical)
 	if base.Tag == "mo" {
 		base.SetTrue("stretchy")
 	}
@@ -106,7 +108,7 @@ func cmd_undersetOverset(pitz *Pitziil, name string, star bool, ctx parseContext
 		tag = "mover"
 	}
 	underover := NewMMLNode(tag)
-	underover.AppendChild(base, pitz.ParseTex(args[0], ctx))
+	underover.AppendChild(base, embellishment)
 	n := NewMMLNode("mrow")
 	n.AppendChild(underover)
 	return n
@@ -251,8 +253,16 @@ func cmd_frac(pitz *Pitziil, name string, star bool, ctx parseContext, args []*T
 	// be a child of parent, and parent must be an mrow.
 	wrapper := NewMMLNode("mrow")
 	frac := NewMMLNode("mfrac")
-	numerator := pitz.ParseTex(args[0], ctx)
-	denominator := pitz.ParseTex(args[1], ctx)
+	var denominator, numerator *MMLNode
+	if ctx&ctxChemical == 0 {
+		numerator = pitz.ParseTex(args[0], ctx)
+		denominator = pitz.ParseTex(args[1], ctx)
+	} else {
+		temp, _ := pitz.mhchem(args[0], ctx)
+		numerator = NewMMLNode("mrow").AppendChild(temp...)
+		temp, _ = pitz.mhchem(args[1], ctx)
+		denominator = NewMMLNode("mrow").AppendChild(temp...)
+	}
 	frac.AppendChild(numerator, denominator)
 	switch name {
 	case "", "frac":

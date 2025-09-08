@@ -37,7 +37,9 @@ func TexToMML(tex string, macros map[string]string, block, displaystyle bool) (r
 			err = fmt.Errorf("TreeBlood encountered an unexpected error while processing\n%s\n", tex)
 		}
 	}()
-	tokens, err := tokenize(tex)
+	pitz := NewPitziil()
+	pitz.currentExpr = []rune(strings.Clone(tex))
+	tokens, err := tokenize(pitz.currentExpr)
 	if err != nil {
 		return "", err
 	}
@@ -47,7 +49,6 @@ func TexToMML(tex string, macros map[string]string, block, displaystyle bool) (r
 			return "", err
 		}
 	}
-	pitz := NewPitziil()
 	ast = wrapInMathTag(pitz.ParseTex(NewTokenBuffer(tokens), ctxRoot), tex)
 	if block {
 		ast.SetAttr("display", "block")
@@ -101,7 +102,7 @@ type Pitziil struct {
 	EQCount              int              // used for numbering display equations
 	DoNumbering          bool             // Whether or not to number equations in a document
 	PrintOneLine         bool
-	currentExpr          []Token         // the expression currently being evaluated
+	currentExpr          []rune          // the expression currently being evaluated
 	currentIsDisplay     bool            // true if the current expression is being rendered in displaystyle
 	cursor               int             // the index of the token currently being evaluated
 	needMacroExpansion   map[string]bool // used if any \newcommand definitions are encountered.
@@ -165,7 +166,8 @@ func (pitz *Pitziil) render(tex string, displaystyle bool) (result string, err e
 		}
 		pitz.currentIsDisplay = false
 	}()
-	tokens, err := tokenize(tex)
+	pitz.currentExpr = []rune(strings.Clone(tex))
+	tokens, err := tokenize(pitz.currentExpr)
 	if err != nil {
 		return "", err
 	}
@@ -243,7 +245,8 @@ func (pitz *Pitziil) TextStyle(tex string) (string, error) {
 
 // only produce the MathML that would be within the <semantics> tag. I.e. the root level <mrow>.
 func (pitz *Pitziil) SemanticsOnly(tex string) (string, error) {
-	tokens, err := tokenize(tex)
+	pitz.currentExpr = []rune(strings.Clone(tex))
+	tokens, err := tokenize(pitz.currentExpr)
 	defer func() {
 		if r := recover(); r != nil {
 			//ast = makeMMLError()
