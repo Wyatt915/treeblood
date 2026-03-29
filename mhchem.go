@@ -477,6 +477,9 @@ func (pitz *Pitziil) mhchem(b *TokenBuffer, ctx parseContext) ([]*MMLNode, error
 					return nil, err
 				}
 				bondElem, err := bond(StringifyTokens(arg.Expr))
+				if err != nil {
+					return nil, err
+				}
 				flush(bondElem)
 			} else if symbol, ok := symbolTable[t.Value]; ok {
 				flush(makeSymbol(symbol, t, ctx).SetAttr("mathvariant", "normal"))
