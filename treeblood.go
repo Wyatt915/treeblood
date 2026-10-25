@@ -2,6 +2,7 @@ package treeblood
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"slices"
@@ -10,6 +11,12 @@ import (
 
 func init() {
 	logger = log.New(os.Stderr, "TreeBlood: ", log.LstdFlags)
+}
+
+// SetLogOutput sets where warnings and errors are written; the default is
+// standard error. Pass io.Discard to silence them.
+func SetLogOutput(w io.Writer) {
+	logger.SetOutput(w)
 }
 
 // tex - the string of math to render. Do not include delimeters like \\(...\\) or $...$
@@ -30,8 +37,7 @@ func TexToMML(tex string, macros map[string]string, block, displaystyle bool) (r
 			if displaystyle {
 				ast.SetTrue("displaystyle")
 			}
-			fmt.Println(r)
-			fmt.Println(tex)
+			logger.Printf("recovered from %v while processing\n%s\n", r, tex)
 			ast.Write(&builder, 0)
 			result = builder.String()
 			err = fmt.Errorf("TreeBlood encountered an unexpected error while processing\n%s\n", tex)
@@ -158,8 +164,7 @@ func (pitz *Pitziil) render(tex string, displaystyle bool) (result string, err e
 				ast.SetAttr("display", "inline")
 				ast.SetAttr("class", "math-textstyle")
 			}
-			fmt.Println(r)
-			fmt.Println(tex)
+			logger.Printf("recovered from %v while processing\n%s\n", r, tex)
 			ast.Write(&builder, indent)
 			result = builder.String()
 			err = fmt.Errorf("TreeBlood encountered an unexpected error")
@@ -262,7 +267,7 @@ func (pitz *Pitziil) SemanticsOnly(tex string) (string, error) {
 			//fmt.Println(tex)
 			//ast.Write(&builder, 0)
 			//result = builder.String()
-			fmt.Printf("TreeBlood encountered an unexpected error while processing\n%s\n", tex)
+			logger.Printf("recovered from %v while processing\n%s\n", r, tex)
 		}
 	}()
 	if err != nil {
